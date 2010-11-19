@@ -1,0 +1,11 @@
+XTerm*background:        #003200
+XTerm*foreground:        #00BB00
+XTerm*cursorColor:       blue
+XTerm*saveLines:         1000
+XTerm*scrollBar:         true
+XTerm*scrollKey:         true
+XTerm*scrollTtyOutput:   false
+XTerm*font:              -*-fixed-medium-*-*-*-13-100-*-*-*-*-*-*
+XTerm*loginShell:        true
+XTerm*geometry:          110x40
+XTerm*multiScroll: true
