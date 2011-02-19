@@ -95,6 +95,16 @@ def parse_args(args=None):
     )
 
     parser.add_argument(
+        "-d", "--disk",
+        action="store_const",
+        default=None,
+        const=create_temp_file(),
+        dest="db_path",
+        help="If specified, store the internal database into a temporary file intead of in " +
+            "memory; this decreases performance but may fix out-of-memory errors",
+    )
+
+    parser.add_argument(
         "-a", "--all",
         action="store_const",
         const=0,
@@ -127,7 +137,12 @@ class FreqDb(object):
         self.path = path
 
     def open(self):
-        self.db = sqlite3.connect(self.path)
+        if self.path is not None:
+            db_path = self.path
+        else:
+            db_path = ":memory:"
+
+        self.db = sqlite3.connect(db_path)
         
         # make it faster sine we don't really care about stability of the data
         cur = self.db.cursor()
@@ -137,8 +152,8 @@ class FreqDb(object):
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS freq (
-                line TEXT,
-                count INTEGER
+                line TEXT PRIMARY KEY NOT NULL,
+                count INTEGER NOT NULL
             )
             """
         )
@@ -289,11 +304,11 @@ def freq_path(path, results, line_filter):
                 line = line_filter(line)
             if line is not None:
                 results.inc(line)
-
-        results.commit()
     finally:
         if close_enabled:
             f.close()
+
+    results.commit()
 
 ####################################################################################################
 
@@ -303,7 +318,7 @@ def print_freq(results, n):
 
 ####################################################################################################
 
-def freq(paths, n, line_filter):
+def freq(paths, db_path, n, line_filter):
     """
     Reads the paths from the given list of paths and prints the most-frequently-occuring lines.
     The "paths" parameter must be an iterable that returns strings.  For each string returned that
@@ -315,8 +330,8 @@ def freq(paths, n, line_filter):
     will be used as the line's value; may be None to perform no filtering.  Raises GeneralException
     on error.
     """
-    temp_path = create_temp_file()
-    results = FreqDb(temp_path)
+    results = FreqDb(db_path)
+
     results.open()
     try:
         for path in paths:
@@ -334,9 +349,10 @@ def main():
     """
     settings = parse_args()
     paths = iter_paths(settings.files)
+    db_path = settings.db_path
     n = settings.n
     line_filter = LineFilter(settings.trim, settings.include_empty_lines)
-    freq(paths, n, line_filter)
+    freq(paths, db_path, n, line_filter)
 
 ####################################################################################################
 
