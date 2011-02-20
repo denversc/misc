@@ -142,6 +142,7 @@ class FreqDb(object):
             db_path = ":memory:"
 
         self.db = sqlite3.connect(db_path)
+        self.db.text_factory = str
         
         # make it faster sine we don't really care about stability of the data
         cur = self.db.cursor()
@@ -304,7 +305,6 @@ def freq_path(path, results, line_filter, inserted_hashes):
     (f, close_enabled) = open_file(path)
     try:
         for line in f:
-            line = line[:-1]
             if line_filter is not None:
                 line = line_filter(line)
 
@@ -330,8 +330,19 @@ def freq_path(path, results, line_filter, inserted_hashes):
 
 ####################################################################################################
 
+def strip_eol(s):
+    if s.endswith("\r\n"):
+        return s[:-2]
+    elif s.endswith("\r") or s.endswith("\n"):
+        return s[:-1]
+    else:
+        return s
+
+####################################################################################################
+
 def print_freq(results, n):
     for (line, count) in results.top(n):
+        line = strip_eol(line)
         print("%i %s" % (count, line))
 
 ####################################################################################################
