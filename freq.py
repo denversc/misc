@@ -4,7 +4,6 @@ from __future__ import print_function
 
 import atexit
 import argparse
-import io
 import os
 import sqlite3
 import sys
@@ -252,7 +251,7 @@ def open_file(path):
     else:
         close_enabled = True
         try:
-            f = io.open(path, "rt")
+            f = open(path, "rt")
         except IOError as e:
             raise GeneralException("unable to open file for reading: %s (%s)" %
                 (path, e.strerror))
