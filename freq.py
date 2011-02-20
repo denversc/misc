@@ -142,6 +142,7 @@ class FreqDb(object):
             db_path = ":memory:"
 
         self.db = sqlite3.connect(db_path)
+        self.db.text_factory = str
         
         # make it faster sine we don't really care about stability of the data
         cur = self.db.cursor()
