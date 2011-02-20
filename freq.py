@@ -168,18 +168,23 @@ class FreqDb(object):
         finally:
             del self.db
 
-    def inc(self, line):
+    def inc(self, line, skip_update=False):
         cur = self.db.cursor()
-        cur.execute(
-            """
-            UPDATE freq
-            SET count=count+1
-            WHERE line=?
-            """,
-            (line,)
-        )
+
+        if skip_update:
+            do_insert = True
+        else:
+            cur.execute(
+                """
+                UPDATE freq
+                SET count=count+1
+                WHERE line=?
+                """,
+                (line,)
+            )
+            do_insert = (cur.rowcount == 0)
         
-        if cur.rowcount == 0:
+        if do_insert:
             cur.execute(
                 """
                 INSERT INTO freq
@@ -284,7 +289,7 @@ def create_temp_file():
 
 ####################################################################################################
 
-def freq_path(path, results, line_filter):
+def freq_path(path, results, line_filter, inserted_hashes):
     """
     Reads a file for storing the frequency of line occurrences.  The "path" parameter must be a
     string whose value is the path of the file to open.  If an error occurs opening or reading from
@@ -293,7 +298,8 @@ def freq_path(path, results, line_filter):
     key then its value will be incremented by 1.  The "line_filter" parameter must be a function
     that will be specified each line as a string; if it returns None then the line will be
     discarded; otherwise, the returned string will be used as the line's value; may be None to
-    perform no filtering.
+    perform no filtering.  The "inserted_hashes" parameter must be a set and will be used to
+    optimize populating the database.
     """
     (f, close_enabled) = open_file(path)
     try:
@@ -301,8 +307,21 @@ def freq_path(path, results, line_filter):
             line = line[:-1]
             if line_filter is not None:
                 line = line_filter(line)
+
             if line is not None:
-                results.inc(line)
+
+                # OPTIMIZATION: if the line has never been inserted then the UPDATE statement in
+                # results.inc() can be safely skipped
+                line_hash = hash(line)
+                skip_update = (line_hash not in inserted_hashes)
+                if skip_update:
+                    inserted_hashes.add(line_hash)
+
+                    # Don't let inserted_hashes get too big
+                    if len(inserted_hashes) > 10000:
+                        inserted_hashes.clear()
+
+                results.inc(line, skip_update=skip_update)
     finally:
         if close_enabled:
             f.close()
@@ -330,11 +349,12 @@ def freq(paths, db_path, n, line_filter):
     on error.
     """
     results = FreqDb(db_path)
+    inserted_hashes = set()
 
     results.open()
     try:
         for path in paths:
-            freq_path(path, results, line_filter)
+            freq_path(path, results, line_filter, inserted_hashes)
         results.commit()
         print_freq(results, n)
     finally:
