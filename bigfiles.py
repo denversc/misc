@@ -33,6 +33,7 @@ import collections
 import glob
 import itertools
 import os
+import sqlite3
 import sys
 
 ################################################################################
@@ -110,6 +111,8 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
             help="If specified, ignore errors accessing files"
         )
 
+        # Arguments for size formatting
+
         self.add_argument(
             "-p", "--no-padding",
             action="store_true",
@@ -143,6 +146,15 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
             action=ListSizeUnitsAction,
             nargs=0,
             help="List the units of size used by --format-sizes"
+        )
+
+        # Arguments for databases
+
+        self.add_argument(
+            "--save",
+            dest="db_save_path",
+            help="If specified, save the paths and file sizes of all visited " +
+                "files into an SQLite database with the given name."
         )
 
     def parse_args(self, *args, **kwargs):
@@ -245,21 +257,7 @@ class BigFilesSearchEngine(object):
         self.sizes = []
         self.paths = []
 
-    def add_file(self, path):
-        """
-        Updates this object by searching the file with the given path.
-        The *path* parameter must be the string whose value is the path of a
-        file whose size to update this search engine with.
-        Raises OSError if an error occurs retrieving the size of the file.
-        This method simply determines the size of the given file and then
-        invokes self.add_file_info() with the given path and the size of the
-        file.
-        """
-        stat_info = os.stat(path)
-        size = stat_info.st_size
-        self.add_file_info(path, size)
-
-    def add_file_info(self, path, size):
+    def add_file(self, path, size):
         """
         Updates this object by searching the file with the given path.
         The *path* parameter must be the string whose value is the path of a
@@ -278,7 +276,6 @@ class BigFilesSearchEngine(object):
                 del self.sizes[0]
                 del self.paths[0]
 
-
     def results(self):
         """
         Returns the results of the search.
@@ -287,6 +284,59 @@ class BigFilesSearchEngine(object):
         whose value is the size of the size of the file. 
         """
         return itertools.izip(self.sizes, self.paths)
+
+################################################################################
+
+class Database(object):
+
+    def __init__(self, path):
+        self.path = path
+        self.con = sqlite3.connect(path)
+
+    def initialize(self):
+        """
+        Initializes this connection and prepares it for use.
+        This method sets up the connection and creates any required tables.
+        """
+        cur = self.con.cursor()
+
+        # set some pragmas to increase performance
+        cur.execute("PRAGMA fullfsync = off")
+        cur.execute("PRAGMA journal_mode = off")
+        cur.execute("PRAGMA synchronous = off")
+
+        # create the table if it does not already exist
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS files (
+                path TEXT,
+                size INTEGER
+            )
+        """)
+
+        self.commit()
+
+    def close(self):
+        """
+        Closes this connection from use.
+        """
+        self.con.close()
+
+    def commit(self):
+        """
+        Commits all changes since the last commit.
+        """
+        self.con.commit()
+
+    def add_file(self, path, size):
+        """
+        Adds a file with the given path and size.
+        The *path* parameter must be the string whose value is the path of a
+        file whose size to update this search engine with.
+        The *size* parameter must be an integer whose value is the size of the
+        given file.
+        """
+        self.con.execute("INSERT INTO files (path, size) VALUES (?, ?)",
+            (path, size))
 
 ################################################################################
 
@@ -356,6 +406,42 @@ def format_file_size(size, table):
 
 ################################################################################
 
+def print_results(search, format_size_units, no_padding, reverse_order):
+    """
+    Prints search results to standard output.
+    *search* must be an instance of BigFilesSearchEngine whose results to print.
+    *format_size_units* is the unit table used to format sizes for output; if
+    None then the integer sizes will be printed without formatting; the
+    predefined units are UNIT_TABLE_SI_DECIMAL and UNIT_TABLE_IEC_BINARY.
+    If *no_padding* evaluates to True, then the left padding of the sizes is
+    not done. 
+    If *reverse* evaluates to True, then the order in which the search results
+    are printed is reversed.
+    """
+
+    results = list(search.results())
+    if reverse_order:
+        results.reverse()
+
+    if format_size_units is not None:
+        size_formatter = lambda x: format_file_size(x, format_size_units)
+    else:
+        size_formatter = str
+
+    if no_padding or len(results) == 0:
+        max_size_str_len = 0
+    else:
+        max_size_str_len = max(len(size_formatter(x[0])) for x in results)
+
+    output_template = "{size:>" + str(max_size_str_len) + "} {path}"
+
+    for (size, path) in results:
+        size_str = size_formatter(size)
+        formatted_line = output_template.format(size=size_str, path=path)
+        print(formatted_line)
+
+################################################################################
+
 def main(args):
     """
     The main method for this application.
@@ -370,51 +456,65 @@ def main(args):
     args_parser = BigFilesArgumentParser()
     settings = args_parser.parse_args(args=args)
 
+    search_engines = []
+
     # setup the search engine
     size_cmp = cmp if not settings.invert else lambda x, y:-cmp(x, y)
     search = BigFilesSearchEngine(
         max_results=settings.num_results,
         size_cmp=size_cmp,
     )
+    search_engines.append(search)
+
+    # setup the database, if specified
+    if settings.db_save_path is not None:
+        db = Database(settings.db_save_path)
+        search_engines.append(db)
+    else:
+        db = None
 
     # search the files specified by the user
-    for path_lists in settings.paths:
-        for paths in path_lists:
-            for path in iter_paths(paths):
-                try:
-                    search.add_file(path)
-                except OSError as e:
-                    if settings.ignore_errors:
-                        continue
-                    print("ERROR: unable to process file: %s (%s)" %
-                        (path, e.strerror))
-                    return 1
+    try:
+        if db is not None:
+            db.initialize()
 
-    # print the search results (if there are any)
-    results = list(search.results())
-    if len(results) > 0:
+        for path_lists in settings.paths:
+            for paths in path_lists:
+                for path in iter_paths(paths):
+                    try:
+                        stat_info = os.stat(path)
+                    except OSError as e:
+                        if settings.ignore_errors:
+                            continue
+                        print("ERROR: unable to process file: %s (%s)" %
+                            (path, e.strerror))
+                        return 1
 
-        if settings.format_sizes:
-            unit_table = UNIT_TABLE_IEC_BINARY if settings.binary_sizes \
-                else UNIT_TABLE_SI_DECIMAL
-            size_formatter = lambda x: format_file_size(x, unit_table)
-        else:
-            size_formatter = str
+                    size = stat_info.st_size
+                    for search_engine in search_engines:
+                        search_engine.add_file(path, size)
+    finally:
+        if db is not None:
+            try:
+                db.commit()
+            finally:
+                db.close()
 
-        if settings.no_padding:
-            max_size_str_len = 0
-        else:
-            max_size_str_len = max(len(size_formatter(x[0])) for x in results)
+    # print the results
+    if not settings.format_sizes:
+        format_size_units = None
+    elif settings.binary_sizes:
+        format_size_units = UNIT_TABLE_IEC_BINARY
+    else:
+        format_size_units = UNIT_TABLE_SI_DECIMAL
 
-        output_template = "{size:>" + str(max_size_str_len) + "} {path}"
+    print_results(
+        search=search,
+        format_size_units=format_size_units,
+        no_padding=settings.no_padding,
+        reverse_order=(settings.invert == settings.reverse_order),
+    )
 
-        if settings.invert == settings.reverse_order:
-            results.reverse()
-
-        for (size, path) in results:
-            size_str = size_formatter(size)
-            formatted_line = output_template.format(size=size_str, path=path)
-            print(formatted_line)
 
     return 0
 
