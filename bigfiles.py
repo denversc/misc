@@ -154,7 +154,15 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
             "--save",
             dest="db_save_path",
             help="If specified, save the paths and file sizes of all visited " +
-                "files into an SQLite database with the given name."
+                "files into an SQLite database with the given name"
+        )
+
+        self.add_argument(
+            "--load",
+            type=self.type_file_exists,
+            dest="db_load_path",
+            help="If specified, load paths and file sizes from this file, " +
+                "which must be an SQLite database created with --save"
         )
 
     def parse_args(self, *args, **kwargs):
@@ -164,7 +172,7 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
         with the given parameters, and then tweaks the return value.
         """
         result = argparse.ArgumentParser.parse_args(self, *args, **kwargs)
-        if len(result.paths) == 0:
+        if len(result.paths) == 0 and result.db_load_path is None:
             paths = self.type_path_wildcard("*")
             result.paths.append(paths)
         return result
@@ -209,6 +217,21 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
                 value)
 
         return itertools.chain([first_path], paths)
+
+    @staticmethod
+    def type_file_exists(value):
+        """
+        Argument type is an existing file.
+        The *value* parameter must be a string whose value to validate.
+        If the path of the given value does not exist or is not a file then
+        argparse.ArgumentTypeError is raised.
+        Returns the given string verbatim.
+        """
+        if not os.path.exists(value):
+            raise argparse.ArgumentTypeError("file not found: %s" % value)
+        elif not os.path.isfile(value):
+            raise argparse.ArgumentTypeError("not a file: %s" % value)
+        return value
 
     @classmethod
     def list_sizes(cls):
@@ -337,6 +360,18 @@ class Database(object):
         """
         self.con.execute("INSERT INTO files (path, size) VALUES (?, ?)",
             (path, size))
+
+    def __iter__(self):
+        """
+        Returns an iterator over the files and sizes in the database.
+        Returns (size, path) tuples where *path* is a string whose value is the
+        path of a file in the filesystem and *size* is an integer whose value is
+        the size of that file.  Raises sqlite3.Error on error.
+        """
+        cur = self.con.cursor()
+        cur.execute("SELECT size, path FROM files")
+        for result in cur:
+            yield result
 
 ################################################################################
 
@@ -468,15 +503,20 @@ def main(args):
 
     # setup the database, if specified
     if settings.db_save_path is not None:
-        db = Database(settings.db_save_path)
-        search_engines.append(db)
+        save_db = Database(settings.db_save_path)
+        search_engines.append(save_db)
     else:
-        db = None
+        save_db = None
 
     # search the files specified by the user
     try:
-        if db is not None:
-            db.initialize()
+        if save_db is not None:
+            try:
+                save_db.initialize()
+            except sqlite3.Error as e:
+                print("ERROR: unable to initialize sqlite database: %s (%s)" %
+                    (save_db.path, e))
+                return 1
 
         for path_lists in settings.paths:
             for paths in path_lists:
@@ -493,12 +533,28 @@ def main(args):
                     size = stat_info.st_size
                     for search_engine in search_engines:
                         search_engine.add_file(path, size)
-    finally:
-        if db is not None:
+
+        if settings.db_load_path is not None:
+            load_db = Database(settings.db_load_path)
             try:
-                db.commit()
+                try:
+                    load_db.initialize()
+                except sqlite3.Error as e:
+                    print("ERROR: unable to initialize sqlite database: %s (%s)"
+                        % (load_db.path, e))
+                    return 1
+                for (size, path) in load_db:
+                    for search_engine in search_engines:
+                        search_engine.add_file(path, size)
             finally:
-                db.close()
+                load_db.close()
+
+    finally:
+        if save_db is not None:
+            try:
+                save_db.commit()
+            finally:
+                save_db.close()
 
     # print the results
     if not settings.format_sizes:
@@ -514,7 +570,6 @@ def main(args):
         no_padding=settings.no_padding,
         reverse_order=(settings.invert == settings.reverse_order),
     )
-
 
     return 0
 
