@@ -37,6 +37,30 @@ import sys
 
 ################################################################################
 
+def log(x, base):
+    """
+    Computes the logarithm of the given value in the given base.
+    The *x* and *base* parameters must both be integers and the return value
+    is also an integer.
+    The given *x* must be a perfect power of *base* or else ValueError is
+    raised.
+    """
+    if x < 0:
+        raise ValueError("invalid x: %i" % x)
+    elif x == 1:
+        return 0
+
+    exponent = 1
+    while True:
+        power = base ** exponent
+        if power == x:
+            return exponent
+        elif power > x:
+            raise ValueError("%i is not a perfect power of %i" % (x, base))
+        exponent += 1
+
+################################################################################
+
 class BigFilesArgumentParser(argparse.ArgumentParser):
     """
     The command-line arguments parser for this application.
@@ -109,6 +133,18 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
                 "using base 2 units instead of base 10"
         )
 
+        class ListSizeUnitsAction(argparse.Action):
+            def __call__(self, parser, namespace, values, option_string=None):
+                parser.list_sizes()
+                parser.exit(0)
+
+        self.add_argument(
+            "--list-size-units",
+            action=ListSizeUnitsAction,
+            nargs=0,
+            help="List the units of size used by --format-sizes"
+        )
+
     def parse_args(self, *args, **kwargs):
         """
         Parses the command-line arguments.
@@ -161,6 +197,40 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
                 value)
 
         return itertools.chain([first_path], paths)
+
+    @classmethod
+    def list_sizes(cls):
+        """
+        Prints lines to standard output about the different units that are
+        displayed by --format-sizes.  Uses list_sizes_for_type() to print the
+        different unit tables. 
+        """
+        cls.list_sizes_for_type("SI Decimal", UNIT_TABLE_SI_DECIMAL, 10)
+        print()
+        cls.list_sizes_for_type("IEC Binary", UNIT_TABLE_IEC_BINARY, 2)
+
+    @staticmethod
+    def list_sizes_for_type(name, unit_table, base):
+        """
+        Prints the unit table for the given units to standard output.
+        The *name* parameter must be a string whose value is the name of the
+        units whose table to print.
+        The *unit_table* parameter must be a unit table; predefined unit tables
+        are UNIT_TABLE_SI_DECIMAL and UNIT_TABLE_IEC_BINARY.
+        The *base* parameter must be an integer that is the exponential base
+        of all sizes of the given unit.
+        """
+        title = "%s Units" % name
+        print(title)
+        print("=" * len(title))
+        print()
+
+        unit_table = list(unit_table)
+        unit_table.reverse()
+        for unit in unit_table:
+            exp = int(log(unit.size, base))
+            print("1 {name} = {base:d}^{exp:d} {size:,d} bytes".format(
+                name=unit.name, size=unit.size, base=base, exp=exp))
 
 ################################################################################
 
