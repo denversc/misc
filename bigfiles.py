@@ -79,7 +79,7 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
             type=self.type_path_wildcard,
             nargs="*",
             help="The paths of the files and/or directories to search; " +
-                "May contain wildcard characters '*' and '?';" +
+                "May contain wildcard characters '*' and '?'; " +
                 "if none are specified then the current directory is used"
         )
 
