@@ -9,12 +9,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -94,21 +94,21 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
             "-i", "--invert",
             action="store_true",
             default=False,
-            help="If specified, show the smallest files instead of the largest"
+            help="Show the smallest files instead of the largest"
         )
 
         self.add_argument(
             "-r", "--reverse-order",
             action="store_true",
             default=False,
-            help="If specified, list the results in reverse order"
+            help="List the results in reverse order"
         )
 
         self.add_argument(
             "-e", "--ignore-errors",
             action="store_true",
             default=False,
-            help="If specified, ignore errors accessing files"
+            help="Ignore errors accessing files"
         )
 
         # Arguments for size formatting
@@ -117,23 +117,23 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
             "-p", "--no-padding",
             action="store_true",
             default=False,
-            help="If specified, do not left-pad file sizes in output"
+            help="Do not left-pad file sizes in output"
         )
 
         self.add_argument(
             "-f", "--format-sizes",
             action="store_true",
             default=False,
-            help="If specified, format the file sizes into a human-readable " +
-                "format (eg. 500kb instead of 500000); these values are base 10"
+            help="Format the file sizes into a human-readable " +
+                "format (eg. 500kB instead of 500000); these values are base 10"
         )
 
         self.add_argument(
             "-b", "--binary-sizes",
             action="store_true",
             default=False,
-            help="If specified with --format-sizes, sizes will be formatted " +
-                "using base 2 units instead of base 10"
+            help="Causes size formatting done by --format-sizes to use IEC " +
+                "Binary base 2 units instead of SI Decimal base 10"
         )
 
         class ListSizeUnitsAction(argparse.Action):
@@ -153,16 +153,17 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
         self.add_argument(
             "--save",
             dest="db_save_path",
-            help="If specified, save the paths and file sizes of all visited " +
-                "files into an SQLite database with the given name"
+            help="Save the paths and file sizes of all visited files into " +
+                "an SQLite database with the given name"
         )
 
         self.add_argument(
             "--load",
             type=self.type_file_exists,
             dest="db_load_path",
-            help="If specified, load paths and file sizes from this file, " +
-                "which must be an SQLite database created with --save"
+            help="Load paths and file sizes from this file, which must be " +
+                "an SQLite database created with --save, in addition to " +
+                "the paths specified in the positional parameters"
         )
 
     def parse_args(self, *args, **kwargs):
@@ -238,7 +239,7 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
         """
         Prints lines to standard output about the different units that are
         displayed by --format-sizes.  Uses list_sizes_for_type() to print the
-        different unit tables. 
+        different unit tables.
         """
         cls.list_sizes_for_type("SI Decimal", UNIT_TABLE_SI_DECIMAL, 10)
         print()
@@ -304,7 +305,7 @@ class BigFilesSearchEngine(object):
         Returns the results of the search.
         Returns an iterable that yields (size, path) tuples where *path* is
         a string whose value is the path of the file and *size* is an integer
-        whose value is the size of the size of the file. 
+        whose value is the size of the size of the file.
         """
         return itertools.izip(self.sizes, self.paths)
 
@@ -429,7 +430,7 @@ def format_file_size(size, table):
     The *table* parameter must be a tuple; TABLE_SI_DECIMAL and TABLE_IEC_BINARY
     are two examples of tables.
     Returns a string whose value is the given size converted to a string that
-    is more human readable, such as 1.25kb instead of 125000.
+    is more human readable, such as 1.25kB instead of 125000.
     """
     unit = None
     for unit in table:
@@ -449,7 +450,7 @@ def print_results(search, format_size_units, no_padding, reverse_order):
     None then the integer sizes will be printed without formatting; the
     predefined units are UNIT_TABLE_SI_DECIMAL and UNIT_TABLE_IEC_BINARY.
     If *no_padding* evaluates to True, then the left padding of the sizes is
-    not done. 
+    not done.
     If *reverse* evaluates to True, then the order in which the search results
     are printed is reversed.
     """
