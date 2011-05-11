@@ -24,8 +24,8 @@
 Searches the filesystem for the biggest files.
 """
 
-from __future__ import absolute_import
-from __future__ import print_function
+
+
 
 import argparse
 import bisect
@@ -307,7 +307,7 @@ class BigFilesSearchEngine(object):
         a string whose value is the path of the file and *size* is an integer
         whose value is the size of the size of the file.
         """
-        return itertools.izip(self.sizes, self.paths)
+        return zip(self.sizes, self.paths)
 
 ################################################################################
 
