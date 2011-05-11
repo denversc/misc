@@ -275,9 +275,9 @@ class BigFilesSearchEngine(object):
     Searches a set of paths for the largest files.
     """
 
-    def __init__(self, max_results, size_cmp):
+    def __init__(self, max_results, invert):
         self.max_results = max_results
-        self.size_cmp = size_cmp
+        self.invert = invert
         self.sizes = []
         self.paths = []
 
@@ -290,7 +290,7 @@ class BigFilesSearchEngine(object):
         given file.
         """
         if len(self.sizes) < self.max_results or \
-                self.size_cmp(size, self.sizes[0]) > 0:
+                self.cmp_sizes(size, self.sizes[0]) > 0:
 
             index = bisect.bisect_left(self.sizes, size)
             self.sizes.insert(index, size)
@@ -308,6 +308,20 @@ class BigFilesSearchEngine(object):
         whose value is the size of the size of the file.
         """
         return zip(self.sizes, self.paths)
+
+    def cmp_sizes(self, size1, size2):
+        """
+        Compares two sizes for relative ordering.
+        The "size1" and "size2" parameters must both be integers.
+        If size1 is greater than, less than, or equal to size2 then a value
+        greater than zero, less than zero, or equal to zero will be returned,
+        respectively.
+        The return values are inverted if self.inverted evaluates to True.
+        """
+        difference = size1 - size2
+        if self.invert:
+            difference = -difference
+        return difference
 
 ################################################################################
 
@@ -495,10 +509,9 @@ def main(args):
     search_engines = []
 
     # setup the search engine
-    size_cmp = cmp if not settings.invert else lambda x, y:-cmp(x, y)
     search = BigFilesSearchEngine(
         max_results=settings.num_results,
-        size_cmp=size_cmp,
+        invert=settings.invert,
     )
     search_engines.append(search)
 
