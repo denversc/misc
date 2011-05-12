@@ -520,6 +520,7 @@ def main(args):
         save_db = None
 
     # search the files specified by the user
+    print_results_enabled = False
     try:
         if save_db is not None:
             try:
@@ -560,6 +561,14 @@ def main(args):
             finally:
                 load_db.close()
 
+        # we finished; enable printing of the results
+        print_results_enabled = True
+
+    except KeyboardInterrupt:
+        # force printing of the results if CTRL+C was pressed
+        print_results_enabled = True
+        raise
+
     finally:
         if save_db is not None:
             try:
@@ -567,20 +576,21 @@ def main(args):
             finally:
                 save_db.close()
 
-    # print the results
-    if not settings.format_sizes:
-        format_size_units = None
-    elif settings.binary_sizes:
-        format_size_units = UNIT_TABLE_IEC_BINARY
-    else:
-        format_size_units = UNIT_TABLE_SI_DECIMAL
+        # print the results
+        if print_results_enabled:
+            if not settings.format_sizes:
+                format_size_units = None
+            elif settings.binary_sizes:
+                format_size_units = UNIT_TABLE_IEC_BINARY
+            else:
+                format_size_units = UNIT_TABLE_SI_DECIMAL
 
-    print_results(
-        search=search,
-        format_size_units=format_size_units,
-        no_padding=settings.no_padding,
-        reverse_order=(settings.invert == settings.reverse_order),
-    )
+            print_results(
+                search=search,
+                format_size_units=format_size_units,
+                no_padding=settings.no_padding,
+                reverse_order=(settings.invert == settings.reverse_order),
+            )
 
     return 0
 
