@@ -521,6 +521,10 @@ def main(args):
 
     # search the files specified by the user
     print_results_enabled = False
+
+    # will be set below and used outside of the block to report the last-processed file
+    path = None
+
     try:
         if save_db is not None:
             try:
@@ -564,9 +568,10 @@ def main(args):
         # we finished; enable printing of the results
         print_results_enabled = True
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as e:
         # force printing of the results if CTRL+C was pressed
         print_results_enabled = True
+        e.last_path = path
         raise
 
     finally:
@@ -601,8 +606,16 @@ def main(args):
 if __name__ == "__main__":
     try:
         exit_code = main(sys.argv[1:])
-    except KeyboardInterrupt:
-        print("ERROR: Application terminated by keyboard interrupt",
-            file=sys.stderr)
+    except KeyboardInterrupt as e:
+        message = "ERROR: Application terminated by keyboard interrupt"
+
+        try:
+            last_path = e.last_path
+        except AttributeError:
+            last_path = None
+        if last_path is not None:
+            message = "%s (last processed file: %s)" % (message, last_path)
+
+        print(message, file=sys.stderr)
         exit_code = 1
     sys.exit(exit_code)
