@@ -24,9 +24,6 @@
 Searches the filesystem for the biggest files.
 """
 
-
-
-
 import argparse
 import bisect
 import collections
