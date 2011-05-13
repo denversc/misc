@@ -102,6 +102,14 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
         )
 
         self.add_argument(
+            "-d", "--directories",
+            action="store_true",
+            default=False,
+            help="Consider the size of files within directories, " +
+                "instead of individual files, non-recursively"
+        )
+
+        self.add_argument(
             "-e", "--ignore-errors",
             action="store_true",
             default=False,
@@ -171,8 +179,16 @@ class BigFilesArgumentParser(argparse.ArgumentParser):
         """
         result = argparse.ArgumentParser.parse_args(self, *args, **kwargs)
         if len(result.paths) == 0 and result.db_load_path is None:
-            paths = self.type_path_wildcard("*")
-            result.paths.append(paths)
+            if result.directories:
+                result.paths.append(".")
+            else:
+                try:
+                    paths = os.listdir()
+                except OSError:
+                    pass # oh well
+                else:
+                    result.paths.append(paths)
+
         return result
 
     @staticmethod
@@ -376,35 +392,14 @@ class Database(object):
     def __iter__(self):
         """
         Returns an iterator over the files and sizes in the database.
-        Returns (size, path) tuples where *path* is a string whose value is the
+        Returns (path, size) tuples where *path* is a string whose value is the
         path of a file in the filesystem and *size* is an integer whose value is
         the size of that file.  Raises sqlite3.Error on error.
         """
         cur = self.con.cursor()
-        cur.execute("SELECT size, path FROM files")
+        cur.execute("SELECT path, size FROM files")
         for result in cur:
             yield result
-
-################################################################################
-
-def iter_paths(path):
-    """
-    Walks recursively through all files in a path.
-    The *path* parameter must be a string whose value is the path of a file or
-    directory in the filesystem.
-    Returns an iterable over a set of strings.
-    If the given path is a file then that string is the only element yielded by
-    the returned iterator.
-    Otherwise, the given path is walked, recursively, and all discovered files
-    have their paths yielded by the returned iterator.
-    """
-    if os.path.isdir(path):
-        for (dirpath, dirnames, filenames) in os.walk(path):
-            for filename in filenames:
-                cur_path = os.path.join(dirpath, filename)
-                yield cur_path
-    else:
-        yield path
 
 ################################################################################
 
@@ -489,6 +484,281 @@ def print_results(search, format_size_units, no_padding, reverse_order):
 
 ################################################################################
 
+def file_size(path):
+    """
+    Returns the size of a file.
+    The "path" parameter must be a string whose value is the path of the file
+    whose size to return.
+    Raises OSError if the size of the file with the given path cannot be
+    determined, such as if the path does not exist, is a directory, or
+    permission is denied.
+    """
+    stat_info = os.stat(path)
+    size = stat_info.st_size
+    return size
+
+################################################################################
+
+class SizeProducerError(Exception):
+    pass
+
+################################################################################
+
+class SizeProducer:
+    """
+    Base class for iterators that yield (name, size) pairs.
+    Sublcasses must override the values(), name_from_value(), and
+    size_from_value() methods.
+    """
+
+    def __init__(self, on_error):
+        """
+        Initializes a new SizeProducer object.
+        The "on_error" parameter must be a function that will be called when
+        an error occurs (such as file not found) from any of the methods
+        implemented by the subclass.  It accepts one argument, a string, whose
+        value is an error message.  The function may raise a SizeProducerError
+        to indicate that the error should cease iteration, or it may simply
+        return, in which case the error should be ignored and progress should
+        continue. 
+        """
+
+        self.on_error = on_error
+        """
+        The function to be called when an error occurs in a subclass; set to the
+        "on_error" parameter given to __init__().
+        """
+
+    def __iter__(self):
+        """
+        Returns an iterator that yield (name, size) tuples.
+        The "name" element must be a string whose value is the name of the
+        object (such as a file path) whose size is given in the "size" element.
+        The "size" element must be an integer whose value is the size of the
+        object with the name given in the "name" element.
+        Raises any exceptions raised by self.on_error().
+        
+        This function iterates over the iterator returned from self.values().
+        Each value is then given to self.name_from_value() and
+        self.size_from_value().  If either of these methods return None, which
+        they should if an error occurs and self.on_error() does not raise an
+        exception, then the value is discarded.
+        """
+        for value in self.values():
+            name = self.name_from_value(value)
+            if name is None:
+                continue
+            size = self.size_from_value(value)
+            if size is None:
+                continue
+
+            yield (name, size)
+
+    def values(self):
+        """
+        Returns an iterator over the "values" whose name and size to yield.
+        This method must be implemented by subclasses.
+        """
+        raise NotImplementedError
+
+    def name_from_value(self, value):
+        """
+        Returns a string whose value is the "name" of the given "value".
+        The "value" parameter must be an object that was yielded from the
+        iterator returned from self.values().
+        This method may invoke self.on_error() if an error occurs.
+        Returns None if self.on_error() is called and returns None, to indicate
+        to the caller than an error occurred and the value should be ignored.
+        """
+        raise NotImplementedError
+
+    def size_from_value(self, value):
+        """
+        Returns an int whose value is the "size" of the given "value".
+        The "value" parameter must be an object that was yielded from the
+        iterator returned from self.values().
+        This method may invoke self.on_error() if an error occurs.
+        Returns None if self.on_error() is called and returns None, to indicate
+        to the caller than an error occurred and the value should be ignored.
+        """
+        raise NotImplementedError
+
+################################################################################
+
+class FileSizeProducer(SizeProducer):
+    """
+    An implementation of SizeProducer that returns the sizes of files.
+    """
+
+    def __init__(self, paths, *args, **kwargs):
+        """
+        Initializes a new instance of FileSizeProducer.
+        The "paths" parameter must be an iterable that returns strings whose
+        values are the paths to iterate over in values().
+        All other positional and keyword arguments are given to the __init__()
+        method of the superclass. 
+        """
+        SizeProducer.__init__(self, *args, **kwargs)
+        self.paths = paths
+
+    def values(self):
+        """
+        Iterates over the paths in self.paths.
+        If an element is a directory then that directory is walked, recursively,
+        and the path of each file is returned.  Otherwise, the path is returned.
+        """
+        for path in self.paths:
+            if os.path.isdir(path):
+                for (dirpath, dirnames, filenames) in os.walk(path):
+                    for filename in filenames:
+                        cur_path = os.path.join(dirpath, filename)
+                        yield cur_path
+            else:
+                yield path
+
+    def name_from_value(self, value):
+        """
+        Returns exactly the given "value".
+        """
+        return value
+
+    def size_from_value(self, path):
+        """
+        Returns the size of the file with the given path.
+        The "path" parameter must be a string whose value is the path of the
+        file whose size to return.
+        If an error occurs then self.on_error() is invoked with a message,
+        and if no exception is raised then None is returned.
+        Returns an integer whose value is the size of the file with the given
+        path.
+        """
+        try:
+            return file_size(path)
+        except OSError as e:
+            self.on_error("unable to determine file size: %s (%s)" %
+                (path, e.strerror))
+
+################################################################################
+
+class DirSizeProducer(SizeProducer):
+    """
+    An implementation of SizeProducer that returns the sum of the sizes of files
+    in a directory.
+    """
+
+    def __init__(self, paths, *args, **kwargs):
+        """
+        Initializes a new instance of DirSizeProducer.
+        The "paths" parameter must be an iterable that returns strings whose
+        values are the paths of the directories to iterate over in values().
+        All other positional and keyword arguments are given to the __init__()
+        method of the superclass. 
+        """
+        SizeProducer.__init__(self, *args, **kwargs)
+        self.paths = paths
+
+    def values(self):
+        """
+        Iterates over the paths in self.paths.
+        If an element is a directory then that directory is walked, recursively,
+        and the path of each directory is returned.  Otherwise, the path is
+        returned.
+        """
+        for path in self.paths:
+            if os.path.isdir(path):
+                for (dirpath, dirnames, filenames) in os.walk(path):
+                    yield dirpath
+            else:
+                yield path
+
+    def name_from_value(self, value):
+        """
+        Returns exactly the given "value".
+        """
+        return value
+
+    def size_from_value(self, path):
+        """
+        Returns the sum of the sizes of all files in the given directory.
+        The "path" parameter must be a string whose value is the path of the
+        directory whose sum of file sizes to return.
+        If the entries in the given directory cannot be listed then
+        self.on_error() is invoked with an error message, and if it returns,
+        then None is returned.
+        Otherwise, the sum of the sizes of all files in the given directory
+        is returned as an int.
+        If an error occurs getting the size of one of the files then
+        self.on_error() is inovked with an error message; if on_error() does
+        not raise an exception then the size of that file is simply ignored in
+        the returned total. 
+        """
+        try:
+            dir_entries = os.listdir(path)
+        except OSError as e:
+            self.on_error("unable to list directory: %s (%s)" %
+                (path, e.strerror))
+        else:
+            size = 0
+            for entry in dir_entries:
+                cur_path = os.path.join(path, entry)
+                if os.path.isfile(cur_path):
+                    try:
+                        cur_size = file_size(cur_path)
+                    except OSError as e:
+                        self.on_error("unable to determine file size: %s (%s)" %
+                            (path, e.strerror))
+                    else:
+                        size += cur_size
+
+            return size
+
+################################################################################
+
+class DatabaseSizeProducer(SizeProducer):
+    """
+    An implementation of SizeProducer that returns the (name, size) of all
+    entries in a Database.
+    """
+
+    def __init__(self, db, *args, **kwargs):
+        """
+        Initializes a new instance of DatabaseSizeProducer.
+        The "db" parameter must be an instance of Database whose elements to
+        iterate over in values().
+        All other positional and keyword arguments are given to the __init__()
+        method of the superclass. 
+        """
+        SizeProducer.__init__(self, *args, **kwargs)
+        self.db = db
+
+    def values(self):
+        """
+        Yields each record from self.db.
+        If a database access error occurs then SizeProducerError is raised.
+        """
+        try:
+            for record in self.db:
+                yield record
+        except sqlite3.error as e:
+            raise SizeProducerError(("unable to load record from database: " +
+                "%s (%s)") % (self.db.path, e))
+
+    def name_from_value(self, value):
+        """
+        Returns the "name" component of a record yielded from "values".
+        The return value will be a string.
+        """
+        return value[0]
+
+    def size_from_value(self, value):
+        """
+        Returns the "size" component of a record yielded from "values".
+        The return value will be an int.
+        """
+        return value[1]
+
+################################################################################
+
 def main(args):
     """
     The main method for this application.
@@ -512,7 +782,44 @@ def main(args):
     )
     search_engines.append(search)
 
-    # setup the database, if specified
+    # setup the size producers
+    if settings.directories:
+        size_producer_type = DirSizeProducer
+    else:
+        size_producer_type = FileSizeProducer
+
+    if settings.ignore_errors:
+        def size_producer_on_error(message):
+            print(message, file=sys.stderr)
+    else:
+        def size_producer_on_error(message):
+            raise SizeProducerError(message)
+
+    size_producers = []
+    for paths in settings.paths:
+        size_producer = size_producer_type(
+            paths=paths,
+            on_error=size_producer_on_error,
+        )
+        size_producers.append(size_producer)
+
+    # setup the load database as a size producer, if specified
+    if settings.db_load_path is not None:
+        load_db = Database(settings.db_load_path)
+        try:
+            load_db.initialize()
+        except sqlite3.Error as e:
+            print("ERROR: unable to initialize sqlite database: %s (%s)"
+                % (load_db.path, e))
+            return 1
+
+        load_db_size_producer = DatabaseSizeProducer(
+            db=load_db,
+            on_error=size_producer_on_error,
+        )
+        size_producers.append(load_db_size_producer)
+
+    # setup the save database as a search engine, if specified
     if settings.db_save_path is not None:
         save_db = Database(settings.db_save_path)
         search_engines.append(save_db)
@@ -534,36 +841,14 @@ def main(args):
                     (save_db.path, e))
                 return 1
 
-        for path_lists in settings.paths:
-            for paths in path_lists:
-                for path in iter_paths(paths):
-                    try:
-                        stat_info = os.stat(path)
-                    except OSError as e:
-                        if settings.ignore_errors:
-                            continue
-                        print("ERROR: unable to process file: %s (%s)" %
-                            (path, e.strerror))
-                        return 1
-
-                    size = stat_info.st_size
-                    for search_engine in search_engines:
-                        search_engine.add_file(path, size)
-
-        if settings.db_load_path is not None:
-            load_db = Database(settings.db_load_path)
+        for size_producer in size_producers:
             try:
-                try:
-                    load_db.initialize()
-                except sqlite3.Error as e:
-                    print("ERROR: unable to initialize sqlite database: %s (%s)"
-                        % (load_db.path, e))
-                    return 1
-                for (size, path) in load_db:
+                for (name, size) in size_producer:
                     for search_engine in search_engines:
-                        search_engine.add_file(path, size)
-            finally:
-                load_db.close()
+                        search_engine.add_file(name, size)
+            except SizeProducerError as e:
+                print(str(e), file=sys.stderr)
+                return 1
 
         # we finished; enable printing of the results
         print_results_enabled = True
