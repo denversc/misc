@@ -1,4 +1,3 @@
 colorscheme darkblue
 set guioptions=agimrLbT
-set guifont=Lucida_Console:h9:cANSI
-winsize 110 60
+set guifont=Lucida_Console:h12:cANSI
