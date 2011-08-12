@@ -1,37 +1,45 @@
-set completion-ignore-case on
-TAB: menu-complete 
-
-# Make sure we don't output everything on the 1 line
-set horizontal-scroll-mode Off
-
-# Enable 8bit input
-set meta-flag On 
-set input-meta On
-
-# Turns off 8th bit stripping
-set convert-meta Off
-
-# Keep the 8th bit for display
-set output-meta On
-
-# none, visible or audible
+# Controls what happens when readline wants to ring the terminal bell. If set to
+# none, readline never rings the bell. If set to visible, readline uses a
+# visible bell if one is available. If set to audible, readline attempts to
+# ring the terminal's bell.
 set bell-style none
 
-# All of the following map the escape sequence of the 
-# value contained inside the 1st argument to the 
-# readline specific functions
+# If set to On, readline performs filename matching and completion in a
+# case-insensitive fashion.
+set completion-ignore-case on
 
-"\eOd": backward-word
-"\eOc": forward-word
+# Controls whether readline begins with a set of key bindings similar to Emacs
+# or vi. editing-mode can be set to either emacs or vi.
+set editing-mode vi
 
-# for linux console
-"\e[1~": beginning-of-line
-"\e[4~": end-of-line
-"\e[5~": beginning-of-history
-"\e[6~": end-of-history
-"\e[3~": delete-char
-"\e[2~": quoted-insert
+# If set to On, readline will convert characters with the eighth bit set to an
+# ASCII key sequence by stripping the eighth bit and prefixing it with an
+# escape character (in effect, using escape as the meta prefix).
+set convert-meta off
 
-# for xterm
-"\eOH": beginning-of-line
-"\eOF": end-of-line
+# If set to On, readline will enable eight-bit input (that is, it will not
+# clear the eighth bit in the characters it reads), regardless of what the
+# terminal claims it can support. The name meta-flag is a synonym for this
+# variable.
+set input-meta on
+
+# If set to On, readline will display characters with the eighth bit set
+# directly rather than as a meta-prefixed escape sequence.
+set output-meta on
+
+# Set the current readline keymap. The set of legal keymap names is emacs,
+# emacs-standard, emacs-meta, emacs- ctlx, vi, vi-move, vi-command, and
+# vi-insert. vi is equivalent to vi-command; emacs is equivalent to
+# emacs-standard. The default value is emacs. The value of editing-mode also
+# affects the default keymap.
+set keymap vi-insert
+
+# menu-complete is similar to complete, but replaces the word to be completed
+# with a single match from the list of possible completions. Repeated execution
+# of menu-complete steps through the list of possible completions, inserting
+# each match in turn. At the end of the list of comple‐ tions, the bell is rung
+# (subject to the setting of bell-style) and the original text is restored. An
+# argument of n moves n positions forward in the list of matches; a negative
+# argument may be used to move backward through the list. This command is
+# intended to be bound to TAB, but is unbound by default.
+TAB: menu-complete
