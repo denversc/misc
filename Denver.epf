@@ -153,7 +153,7 @@
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.blank_lines_before_imports=1
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.alignment_for_selector_in_method_invocation=20
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_before_opening_angle_bracket_in_type_parameters=do not insert
-/instance/org.python.pydev/FORMAT_BEFORE_SAVING=true
+/instance/org.python.pydev/FORMAT_BEFORE_SAVING=false
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.alignment_for_assignment=20
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_after_opening_bracket_in_array_reference=do not insert
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.codeComplete.argumentPrefixes=
@@ -223,7 +223,7 @@
 /instance/org.eclipse.jdt.ui/sp_cleanup.make_parameters_final=false
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_after_opening_angle_bracket_in_type_arguments=do not insert
 /instance/org.eclipse.jdt.ui/org.eclipse.jdt.ui.visibility.order=B,V,R,D,
-/instance/org.python.pydev/USE_LOCALS_AND_ATTRS_CAMELCASE=true
+/instance/org.python.pydev/USE_LOCALS_AND_ATTRS_CAMELCASE=false
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.compiler.problem.missingJavadocComments=ignore
 /instance/org.eclipse.ui.workbench/PLUGINS_NOT_ACTIVATED_ON_STARTUP=
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.codeComplete.staticFieldSuffixes=
@@ -267,7 +267,6 @@
 /instance/org.eclipse.wst.validation/DELEGATES_PREFERENCE=delegateValidatorListorg.eclipse.wst.xsd.core.internal.validation.eclipse.XSDDelegatingValidator\=org.eclipse.wst.xsd.core.internal.validation.eclipse.Validator;
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_before_closing_angle_bracket_in_type_arguments=do not insert
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.compact_else_if=true
-/instance/org.python.pydev/USE_METHODS_FORMAT=1
 /instance/org.eclipse.debug.ui/org.eclipse.debug.ui.manage_view_perspectives=org.eclipse.debug.ui.DebugPerspective,
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.indent_body_declarations_compare_to_type_header=true
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_after_unary_operator=do not insert
@@ -355,7 +354,7 @@
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_new_line_in_empty_anonymous_type_declaration=insert
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_between_empty_brackets_in_array_allocation_expression=do not insert
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_after_opening_paren_in_switch=do not insert
-/instance/com.python.pydev.analysis/DO_AUTO_IMPORT=false
+/instance/com.python.pydev.analysis/DO_AUTO_IMPORT=true
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_new_line_before_closing_brace_in_array_initializer=do not insert
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.indent_body_declarations_compare_to_enum_declaration_header=true
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_before_comma_in_allocation_expression=do not insert
@@ -474,6 +473,7 @@ file_export_version=3.0
 /instance/org.python.pydev/DOCSTRING\ CHARACTER="
 /instance/org.python.pydev/APPLY_COMPLETION_ON_LPAREN=false
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_before_closing_brace_in_array_initializer=insert
+/instance/org.python.pydev/TITLE_EDITOR_SHOW_EXTENSION=true
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.comment.indent_root_tags=false
 /instance/org.eclipse.jdt.ui/org.eclipse.jdt.ui.ondemandthreshold=99
 /instance/org.eclipse.jdt.ui/org.eclipse.jdt.ui.javadoclocations.migrated=true
