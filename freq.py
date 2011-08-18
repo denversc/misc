@@ -48,7 +48,7 @@ def parse_args(args=None):
             raise ArgumentParseException(status, message)
         def error(self, message):
             self.exit(status=2, message=message)
-    
+
     def file_arg(path):
         if not os.path.exists(path):
             raise argparse.ArgumentTypeError("file not found: %s" % path)
@@ -143,7 +143,7 @@ class FreqDb(object):
 
         self.db = sqlite3.connect(db_path)
         self.db.text_factory = str
-        
+
         # make it faster sine we don't really care about stability of the data
         cur = self.db.cursor()
         cur.execute("PRAGMA journal_mode = OFF")
@@ -180,7 +180,7 @@ class FreqDb(object):
             """,
             (line,)
         )
-        
+
         if cur.rowcount == 0:
             cur.execute(
                 """
@@ -191,8 +191,8 @@ class FreqDb(object):
                 """,
                 (line, 1)
             )
-    
-    def top(self, n):        
+
+    def top(self, n):
         ordering = "DESC" if n >= 0 else "ASC"
         if n > 0:
             limit = n
@@ -324,10 +324,16 @@ def strip_eol(s):
 ####################################################################################################
 
 def print_freq(results, n):
+    f = sys.stdout
+    try:
+        encoding = f.encoding
+    except AttributeError:
+        encoding = sys.getdefaultencoding()
+
     for (line, count) in results.top(n):
-        line = line.decode("UTF-8", errors="ignore")
+        line = line.decode(encoding, errors="replace")
         line = strip_eol(line)
-        print("%i %s" % (count, line))
+        print("%i %s" % (count, line), file=f)
 
 ####################################################################################################
 
