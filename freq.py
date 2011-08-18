@@ -253,7 +253,7 @@ def open_file(path):
     else:
         close_enabled = True
         try:
-            f = open(path, "rt")
+            f = open(path, "rb")
         except IOError as e:
             raise GeneralException("unable to open file for reading: %s (%s)" %
                 (path, e.strerror))
@@ -325,6 +325,7 @@ def strip_eol(s):
 
 def print_freq(results, n):
     for (line, count) in results.top(n):
+        line = line.decode("UTF-8", errors="ignore")
         line = strip_eol(line)
         print("%i %s" % (count, line))
 
