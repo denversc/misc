@@ -1,0 +1,1 @@
+javaloader -u eventlog %*
