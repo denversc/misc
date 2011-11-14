@@ -1,4 +1,4 @@
 #!/bin/bash
-for f in [ $* ] ; do
+for f in $* ; do
     blackberry-deploy -installApp -device 169.254.0.1 -password qwsa -package $f
 done
