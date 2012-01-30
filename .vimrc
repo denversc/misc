@@ -19,6 +19,7 @@ set autowrite
 set undolevels=1000
 set history=100
 set cpoptions=aABceFs
+set notitle
 
 set title
 set icon
