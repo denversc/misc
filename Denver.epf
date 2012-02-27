@@ -21,7 +21,6 @@
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_annotation_type_declaration=insert
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_after_opening_bracket_in_array_allocation_expression=do not insert
 /instance/org.eclipse.jdt.ui/org.eclipse.jdt.ui.text.custom_templates=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?><templates><template autoinsert\="true" context\="java" deleted\="false" description\="Throw a RuntimeException with a message indicating that its only purpose is to keep the Java compiler from failing" enabled\="true" name\="keepcompilerhappy">throw new RuntimeException("to keep the compiler happy");</template></templates>
-/instance/org.eclipse.jdt.core/org.eclipse.jdt.core.compiler.compliance=1.3
 /instance/org.eclipse.debug.ui/Console.highWaterMark=88000
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.indent_switchstatements_compare_to_cases=true
 /instance/org.eclipse.ui.editors/lineNumberRuler=true
@@ -147,7 +146,6 @@
 @org.eclipse.team.cvs.ui=3.3.1.r33x_20070807
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.wrap_before_binary_operator=true
 @org.eclipse.ui.intro.universal=3.2.100.v20070530A
-/instance/org.eclipse.jdt.core/org.eclipse.jdt.core.compiler.source=1.3
 /instance/org.eclipse.debug.ui/org.eclipse.debug.ui.remove_all_breakpoints_prompt=false
 /instance/org.eclipse.wst.validation/USER_PREFERENCE=saveAutomaticallyfalseprojectsCanOverridetruedisableAllValidationfalseversion1.1.102.v200709122200
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.blank_lines_before_imports=1
@@ -374,7 +372,6 @@
 @org.eclipse.update.scheduler=3.2.100.v20070615
 /instance/org.eclipse.jdt.ui/sp_cleanup.qualify_static_member_accesses_through_subtypes_with_declaring_class=true
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_after_closing_angle_bracket_in_type_parameters=insert
-/instance/org.eclipse.jdt.ui/org.eclipse.jdt.ui.text.custom_code_templates=<?xml version\="1.0" encoding\="UTF-8" standalone\="no"?><templates><template autoinsert\="false" context\="constructorcomment_context" deleted\="false" description\="Comment for created constructors" enabled\="true" id\="org.eclipse.jdt.ui.text.codetemplates.constructorcomment" name\="constructorcomment">/**\r\n * Creates a new instance of &lt;code&gt;${enclosing_type}&lt;/code&gt;.\r\n * ${tags}\r\n */</template><template autoinsert\="false" context\="filecomment_context" deleted\="false" description\="Comment for created Java files" enabled\="true" id\="org.eclipse.jdt.ui.text.codetemplates.filecomment" name\="filecomment">/*\r\n * ${type_name}.java\r\n * By\: Denver Coneybeare\r\n * ${date}\r\n *\r\n * Research In Motion Limited proprietary and confidential\r\n * Copyright Research In Motion Limited, ${year}-${year}\r\n */</template><template autoinsert\="false" context\="typecomment_context" deleted\="false" description\="Comment for created types" enabled\="true" id\="org.eclipse.jdt.ui.text.codetemplates.typecomment" name\="typecomment">/**\r\n * \r\n *\r\n * ${tags}\r\n * @category Internal\r\n */</template><template autoinsert\="false" context\="methodbody_context" deleted\="false" description\="Code in created method stubs" enabled\="true" id\="org.eclipse.jdt.ui.text.codetemplates.methodbody" name\="methodbody">${body_statement}</template><template autoinsert\="false" context\="constructorbody_context" deleted\="false" description\="Code in created constructor stubs" enabled\="true" id\="org.eclipse.jdt.ui.text.codetemplates.constructorbody" name\="constructorbody">${body_statement}</template></templates>
 /instance/org.eclipse.jdt.ui/sp_cleanup.qualify_static_member_accesses_with_declaring_class=false
 /instance/org.eclipse.jdt.ui/sp_cleanup.remove_trailing_whitespaces=false
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_after_comma_in_superinterfaces=insert
