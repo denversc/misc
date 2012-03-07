@@ -1,3 +1,0 @@
-#!/bin/bash -e
-py_script_path=$(dirname $0)/bgrep.py
-exec python3 -u $py_script_path "$@"
