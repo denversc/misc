@@ -158080,3 +158080,4 @@ verizon
 speakerphone
 grayscale
 wildcard
+screenshot
