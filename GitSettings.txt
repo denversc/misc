@@ -1,0 +1,22 @@
+[user]
+	name = Denver Coneybeare
+[color]
+	ui = auto
+[core]
+	eol = nl
+	editor = vim
+[alias]
+	su = status -uall
+	co = checkout
+	dt = difftool
+	dtc = difftool --cached
+	dc = diff --cached
+	st = status
+[diff]
+	tool = winmerge
+[difftool "winmerge"]
+	cmd = winmergeu //e //u //wl "$LOCAL" "$REMOTE"
+[difftool]
+	prompt = false
+[push]
+	default = upstream
