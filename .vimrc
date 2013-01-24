@@ -38,6 +38,10 @@ inoremap <down> <nop>
 inoremap <left> <nop>
 inoremap <right> <nop>
 
+" Make pressing "j" followed by "k" in rapid succession in insert mode
+" equivalent to escape; saves reaching all the way up to the real escape
+inoremap jk <ESC>
+
 au BufNewFile,BufRead *.avs set syntax=avs
 
 " Source: http://vim.wikia.com/wiki/Pretty-formatting_XML
