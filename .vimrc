@@ -33,10 +33,6 @@ noremap <up> <nop>
 noremap <down> <nop>
 noremap <left> <nop>
 noremap <right> <nop>
-inoremap <up> <nop>
-inoremap <down> <nop>
-inoremap <left> <nop>
-inoremap <right> <nop>
 
 " Make pressing "j" followed by "k" in rapid succession in insert mode
 " equivalent to escape; saves reaching all the way up to the real escape
