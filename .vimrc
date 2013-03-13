@@ -4,6 +4,8 @@ set nocompatible
 call pathogen#infect()
 call pathogen#helptags()
 
+colorscheme Tomorrow-Night-Bright
+
 syntax on
 
 set tabstop=4

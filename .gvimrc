@@ -1,4 +1,3 @@
-colorscheme torte
 set guioptions=agimrLbT
 set lines=30 columns=100
 
