@@ -1,4 +1,9 @@
 set nocompatible
+
+" Enable pathogen.vim
+call pathogen#infect()
+call pathogen#helptags()
+
 syntax on
 
 set tabstop=4
