@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import io
 import os
+import subprocess
 import sys
 import urllib2
 
@@ -30,6 +31,7 @@ class VimSetup(object):
         self.install_pathogen(autoload_dir_path)
         bundle_dir_path = self.create_bundle_dir(dest_dir_path)
         self.install_tomorrow_theme(bundle_dir_path)
+        self.install_easymotion(bundle_dir_path)
 
     def create_rc_files(self, src_dir_path, dest_dir_path):
         for filename in (".vimrc", ".gvimrc"):
@@ -79,10 +81,27 @@ class VimSetup(object):
         vim_path = os.path.join(install_dir_path, "Tomorrow-Night-Bright.vim")
         self.download_file(vim_url, vim_path)
 
+    def install_easymotion(self, bundle_dir_path):
+        git_repo_url = "https://github.com/Lokaltog/vim-easymotion.git"
+        install_dir_path = os.path.join(bundle_dir_path, "easymotion")
+        self.git_clone(git_repo_url, install_dir_path)
+
     def mkdir(self, path):
         self.log("Creating directory: {}".format(path))
         if not os.path.isdir(path):
             os.makedirs(path)
+
+    def git_clone(self, repo_url, dest_dir_path):
+        self.log("Cloning Git repository {} into {}"
+            .format(repo_url, dest_dir_path))
+        args = ["git", "clone", repo_url, dest_dir_path]
+        args_str = subprocess.list2cmdline(args)
+        self.log(args_str)
+        process = subprocess.Popen(args)
+        process.wait()
+        if process.returncode != 0:
+            raise Exception("command completed with non-zero exit code {}: {}"
+                .format(process.returncode, args_str))
 
     def log(self, message):
         log_func = self.log_func
