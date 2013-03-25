@@ -42,7 +42,12 @@ class VimSetup(object):
                 print("source {}".format(src_path), file=f)
 
     def create_autoload_dir(self, dest_dir_path):
-        path = os.path.join(dest_dir_path, "vimfiles", "autoload")
+        if os.name == "nt":
+            path = os.path.join(dest_dir_path, "vimfiles", "autoload")
+        elif os.name == "posix":
+            path = os.path.join(dest_dir_path, ".vim", "autoload")
+        else:
+            raise self.Error("unsupported OS: {}".format(os.name))
         self.mkdir(path)
         return path
 
@@ -67,7 +72,12 @@ class VimSetup(object):
             infile.close()
 
     def create_bundle_dir(self, dest_dir_path):
-        path = os.path.join(dest_dir_path, "vimfiles", "bundle")
+        if os.name == "nt":
+            path = os.path.join(dest_dir_path, "vimfiles", "bundle")
+        elif os.name == "posix":
+            path = os.path.join(dest_dir_path, ".vim", "bundle")
+        else:
+            raise self.Error("unsupported OS: {}".format(os.name))
         self.mkdir(path)
         return path
 
