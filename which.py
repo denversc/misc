@@ -65,19 +65,18 @@ def path_matches(executable, path_dir, exe_suffixes, warnings_enabled):
 
         for path_dir_entry in path_dir_entries:
             entry_path = os.path.join(path_dir, path_dir_entry)
-            if os.path.isfile(entry_path):
-                path_dir_entry_norm = os.path.normcase(path_dir_entry)
-                if path_dir_entry_norm == executable_norm:
-                    match = True
-                else:
-                    (path_dir_entry_filename, path_dir_entry_suffix) = \
-                        os.path.splitext(path_dir_entry)
-                    match = (len(path_dir_entry_suffix) > 0
-                            and path_dir_entry_suffix in exe_suffixes_norm
-                            and path_dir_entry_filename == executable_norm)
+            path_dir_entry_norm = os.path.normcase(path_dir_entry)
+            if path_dir_entry_norm == executable_norm:
+                match = True
+            else:
+                (path_dir_entry_filename, path_dir_entry_suffix) = \
+                    os.path.splitext(path_dir_entry)
+                match = (len(path_dir_entry_suffix) > 0
+                        and path_dir_entry_suffix in exe_suffixes_norm
+                        and path_dir_entry_filename == executable_norm)
 
-                if match:
-                    yield entry_path
+            if match and os.path.isfile(entry_path):
+                yield entry_path
 
 def parse_args():
     parser = argparse.ArgumentParser()
