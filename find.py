@@ -13,7 +13,8 @@ def main():
     config = parse_args()
 
     pattern = config.pattern
-    pattern_regex = fnmatch.translate(pattern)
+    pattern_normcase = os.path.normcase(pattern)
+    pattern_regex = fnmatch.translate(pattern_normcase)
     match_expr = re.compile(pattern_regex)
 
     dir_paths = config.dir_path
@@ -26,7 +27,8 @@ def run(match_expr, dir_paths):
     for dir_path in dir_paths:
         for (cur_dir_path, dirnames, filenames) in os.walk(dir_path):
             for filename in filenames:
-                match = match_expr.match(filename)
+                filename_normcase = os.path.normcase(filename)
+                match = match_expr.match(filename_normcase)
                 if match is not None:
                     cur_path = os.path.join(cur_dir_path, filename)
                     print(cur_path)
