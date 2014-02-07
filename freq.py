@@ -328,6 +328,9 @@ def print_freq(results, n):
     try:
         encoding = f.encoding
     except AttributeError:
+        encoding = None
+
+    if encoding is None:
         encoding = sys.getdefaultencoding()
 
     for (line, count) in results.top(n):
