@@ -37,7 +37,6 @@
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_before_comma_in_for_increments=do not insert
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_before_closing_angle_bracket_in_parameterized_type_reference=do not insert
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_before_comma_in_multiple_field_declarations=do not insert
-/instance/org.eclipse.jdt.ui/org.eclipse.jface.textfont=1|Lucida Console|8.25|0|WINDOWS|1|-11|0|0|0|400|0|0|0|0|3|2|1|49|Lucida Console;
 /instance/org.eclipse.jdt.ui/content_assist_fill_method_arguments=false
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_before_opening_paren_in_constructor_declaration=do not insert
 /instance/org.eclipse.jdt.ui/formatter_profile=_Denver
@@ -52,7 +51,6 @@
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.insert_space_between_empty_parens_in_enum_constant=do not insert
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.comment.insert_new_line_before_root_tags=insert
 @org.eclipse.ui=3.3.1.M20071128-0800
-/instance/org.eclipse.ui.workbench/org.eclipse.jface.textfont=1|Lucida Console|8.25|0|WINDOWS|1|-11|0|0|0|400|0|0|0|0|3|2|1|49|Lucida Console;
 /instance/org.eclipse.jdt.core/org.eclipse.jdt.core.formatter.alignment_for_compact_if=16
 /instance/org.eclipse.jdt.ui/org.eclipse.jdt.ui.exception.name=e
 @com.python.pydev.codecompletion=1.5.4.2010011921
