@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import io
 import os
+import shutil
 import subprocess
 import sys
 import urllib2
@@ -94,6 +95,9 @@ class VimSetup(object):
     def install_easymotion(self, bundle_dir_path):
         git_repo_url = "https://github.com/Lokaltog/vim-easymotion.git"
         install_dir_path = os.path.join(bundle_dir_path, "easymotion")
+        if os.path.isdir(install_dir_path):
+            self.log("Deleting directory: {}".format(install_dir_path))
+            shutil.rmtree(install_dir_path)
         self.git_clone(git_repo_url, install_dir_path)
 
     def mkdir(self, path):
