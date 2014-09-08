@@ -452,18 +452,22 @@ class TournamentXlsxPrinter:
 
         worksheet.write(row, 0, "Day")
         worksheet.write(row, 1, "Match")
-        worksheet.write(row, 2, "Points")
+        worksheet.write(row, 2, "Winner X")
         worksheet.write(row, 3, "Player 1")
         worksheet.write(row, 4, "Player 2")
         row += 1
 
         for (day_index, day) in enumerate(tournament):
-            worksheet.write(row, 0, "Day {}".format(day_index + 1))
+            day_label = "Day {}".format(day_index + 1)
+            worksheet.write(row, 0, day_label)
             row += 1
 
             for (match_index, match) in enumerate(day):
-                worksheet.write(row, 1, "Match {}".format(match_index + 1))
+                match_label = "Match {}".format(match_index + 1)
+                worksheet.write(row, 1, match_label)
                 row += 1
+
+                team_cells = []
                 for (team_index, team) in enumerate(match.teams()):
                     if team_index > 0:
                         worksheet.write(row, 3, "vs.")
@@ -473,6 +477,10 @@ class TournamentXlsxPrinter:
                         worksheet.write(row, col, player)
                         col += 1
                     row += 1
+
+                    team_cells.append((team, row))
+
+                xls_info.schedule_cells.append((match, day_label, match_label, team_cells))
 
         xls_info.schedule_last_row = row
 
@@ -498,6 +506,60 @@ class TournamentXlsxPrinter:
             worksheet = workbook.add_worksheet(player)
             row = 0
 
+
+            # write games
+            worksheet.write(row, 0, "Scheduled Games".format(player))
+            row += 2
+            worksheet.write(row, 0, "Game")
+            worksheet.write(row, 1, "Day")
+            worksheet.write(row, 2, "Match")
+            worksheet.write(row, 3, "WinLoss")
+            worksheet.write(row, 4, "Partner")
+            worksheet.write(row, 5, "Opponent 1")
+            worksheet.write(row, 6, "Opponent 2")
+            row += 1
+            game_number = 1
+            for (match, day_label, match_label, team_cells) in xls_info.schedule_cells:
+                if not match.includes_player(player):
+                    continue
+                worksheet.write(row, 0, "Game #{}".format(game_number))
+                game_number += 1
+                worksheet.write(row, 1, day_label)
+                worksheet.write(row, 2, match_label)
+
+                win_row = None
+                loss_row = None
+                for (team, temp_row) in team_cells:
+                    if team.includes_player(player):
+                        win_row = temp_row
+                    else:
+                        loss_row = temp_row
+
+                worksheet.write(row, 3,
+                    "=IF(Schedule!C{}=\"X\", \"Win\", "
+                        "IF(Schedule!C{}=\"X\", \"Loss\", \"\")"
+                    ")"
+                    .format(win_row, loss_row)
+                )
+
+                col = 4
+
+                for team in match.teams_including_player(player):
+                    for partner in team.players():
+                        if partner != player:
+                            worksheet.write(row, col, partner)
+                            col += 1
+
+                for team in match.teams():
+                    if not team.includes_player(player):
+                        for opponent in team.players():
+                            worksheet.write(row, col, opponent)
+                            col += 1
+
+                row += 1
+            row += 1
+
+            # write partners
             partner_counts = collections.defaultdict(lambda: 0)
             for partner in tournament.player_partners(player):
                 partner_counts[partner] += 1
@@ -505,13 +567,14 @@ class TournamentXlsxPrinter:
             partner_counts.sort(reverse=True)
 
             worksheet.write(row, 0, "{} Partners".format(player))
-            row += 1
+            row += 2
             for (partner_count, partner) in partner_counts:
                 worksheet.write(row, 0, partner)
                 worksheet.write(row, 1, partner_count)
                 row += 1
-
             row += 1
+
+            # write opponents
             opponent_counts = collections.defaultdict(lambda: 0)
             for opponent in tournament.player_opponents(player):
                 opponent_counts[opponent] += 1
@@ -519,15 +582,18 @@ class TournamentXlsxPrinter:
             opponent_counts.sort(reverse=True)
 
             worksheet.write(row, 0, "{} Opponents".format(player))
-            row += 1
+            row += 2
             for (opponent_count, opponent) in opponent_counts:
                 worksheet.write(row, 0, opponent)
                 worksheet.write(row, 1, opponent_count)
                 row += 1
+            row += 1
 
     class XlsxInfo:
         def __init__(self):
             self.schedule_last_row = None
+            self.schedule_cells = []
+
 
 def shuffle(seq):
     for i in range(len(seq) - 1):
