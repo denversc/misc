@@ -1,3 +1,4 @@
+import argparse
 import collections
 import io
 import random
@@ -7,16 +8,30 @@ import xlsxwriter
 
 
 def main():
-    names = load_names_from_file("names.txt")
+    (names_path, xslx_path) = parse_args()
+    print("Loading player names from file: {}".format(names_path))
+    names = load_names_from_file(names_path)
+    print("Generating teams")
     team_generator = FoozeballTeamListGenerator(names, min_games_per_player=0)
     teams = team_generator.generate()
+    print("Generating matches")
     match_generator = FoozeballMatchListGenerator(teams)
     matches = match_generator.generate()
+    print("Generating tournament")
     tournament_generator = FoozeballTournamentGenerator(matches)
     tournament = tournament_generator.generate()
+    print("Writing Tournament to Excel file: {}".format(xslx_path))
+    xslx_printer = TournamentXlsxPrinter(xslx_path)
+    xslx_printer.run(tournament)
+    text_printer = TournamentTextPrinter(sys.stdout)
+    text_printer.run(tournament)
 
-    printer = TournamentXlsxPrinter("/Users/denver/Desktop/fooz.xlsx")
-    printer.run(tournament)
+def parse_args():
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("-n", "--names-file", default="names.txt")
+    arg_parser.add_argument("-o", "--output-excel-file", default="FoosballTournament.xslx")
+    parsed_args = arg_parser.parse_args()
+    return (parsed_args.names_file, parsed_args.output_excel_file)
 
 class FoozeballTournament:
 
