@@ -8,7 +8,7 @@ import xlsxwriter
 
 
 def main():
-    (names_path, xslx_path) = parse_args()
+    (names_path, xlsx_path) = parse_args()
     print("Loading player names from file: {}".format(names_path))
     names = load_names_from_file(names_path)
     print("Generating teams")
@@ -20,16 +20,16 @@ def main():
     print("Generating tournament")
     tournament_generator = FoosballTournamentGenerator(matches)
     tournament = tournament_generator.generate()
-    print("Writing Tournament to Excel file: {}".format(xslx_path))
-    xslx_printer = TournamentXlsxPrinter(xslx_path)
-    xslx_printer.run(tournament)
+    print("Writing Tournament to Excel file: {}".format(xlsx_path))
+    xlsx_printer = TournamentXlsxPrinter(xlsx_path)
+    xlsx_printer.run(tournament)
     text_printer = TournamentTextPrinter(sys.stdout)
     text_printer.run(tournament)
 
 def parse_args():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("-n", "--names-file", default="names.txt")
-    arg_parser.add_argument("-o", "--output-excel-file", default="FoosballTournament.xslx")
+    arg_parser.add_argument("-o", "--output-excel-file", default="FoosballTournament.xlsx")
     parsed_args = arg_parser.parse_args()
     return (parsed_args.names_file, parsed_args.output_excel_file)
 
