@@ -12,13 +12,13 @@ def main():
     print("Loading player names from file: {}".format(names_path))
     names = load_names_from_file(names_path)
     print("Generating teams")
-    team_generator = FoozeballTeamListGenerator(names, min_games_per_player=0)
+    team_generator = FoosballTeamListGenerator(names, min_games_per_player=0)
     teams = team_generator.generate()
     print("Generating matches")
-    match_generator = FoozeballMatchListGenerator(teams)
+    match_generator = FoosballMatchListGenerator(teams)
     matches = match_generator.generate()
     print("Generating tournament")
-    tournament_generator = FoozeballTournamentGenerator(matches)
+    tournament_generator = FoosballTournamentGenerator(matches)
     tournament = tournament_generator.generate()
     print("Writing Tournament to Excel file: {}".format(xslx_path))
     xslx_printer = TournamentXlsxPrinter(xslx_path)
@@ -33,7 +33,7 @@ def parse_args():
     parsed_args = arg_parser.parse_args()
     return (parsed_args.names_file, parsed_args.output_excel_file)
 
-class FoozeballTournament:
+class FoosballTournament:
 
     def __init__(self):
         self.match_lists = []
@@ -61,19 +61,19 @@ class FoozeballTournament:
         return iter(self.match_lists)
 
 
-class FoozeballTournamentGenerator:
+class FoosballTournamentGenerator:
 
     def __init__(self, match_list):
         self.match_list = match_list
 
     def generate(self):
-        tournament = FoozeballTournament()
+        tournament = FoosballTournament()
         matches = list(self.match_list)
         players = frozenset(self.match_list.players())
         shuffle(matches)
 
         while len(matches) > 0:
-            cur_match_list = FoozeballMatchList()
+            cur_match_list = FoosballMatchList()
 
             match_index = len(matches)
             while match_index > 0:
@@ -115,7 +115,7 @@ class FoozeballTournamentGenerator:
         return tournament
 
 
-class FoozeballMatch:
+class FoosballMatch:
 
     def __init__(self, team1, team2):
         self.team1 = team1
@@ -141,7 +141,7 @@ class FoozeballMatch:
             yield from team.players()
 
 
-class FoozeballMatchList:
+class FoosballMatchList:
 
     def __init__(self):
         self.matches = []
@@ -190,13 +190,13 @@ class FoozeballMatchList:
         return iter(self.matches)
 
 
-class FoozeballMatchListGenerator:
+class FoosballMatchListGenerator:
 
     def __init__(self, team_list):
         self.team_list = team_list
 
     def generate(self):
-        match_list = FoozeballMatchList()
+        match_list = FoosballMatchList()
 
         teams = list(self.team_list)
         assert len(teams) % 2 == 0
@@ -242,13 +242,13 @@ class FoozeballMatchListGenerator:
             if team2 is not None:
                 del teams[0]
                 teams.remove(team2)
-                match = FoozeballMatch(team1, team2)
+                match = FoosballMatch(team1, team2)
                 match_list.add_match(match)
 
         return match_list
 
 
-class FoozeballTeam:
+class FoosballTeam:
 
     def __init__(self, player1, player2):
         self.player1 = player1
@@ -272,7 +272,7 @@ class FoozeballTeam:
         yield self.player2
 
 
-class FoozeballTeamList:
+class FoosballTeamList:
 
     def __init__(self):
         self.teams = []
@@ -325,7 +325,7 @@ class FoozeballTeamList:
         return len(self.teams)
 
 
-class FoozeballTeamListGenerator:
+class FoosballTeamListGenerator:
 
     def __init__(self, names, min_games_per_player=None):
         self.names = tuple(names)
@@ -334,7 +334,7 @@ class FoozeballTeamListGenerator:
         self.min_games_per_player = min_games_per_player
 
     def generate(self):
-        teams = FoozeballTeamList()
+        teams = FoosballTeamList()
 
         # generate all partner combinations
         self.add_all_team_combinations(teams)
@@ -360,7 +360,7 @@ class FoozeballTeamListGenerator:
             player1 = self.names[i]
             for j in range(len(self.names) - i - 1):
                 player2 = self.names[j + i + 1]
-                team = FoozeballTeam(player1, player2)
+                team = FoosballTeam(player1, player2)
                 teams.add_team(team)
 
     def add_filler_teams(self, teams):
@@ -385,7 +385,7 @@ class FoozeballTeamListGenerator:
                         partner_count = cur_partner_count
 
             players.remove(player2)
-            team = FoozeballTeam(player1, player2)
+            team = FoosballTeam(player1, player2)
             teams.add_team(team)
 
 
