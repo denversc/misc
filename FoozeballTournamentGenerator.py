@@ -1,10 +1,10 @@
+import collections
 import io
 import random
-import collections
 import statistics
 import sys
-
 import xlsxwriter
+
 
 def main():
     names = load_names_from_file("names.txt")
@@ -440,13 +440,22 @@ class TournamentXlsxPrinter:
 
     def run(self, tournament):
         workbook = xlsxwriter.Workbook(self.path)
-        self.write_schedule(tournament, workbook)
-        self.write_players(tournament, workbook)
+        xls_info = self.XlsxInfo()
+        self.write_schedule(tournament, workbook, xls_info)
+        self.write_standings(tournament, workbook, xls_info)
+        self.write_players(tournament, workbook, xls_info)
         workbook.close()
 
-    def write_schedule(self, tournament, workbook):
+    def write_schedule(self, tournament, workbook, xls_info):
         worksheet = workbook.add_worksheet("Schedule")
         row = 0
+
+        worksheet.write(row, 0, "Day")
+        worksheet.write(row, 1, "Match")
+        worksheet.write(row, 2, "Points")
+        worksheet.write(row, 3, "Player 1")
+        worksheet.write(row, 4, "Player 2")
+        row += 1
 
         for (day_index, day) in enumerate(tournament):
             worksheet.write(row, 0, "Day {}".format(day_index + 1))
@@ -457,15 +466,34 @@ class TournamentXlsxPrinter:
                 row += 1
                 for (team_index, team) in enumerate(match.teams()):
                     if team_index > 0:
-                        worksheet.write(row, 2, "vs.")
+                        worksheet.write(row, 3, "vs.")
                         row += 1
-                    col = 2
+                    col = 3
                     for player in team.players():
                         worksheet.write(row, col, player)
                         col += 1
                     row += 1
 
-    def write_players(self, tournament, workbook):
+        xls_info.schedule_last_row = row
+
+    def write_standings(self, tournament, workbook, xls_info):
+        worksheet = workbook.add_worksheet("Standings")
+
+        row = 0
+        for player in sorted(frozenset(tournament.players())):
+            worksheet.write(row, 0, player)
+            worksheet.write(row, 1,
+                "="
+                "COUNTIFS(Schedule!C1:C{last_row}, \"X\", Schedule!D1:D{last_row}, \"{name}\")"
+                "+"
+                "COUNTIFS(Schedule!C1:C{last_row}, \"X\", Schedule!E1:E{last_row}, \"{name}\")"
+                .format(
+                    last_row=xls_info.schedule_last_row,
+                    name=player,
+                ))
+            row += 1
+
+    def write_players(self, tournament, workbook, xls_info):
         for player in sorted(frozenset(tournament.players())):
             worksheet = workbook.add_worksheet(player)
             row = 0
@@ -496,6 +524,10 @@ class TournamentXlsxPrinter:
                 worksheet.write(row, 0, opponent)
                 worksheet.write(row, 1, opponent_count)
                 row += 1
+
+    class XlsxInfo:
+        def __init__(self):
+            self.schedule_last_row = None
 
 def shuffle(seq):
     for i in range(len(seq) - 1):
