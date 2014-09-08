@@ -4,6 +4,7 @@ import collections
 import statistics
 import sys
 
+import xlsxwriter
 
 def main():
     names = load_names_from_file("names.txt")
@@ -14,7 +15,7 @@ def main():
     tournament_generator = FoozeballTournamentGenerator(matches)
     tournament = tournament_generator.generate()
 
-    printer = TournamentPrinter(sys.stdout)
+    printer = TournamentXlsxPrinter("/Users/denver/Desktop/fooz.xlsx")
     printer.run(tournament)
 
 class FoozeballTournament:
@@ -373,7 +374,7 @@ class FoozeballTeamListGenerator:
             teams.add_team(team)
 
 
-class TournamentPrinter:
+class TournamentTextPrinter:
 
     def __init__(self, f):
         self.f = f
@@ -431,6 +432,70 @@ class TournamentPrinter:
             line = ""
         print(line, file=self.f)
 
+
+class TournamentXlsxPrinter:
+
+    def __init__(self, path):
+        self.path = path
+
+    def run(self, tournament):
+        workbook = xlsxwriter.Workbook(self.path)
+        self.write_schedule(tournament, workbook)
+        self.write_players(tournament, workbook)
+        workbook.close()
+
+    def write_schedule(self, tournament, workbook):
+        worksheet = workbook.add_worksheet("Schedule")
+        row = 0
+
+        for (day_index, day) in enumerate(tournament):
+            worksheet.write(row, 0, "Day {}".format(day_index + 1))
+            row += 1
+
+            for (match_index, match) in enumerate(day):
+                worksheet.write(row, 1, "Match {}".format(match_index + 1))
+                row += 1
+                for (team_index, team) in enumerate(match.teams()):
+                    if team_index > 0:
+                        worksheet.write(row, 2, "vs.")
+                        row += 1
+                    col = 2
+                    for player in team.players():
+                        worksheet.write(row, col, player)
+                        col += 1
+                    row += 1
+
+    def write_players(self, tournament, workbook):
+        for player in sorted(frozenset(tournament.players())):
+            worksheet = workbook.add_worksheet(player)
+            row = 0
+
+            partner_counts = collections.defaultdict(lambda: 0)
+            for partner in tournament.player_partners(player):
+                partner_counts[partner] += 1
+            partner_counts = [(v, k) for (k, v) in partner_counts.items()]
+            partner_counts.sort(reverse=True)
+
+            worksheet.write(row, 0, "{} Partners".format(player))
+            row += 1
+            for (partner_count, partner) in partner_counts:
+                worksheet.write(row, 0, partner)
+                worksheet.write(row, 1, partner_count)
+                row += 1
+
+            row += 1
+            opponent_counts = collections.defaultdict(lambda: 0)
+            for opponent in tournament.player_opponents(player):
+                opponent_counts[opponent] += 1
+            opponent_counts = [(v, k) for (k, v) in opponent_counts.items()]
+            opponent_counts.sort(reverse=True)
+
+            worksheet.write(row, 0, "{} Opponents".format(player))
+            row += 1
+            for (opponent_count, opponent) in opponent_counts:
+                worksheet.write(row, 0, opponent)
+                worksheet.write(row, 1, opponent_count)
+                row += 1
 
 def shuffle(seq):
     for i in range(len(seq) - 1):
