@@ -6,13 +6,18 @@ import random
 import statistics
 
 def main():
-    (players_path, min_num_matches_per_player, max_weeks) = parse_args()
+    parsed_args = parse_args()
+    players_path = parsed_args.players_file
+    min_num_matches_per_player = parsed_args.min_num_matches_per_player
+    max_weeks = parsed_args.max_weeks
+    max_matches_per_day = parsed_args.max_matches_per_day
+
     players = tuple(load_players(players_path))
     print("Loaded {} players".format(len(players)))
 
     while True:
         matches = generate_matches(players, min_num_matches_per_player)
-        tournament = generate_tournament(matches)
+        tournament = generate_tournament(matches, max_matches_per_day)
         if max_weeks is not None:
             num_weeks = len(tournament) / 3
             if num_weeks > max_weeks:
@@ -31,9 +36,9 @@ def generate_matches(players, min_num_matches_per_player):
     return matches
 
 
-def generate_tournament(matches):
+def generate_tournament(matches, max_matches_per_day):
     print("Generating Tournament")
-    tournament_generator = TournamentGenerator(matches)
+    tournament_generator = TournamentGenerator(matches, max_matches_per_day)
     tournament = tournament_generator.run()
     tournament = tuple(tournament)
     return tournament
@@ -98,18 +103,16 @@ def parse_args():
     arg_parser.add_argument("players_file")
     arg_parser.add_argument("--min-num-matches-per-player", "-m", type=int)
     arg_parser.add_argument("--max-weeks", "-w", type=int)
+    arg_parser.add_argument("--max-matches-per-day", "-d", type=int)
     parsed_args = arg_parser.parse_args()
-    return (
-        parsed_args.players_file,
-        parsed_args.min_num_matches_per_player,
-        parsed_args.max_weeks,
-    )
+    return parsed_args
 
 
 class TournamentGenerator:
 
-    def __init__(self, matches):
+    def __init__(self, matches, max_matches_per_day=None):
         self.matches = matches
+        self.max_matches_per_day = max_matches_per_day
 
     def run(self):
         players = tuple(set(self.matches.players()))
@@ -120,17 +123,22 @@ class TournamentGenerator:
             day_matches = tuple(day_matches)
             yield day_matches
 
-    @classmethod
-    def generate_day(cls, matches, players):
+    def generate_day(self, matches, players):
         unused_players = list(players)
-        while len(matches) > 0 and len(unused_players) >= 4:
-            match = cls.pick_match(matches, unused_players)
+        num_matches = 0
+        while True:
+            match = self.pick_match(matches, unused_players)
             if match is None:
                 break
             yield match
             matches.remove(match)
             for player in match.players():
                 unused_players.remove(player)
+
+            num_matches += 1
+            if (self.max_matches_per_day is not None
+                    and num_matches >= self.max_matches_per_day):
+                break
 
     @classmethod
     def pick_match(cls, matches, players):
