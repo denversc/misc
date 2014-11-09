@@ -1,5 +1,6 @@
 import argparse
 import collections
+import contextlib
 import io
 import itertools
 import os
@@ -7,7 +8,7 @@ import pickle
 import random
 import statistics
 import sys
-import contextlib
+import xlsxwriter
 
 def main():
     parsed_args = parse_args()
@@ -16,6 +17,7 @@ def main():
     max_weeks = parsed_args.max_weeks
     max_matches_per_day = parsed_args.max_matches_per_day
     tournament_path = parsed_args.tournament_file
+    xlsx_path = parsed_args.xlsx_file
 
     if tournament_path is None:
         load_tournament = False
@@ -51,9 +53,9 @@ def main():
         with io.open(tournament_path, "wb") as f:
             pickle.dump(tournament, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-    tournament_printers = [
-        TextTournamentPrinter(tournament, sys.stdout),
-    ]
+    tournament_printers = [TextTournamentPrinter(tournament, sys.stdout)]
+    if xlsx_path is not None:
+        tournament_printers.append(ExcelTournamentPrinter(tournament, xlsx_path))
 
     for printer in tournament_printers:
         printer.run()
@@ -82,6 +84,7 @@ def parse_args():
     arg_parser.add_argument("--max-weeks", "-w", type=int)
     arg_parser.add_argument("--max-matches-per-day", "-d", type=int)
     arg_parser.add_argument("--tournament-file", "-f")
+    arg_parser.add_argument("--xlsx-file", "-x")
     parsed_args = arg_parser.parse_args()
     return parsed_args
 
@@ -205,8 +208,10 @@ class MatchGenerator:
             for player2 in min_players:
                 cache[player1][player2] += 1
 
+        coordinator = random.choice(min_players)
         return Match(
-            min_players[0], min_players[1], min_players[2], min_players[3])
+            min_players[0], min_players[1], min_players[2], min_players[3],
+            coordinator)
 
     def num_matches_per_player(self, matches):
         count = None
@@ -221,11 +226,12 @@ class MatchGenerator:
 
 class Match:
 
-    def __init__(self, player1, player2, player3, player4):
+    def __init__(self, player1, player2, player3, player4, coordinator):
         self.player1 = player1
         self.player2 = player2
         self.player3 = player3
         self.player4 = player4
+        self.coordinator = coordinator
 
     def players(self):
         yield self.player1
@@ -459,6 +465,93 @@ class TextTournamentPrinter:
     def _print_indent(self):
         indent_str = "   " * self.indent_count
         self.f.write(indent_str)
+
+
+class ExcelTournamentPrinter:
+
+    COL_SCHEDULE_WEEK = 0
+    COL_SCHEDULE_DAY = 1
+    COL_SCHEDULE_MATCH_NUM = 2
+    COL_SCHEDULE_PLAYERS = 3
+    COL_SCHEDULE_POINTS = 4
+    COL_SCHEDULE_COORDINATOR = COL_SCHEDULE_MATCH_NUM
+
+    def __init__(self, tournament, path):
+        self.tournament = tournament
+        self.path = path
+
+    def run(self):
+        print("Creating Excel tournament schedule: {}".format(self.path))
+        workbook = xlsxwriter.Workbook(self.path)
+        player_info = {x:[] for x in self.tournament.players()}
+        try:
+            self.write_schedule(workbook, player_info)
+        finally:
+            workbook.close()
+
+    def write_schedule(self, f, player_info):
+        sheet = f.add_worksheet("Schedule")
+        row_number = 0
+
+        format_hcenter = self.format_hcenter(f)
+        sheet.write(row_number, self.COL_SCHEDULE_WEEK, "Week", format_hcenter)
+        sheet.write(row_number, self.COL_SCHEDULE_DAY, "Day", format_hcenter)
+        sheet.write(row_number, self.COL_SCHEDULE_MATCH_NUM, "Match", format_hcenter)
+        sheet.write(row_number, self.COL_SCHEDULE_PLAYERS, "Players", format_hcenter)
+        sheet.write(row_number, self.COL_SCHEDULE_POINTS, "Points", format_hcenter)
+        row_number += 2
+
+        week_num = 0
+        for week in self.tournament.weeks():
+            week_num += 1
+            sheet.write(row_number, self.COL_SCHEDULE_WEEK,
+                "Week {}".format(week_num))
+            row_number += 1
+
+            day_num = 0
+            for day in week:
+                day_num += 1
+                sheet.write(row_number, self.COL_SCHEDULE_DAY,
+                    "Day {}".format(day_num))
+                row_number += 1
+
+                match_num = 0
+                for match in day:
+                    match_num += 1
+                    row_number += 1
+                    sheet.write(row_number, self.COL_SCHEDULE_MATCH_NUM,
+                        "Match {}".format(match_num))
+                    row_number += 1
+
+                    coords = {}
+                    for player in sorted(match.players()):
+                        sheet.write(row_number, self.COL_SCHEDULE_PLAYERS,
+                            player)
+                        if player == match.coordinator:
+                            sheet.write(
+                                row_number, self.COL_SCHEDULE_COORDINATOR,
+                                "X", format_hcenter)
+                        coords[player] = (row_number, self.COL_SCHEDULE_POINTS)
+                        row_number += 1
+
+                    for player in match.players():
+                        player_info[player] = self.MatchInfo(
+                            match, week_num, day_num, match_num, coords)
+
+    @staticmethod
+    def format_hcenter(workbook):
+        format = workbook.add_format()
+        format.set_align("center")
+        return format
+
+    class MatchInfo:
+
+        def __init__(self, match, week_num, day_num, match_num, coords):
+            self.match = match
+            self.week_num = week_num
+            self.day_num = day_num
+            self.match_num = match_num
+            self.coords = coords
 
 
 def load_players(path):
