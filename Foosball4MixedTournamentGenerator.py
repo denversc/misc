@@ -2,6 +2,8 @@ import argparse
 import collections
 import io
 import itertools
+import os
+import pickle
 import random
 import statistics
 import sys
@@ -13,20 +15,42 @@ def main():
     min_num_matches_per_player = parsed_args.min_num_matches_per_player
     max_weeks = parsed_args.max_weeks
     max_matches_per_day = parsed_args.max_matches_per_day
+    tournament_path = parsed_args.tournament_file
 
-    players = tuple(load_players(players_path))
-    print("Loaded {} players".format(len(players)))
+    if tournament_path is None:
+        load_tournament = False
+        save_tournament = False
+    elif os.path.exists(tournament_path):
+        load_tournament = True
+        save_tournament = False
+    else:
+        load_tournament = False
+        save_tournament = True
 
-    while True:
-        matches = generate_matches(players, min_num_matches_per_player)
-        tournament = generate_tournament(matches, max_matches_per_day)
-        if max_weeks is not None:
-            num_weeks = tournament.num_weeks()
-            if num_weeks > max_weeks:
-                continue
-        break
+    if load_tournament:
+        print("Loading tournament from file: {}".format(tournament_path))
+        with io.open(tournament_path, "rb") as f:
+            tournament = pickle.load(f)
+        print("Loading tournament from file successful")
+    else:
+        players = tuple(load_players(players_path))
+        print("Loaded {} players".format(len(players)))
 
-    print("Tournament generated successfully")
+        while True:
+            matches = generate_matches(players, min_num_matches_per_player)
+            tournament = generate_tournament(matches, max_matches_per_day)
+            if max_weeks is not None:
+                num_weeks = tournament.num_weeks()
+                if num_weeks > max_weeks:
+                    continue
+            break
+        print("Tournament generated successfully")
+
+    if save_tournament:
+        print("Saving tournament to file: {}".format(tournament_path))
+        with io.open(tournament_path, "wb") as f:
+            pickle.dump(tournament, f, protocol=pickle.HIGHEST_PROTOCOL)
+
     tournament_printers = [
         TextTournamentPrinter(tournament, sys.stdout),
     ]
@@ -57,6 +81,7 @@ def parse_args():
     arg_parser.add_argument("--min-num-matches-per-player", "-m", type=int)
     arg_parser.add_argument("--max-weeks", "-w", type=int)
     arg_parser.add_argument("--max-matches-per-day", "-d", type=int)
+    arg_parser.add_argument("--tournament-file", "-f")
     parsed_args = arg_parser.parse_args()
     return parsed_args
 
