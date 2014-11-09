@@ -770,6 +770,16 @@ class ExcelTournamentPrinter:
 
         row_number += 1
         sheet.write_string(
+            row_number, 0, "Number of Times as Match Coordinator:")
+        coordinator_count = 0
+        for match_info in player_info:
+            if match_info.match.coordinator == player:
+                coordinator_count += 1
+        sheet.write_string(row_number, 1, "{}".format(coordinator_count))
+        row_number += 2
+
+        row_number += 1
+        sheet.write_string(
             row_number, 0, "Number of Matches with Other Players", format_bold)
         row_number += 2
 
