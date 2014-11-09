@@ -476,6 +476,23 @@ class ExcelTournamentPrinter:
     COL_SCHEDULE_POINTS = 4
     COL_SCHEDULE_COORDINATOR = COL_SCHEDULE_MATCH_NUM
 
+    COL_STANDINGS_PLAYER = 0
+    COL_STANDINGS_POINTS = 1
+    COL_STANDINGS_WINS = 3
+    COL_STANDINGS_LOSSES = 4
+    COL_STANDINGS_GAMES = 5
+    COL_STANDINGS_WIN_PERCENTAGE = 7
+    COL_STANDINGS_LOSS_PERCENTAGE = 8
+    COL_STANDINGS_MATCHES = 9
+
+    SHEET_NAME_SCHEDULE = "Schedule"
+    SHEET_NAME_STANDINGS = "Standings"
+
+    # Microsoft Excel built-in number formats
+    NUM_FORMAT_NUMBER = 1  # e.g. 0
+    NUM_FORMAT_PERCENTAGE_NO_DECIMALS = 9  # e.g. 5%
+    NUM_FORMAT_PERCENTAGE_TWO_DECIMALS = 10  # e.g. 5.25%
+
     def __init__(self, tournament, path):
         self.tournament = tournament
         self.path = path
@@ -486,21 +503,26 @@ class ExcelTournamentPrinter:
         player_info = {x:[] for x in self.tournament.players()}
         try:
             self.write_schedule(workbook, player_info)
+            self.write_standings(workbook, player_info)
         finally:
             workbook.close()
 
     def write_schedule(self, f, player_info):
-        sheet = f.add_worksheet("Schedule")
+        sheet = f.add_worksheet(self.SHEET_NAME_SCHEDULE)
         row_number = 0
 
-        format_hcenter = self.format_hcenter(f)
-        sheet.write(row_number, self.COL_SCHEDULE_WEEK, "Week", format_hcenter)
-        sheet.write(row_number, self.COL_SCHEDULE_DAY, "Day", format_hcenter)
-        sheet.write(row_number, self.COL_SCHEDULE_MATCH_NUM, "Match", format_hcenter)
-        sheet.write(row_number, self.COL_SCHEDULE_PLAYERS, "Players", format_hcenter)
-        sheet.write(row_number, self.COL_SCHEDULE_POINTS, "Points", format_hcenter)
+        format_heading = self.format_hcenter(f)
+        format_heading.set_bold()
+        sheet.write(row_number, self.COL_SCHEDULE_WEEK, "Week", format_heading)
+        sheet.write(row_number, self.COL_SCHEDULE_DAY, "Day", format_heading)
+        sheet.write(row_number, self.COL_SCHEDULE_MATCH_NUM, "Match", format_heading)
+        sheet.write(row_number, self.COL_SCHEDULE_PLAYERS, "Players", format_heading)
+        sheet.write(row_number, self.COL_SCHEDULE_POINTS, "Points", format_heading)
         row_number += 2
 
+        format_hcenter = self.format_hcenter(f)
+        format_number = f.add_format()
+        format_number.set_num_format(self.NUM_FORMAT_NUMBER)
         week_num = 0
         for week in self.tournament.weeks():
             week_num += 1
@@ -531,12 +553,122 @@ class ExcelTournamentPrinter:
                             sheet.write(
                                 row_number, self.COL_SCHEDULE_COORDINATOR,
                                 "X", format_hcenter)
+                        sheet.write_blank(row_number, self.COL_SCHEDULE_POINTS,
+                            None, format_number)
                         coords[player] = (row_number, self.COL_SCHEDULE_POINTS)
                         row_number += 1
 
                     for player in match.players():
-                        player_info[player] = self.MatchInfo(
-                            match, week_num, day_num, match_num, coords)
+                        player_info[player].append(self.MatchInfo(
+                            match, week_num, day_num, match_num, coords))
+
+    def write_standings(self, f, player_info):
+        sheet = f.add_worksheet(self.SHEET_NAME_STANDINGS)
+        row_number = 0
+
+        format_heading = self.format_hcenter(f)
+        format_heading.set_bold()
+
+        sheet.write(row_number, self.COL_STANDINGS_PLAYER, "Player", format_heading)
+        sheet.write(row_number, self.COL_STANDINGS_POINTS, "Points", format_heading)
+        sheet.write(row_number, self.COL_STANDINGS_WINS, "Wins", format_heading)
+        sheet.write(row_number, self.COL_STANDINGS_LOSSES, "Losses", format_heading)
+        sheet.write(row_number, self.COL_STANDINGS_GAMES, "Games", format_heading)
+        sheet.write(row_number, self.COL_STANDINGS_WIN_PERCENTAGE, "Win %", format_heading)
+        sheet.write(row_number, self.COL_STANDINGS_LOSS_PERCENTAGE, "Loss %", format_heading)
+        sheet.write(row_number, self.COL_STANDINGS_MATCHES, "Matches Played", format_heading)
+        row_number += 2
+
+        format_percentage = f.add_format()
+        format_percentage.set_num_format(self.NUM_FORMAT_PERCENTAGE_NO_DECIMALS)
+        format_number = f.add_format()
+        format_number.set_num_format(self.NUM_FORMAT_NUMBER)
+
+        players = sorted(set(self.tournament.players()))
+        for player in players:
+            points_formula = "={}".format(
+                xlsxwriter.utility.xl_rowcol_to_cell(
+                    row_number, self.COL_STANDINGS_WINS))
+            wins_formula = "=" + "+".join(
+                "IF(ISBLANK({sheet}!{cell}), 0, {sheet}!{cell})".format(
+                    sheet=self.SHEET_NAME_SCHEDULE,
+                    cell=xlsxwriter.utility.xl_rowcol_to_cell(
+                        x.coords[player][0],
+                        x.coords[player][1],
+                        row_abs=True,
+                        col_abs=True,
+                    ))
+                for x in player_info[player]
+            )
+            losses_formula = "=" + "+".join(
+                "IF(ISBLANK({sheet}!{cell}), 0, 3-{sheet}!{cell})".format(
+                    sheet=self.SHEET_NAME_SCHEDULE,
+                    cell=xlsxwriter.utility.xl_rowcol_to_cell(
+                        x.coords[player][0],
+                        x.coords[player][1],
+                        row_abs=True,
+                        col_abs=True,
+                    ))
+                for x in player_info[player]
+            )
+            games_formula = "={}+{}".format(
+                xlsxwriter.utility.xl_rowcol_to_cell(
+                    row_number, self.COL_STANDINGS_WINS),
+                xlsxwriter.utility.xl_rowcol_to_cell(
+                    row_number, self.COL_STANDINGS_LOSSES),
+            )
+            win_percentage_formula = "=IF({}=0, 0, {}/{})".format(
+                xlsxwriter.utility.xl_rowcol_to_cell(
+                    row_number, self.COL_STANDINGS_GAMES),
+                xlsxwriter.utility.xl_rowcol_to_cell(
+                    row_number, self.COL_STANDINGS_WINS),
+                xlsxwriter.utility.xl_rowcol_to_cell(
+                    row_number, self.COL_STANDINGS_GAMES),
+            )
+            loss_percentage_formula = "=IF({}=0, 0, {}/{})".format(
+                xlsxwriter.utility.xl_rowcol_to_cell(
+                    row_number, self.COL_STANDINGS_GAMES),
+                xlsxwriter.utility.xl_rowcol_to_cell(
+                    row_number, self.COL_STANDINGS_LOSSES),
+                xlsxwriter.utility.xl_rowcol_to_cell(
+                    row_number, self.COL_STANDINGS_GAMES),
+            )
+            matches_played_formula = "=" + "+".join(
+                "IF(ISBLANK({sheet}!{cell}), 0, 1)".format(
+                    sheet=self.SHEET_NAME_SCHEDULE,
+                    cell=xlsxwriter.utility.xl_rowcol_to_cell(
+                        x.coords[player][0],
+                        x.coords[player][1],
+                        row_abs=True,
+                        col_abs=True,
+                    ))
+                for x in player_info[player]
+            )
+
+            sheet.write(
+                row_number, self.COL_STANDINGS_PLAYER, player)
+            sheet.write_formula(
+                row_number, self.COL_STANDINGS_POINTS,
+                points_formula, format_number)
+            sheet.write_formula(
+                row_number, self.COL_STANDINGS_WINS,
+                wins_formula, format_number)
+            sheet.write_formula(
+                row_number, self.COL_STANDINGS_LOSSES,
+                losses_formula, format_number)
+            sheet.write_formula(
+                row_number, self.COL_STANDINGS_GAMES,
+                games_formula, format_number)
+            sheet.write_formula(
+                row_number, self.COL_STANDINGS_WIN_PERCENTAGE,
+                win_percentage_formula, format_percentage)
+            sheet.write_formula(row_number, self.COL_STANDINGS_LOSS_PERCENTAGE,
+                loss_percentage_formula, format_percentage)
+            sheet.write_formula(
+                row_number, self.COL_STANDINGS_MATCHES,
+                matches_played_formula, format_number)
+
+            row_number += 1
 
     @staticmethod
     def format_hcenter(workbook):
