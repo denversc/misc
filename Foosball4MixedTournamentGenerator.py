@@ -4,6 +4,8 @@ import io
 import itertools
 import random
 import statistics
+import sys
+import contextlib
 
 def main():
     parsed_args = parse_args()
@@ -19,12 +21,18 @@ def main():
         matches = generate_matches(players, min_num_matches_per_player)
         tournament = generate_tournament(matches, max_matches_per_day)
         if max_weeks is not None:
-            num_weeks = len(tournament) / 3
+            num_weeks = tournament.num_weeks()
             if num_weeks > max_weeks:
                 continue
         break
 
-    print_tournament(tournament, matches, players)
+    print("Tournament generated successfully")
+    tournament_printers = [
+        TextTournamentPrinter(tournament, sys.stdout),
+    ]
+
+    for printer in tournament_printers:
+        printer.run()
 
 
 def generate_matches(players, min_num_matches_per_player):
@@ -40,62 +48,7 @@ def generate_tournament(matches, max_matches_per_day):
     print("Generating Tournament")
     tournament_generator = TournamentGenerator(matches, max_matches_per_day)
     tournament = tournament_generator.run()
-    tournament = tuple(tournament)
     return tournament
-
-
-def print_tournament(tournament, matches, players):
-    for player in sorted(players):
-        print("")
-        print("{} ({} appearances)".format(
-            player, matches.num_player_appearances(player)))
-
-        co_appearance_counts = [
-            (matches.num_player_co_appearances(player, x), x)
-            for x in sorted(players)
-        ]
-        co_appearance_counts.sort(reverse=True, key=lambda x: x[0])
-
-        for (count, other_player) in co_appearance_counts:
-            if player == other_player:
-                continue
-            print("   {} {}".format(count, other_player))
-
-    print("")
-    print("Tournament Schedule")
-
-    week_num = 0
-    day_num = 4
-    for day in tournament:
-        if day_num == 4:
-            day_num = 1
-            week_num += 1
-            print("")
-            print("Week {}".format(week_num))
-
-        print("")
-        print("   Day {}".format(day_num))
-
-        for (match_num, match) in enumerate(day):
-            print("")
-            print("      Match {}".format(match_num + 1))
-            for player in match.players():
-                print("         {}".format(player))
-
-        day_num += 1
-
-    print("")
-    print("Num Weeks: {}".format(week_num))
-    print("Num Days: {}".format(len(tournament)))
-    print("Num Matches: {}".format(sum(len(x) for x in tournament)))
-    print("Max Matches Per Day: {}".format(max(len(x) for x in tournament)))
-    print("Min Matches Per Day: {}".format(min(len(x) for x in tournament)))
-    print("Avg Matches Per Day: {}".format(statistics.mean(len(x) for x in tournament)))
-
-    matches_per_player = [matches.num_player_appearances(x) for x in players]
-    print("Max Matches Per Player: {}".format(max(matches_per_player)))
-    print("Min Matches Per Player: {}".format(min(matches_per_player)))
-    print("Avg Matches Per Player: {}".format(statistics.mean(matches_per_player)))
 
 
 def parse_args():
@@ -115,12 +68,16 @@ class TournamentGenerator:
         self.max_matches_per_day = max_matches_per_day
 
     def run(self):
+        days = FoosballItemList(self.generate_days())
+        return Tournament(days)
+
+    def generate_days(self):
         players = tuple(set(self.matches.players()))
         matches = FoosballItemList(self.matches)
 
         while len(matches) > 0:
             day_matches = self.generate_day(matches, players)
-            day_matches = tuple(day_matches)
+            day_matches = FoosballItemList(day_matches)
             yield day_matches
 
     def generate_day(self, matches, players):
@@ -296,6 +253,187 @@ class FoosballItemList(list):
             if match_contains_player1 and match_contains_player2:
                 count += 1
         return count
+
+
+class Tournament:
+
+    def __init__(self, days):
+        self.days = days
+
+    def num_days(self):
+        return len(self.days)
+
+    def num_weeks(self):
+        count = 0
+        day_num = 0
+        for unused_day in self.days:
+            if day_num % 3 == 0:
+                count += 1
+                day_num = 0
+            day_num += 1
+        return count
+
+    def num_matches(self):
+        count = 0
+        for day in self.days:
+            for unused_match in day:
+                count += 1
+        return count
+
+    def matches_per_day_stats(self):
+        match_per_day_counts = []
+        for day in self.days:
+            match_per_day_counts.append(len(day))
+        return (
+            min(match_per_day_counts),
+            max(match_per_day_counts),
+            statistics.mean(match_per_day_counts),
+        )
+
+    def matches_per_player_stats(self):
+        players = set(self.players())
+        players = {x:0 for x in players}
+        for player in self.players():
+            players[player] += 1
+        match_per_player_counts = tuple(players.values())
+        return (
+            min(match_per_player_counts),
+            max(match_per_player_counts),
+            statistics.mean(match_per_player_counts),
+        )
+
+    def weeks(self):
+        week = []
+        for day in self.days:
+            week.append(day)
+            if len(week) == 3:
+                yield week
+                week = []
+        if len(week) > 0:
+            yield week
+
+    def players(self):
+        for day in self.days:
+            for match in day:
+                yield from match.players()
+
+    def num_player_appearances(self, player):
+        count = 0
+        for day in self.days:
+            for match in day:
+                count += match.num_player_appearances(player)
+        return count
+
+    def num_player_co_appearances(self, player1, player2):
+        count = 0
+        for day in self.days:
+            count += day.num_player_co_appearances(player1, player2)
+        return count
+
+
+class TextTournamentPrinter:
+
+    def __init__(self, tournament, f):
+        self.tournament = tournament
+        self.f = f
+        self.indent_count = 0
+
+    def run(self):
+        self.print_schedule()
+        self.print_player_info()
+        self.print_statistics()
+
+    def print_schedule(self):
+        week_num = 1
+        for week in self.tournament.weeks():
+            self.println()
+            self.println("Week {}".format(week_num))
+            with self.indented():
+                self.print_schedule_for_week(week_num, week)
+            week_num += 1
+
+    def print_schedule_for_week(self, week_num, week):
+        day_num = 1
+        for day in week:
+            self.println()
+            self.println("Day {}".format(day_num))
+            with self.indented():
+                self.print_schedule_for_day(week_num, day_num, day)
+            day_num += 1
+
+    def print_schedule_for_day(self, week_num, day_num, day):
+        match_num = 1
+        for match in day:
+            self.println()
+            self.println("Match {}".format(match_num))
+            with self.indented():
+                self.println(match.player1)
+                self.println(match.player2)
+                self.println(match.player3)
+                self.println(match.player4)
+            match_num += 1
+
+    def print_player_info(self):
+        players = tuple(sorted(list(set(self.tournament.players()))))
+        for player in players:
+            num_appearances = self.tournament.num_player_appearances(player)
+            co_appearance_counts = [
+                (self.tournament.num_player_co_appearances(player, x), x)
+                for x in players]
+            co_appearance_counts.sort(key=lambda x: x[0], reverse=True)
+            self.println()
+            self.println("{} (Total Matches: {})".format(
+                player, num_appearances))
+            with self.indented():
+                for (count, other_player) in co_appearance_counts:
+                    if player == other_player:
+                        continue
+                    self.println("{} {}".format(count, other_player))
+
+    def print_statistics(self):
+        num_weeks = self.tournament.num_weeks()
+        num_days = self.tournament.num_days()
+        num_matches = self.tournament.num_matches()
+        match_stats = self.tournament.matches_per_day_stats()
+        (min_matches_per_day, max_matches_per_day, avg_matches_per_day) = match_stats
+        player_stats = self.tournament.matches_per_player_stats()
+        (min_matches_per_player, max_matches_per_player, avg_matches_per_player) = player_stats
+
+        self.println()
+        self.println("Num Weeks: {}".format(num_weeks))
+        self.println("Num Days: {}".format(num_days))
+        self.println("Num Matches: {}".format(num_matches))
+        self.println()
+        self.println("Min Matches Per Day: {}".format(min_matches_per_day))
+        self.println("Max Matches Per Day: {}".format(max_matches_per_day))
+        self.println("Avg Matches Per Day: {}".format(avg_matches_per_day))
+        self.println()
+        self.println("Min Matches Per Player: {}".format(min_matches_per_player))
+        self.println("Max Matches Per Player: {}".format(max_matches_per_player))
+        self.println("Avg Matches Per Player: {}".format(avg_matches_per_player))
+
+    def println(self, line=""):
+        self._print_indent()
+        self.f.write(line)
+        self.f.write("\n")
+
+    def increase_indent(self):
+        self.indent_count += 1
+
+    def decrease_indent(self):
+        self.indent_count -= 1
+
+    @contextlib.contextmanager
+    def indented(self):
+        self.increase_indent()
+        try:
+            yield
+        finally:
+            self.decrease_indent()
+
+    def _print_indent(self):
+        indent_str = "   " * self.indent_count
+        self.f.write(indent_str)
 
 
 def load_players(path):
