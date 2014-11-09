@@ -190,7 +190,9 @@ class MatchGenerator:
         min_player_sets = None
         min_weight = None
 
-        for cur_players in itertools.combinations(self.players, 4):
+        players_randomized = list(self.players)
+        random.shuffle(players_randomized)
+        for cur_players in itertools.combinations(players_randomized, 4):
             weight = 0
             for player1 in cur_players:
                 for player2 in cur_players:
