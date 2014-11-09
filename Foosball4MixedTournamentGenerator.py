@@ -210,7 +210,17 @@ class MatchGenerator:
             for player2 in min_players:
                 cache[player1][player2] += 1
 
-        coordinator = random.choice(min_players)
+        # select the coordinator to be the player with fewest times doing it
+        coordinator_min = None
+        for player in min_players:
+            cur_count = matches.num_times_as_match_coordinator(player)
+            if coordinator_min is None or cur_count < coordinator_min:
+                coordinator_min = cur_count
+                coordinator_players = [player]
+            elif cur_count == coordinator_min:
+                coordinator_players.append(player)
+        coordinator = random.choice(coordinator_players)
+
         return Match(
             min_players[0], min_players[1], min_players[2], min_players[3],
             coordinator)
@@ -284,6 +294,13 @@ class FoosballItemList(list):
             match_contains_player1 = match.contains_player(player1)
             match_contains_player2 = match.contains_player(player2)
             if match_contains_player1 and match_contains_player2:
+                count += 1
+        return count
+
+    def num_times_as_match_coordinator(self, player):
+        count = 0
+        for match in self:
+            if match.coordinator == player:
                 count += 1
         return count
 
