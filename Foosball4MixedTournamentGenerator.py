@@ -504,6 +504,7 @@ class ExcelTournamentPrinter:
         try:
             self.write_schedule(workbook, player_info)
             self.write_standings(workbook, player_info)
+            self.write_players(workbook, player_info)
         finally:
             workbook.close()
 
@@ -513,11 +514,11 @@ class ExcelTournamentPrinter:
 
         format_heading = self.format_hcenter(f)
         format_heading.set_bold()
-        sheet.write(row_number, self.COL_SCHEDULE_WEEK, "Week", format_heading)
-        sheet.write(row_number, self.COL_SCHEDULE_DAY, "Day", format_heading)
-        sheet.write(row_number, self.COL_SCHEDULE_MATCH_NUM, "Match", format_heading)
-        sheet.write(row_number, self.COL_SCHEDULE_PLAYERS, "Players", format_heading)
-        sheet.write(row_number, self.COL_SCHEDULE_POINTS, "Points", format_heading)
+        sheet.write_string(row_number, self.COL_SCHEDULE_WEEK, "Week", format_heading)
+        sheet.write_string(row_number, self.COL_SCHEDULE_DAY, "Day", format_heading)
+        sheet.write_string(row_number, self.COL_SCHEDULE_MATCH_NUM, "Match", format_heading)
+        sheet.write_string(row_number, self.COL_SCHEDULE_PLAYERS, "Players", format_heading)
+        sheet.write_string(row_number, self.COL_SCHEDULE_POINTS, "Points", format_heading)
         row_number += 2
 
         format_hcenter = self.format_hcenter(f)
@@ -526,31 +527,32 @@ class ExcelTournamentPrinter:
         week_num = 0
         for week in self.tournament.weeks():
             week_num += 1
-            sheet.write(row_number, self.COL_SCHEDULE_WEEK,
+            sheet.write_string(row_number, self.COL_SCHEDULE_WEEK,
                 "Week {}".format(week_num))
             row_number += 1
 
             day_num = 0
             for day in week:
                 day_num += 1
-                sheet.write(row_number, self.COL_SCHEDULE_DAY,
-                    "Day {}".format(day_num))
+                sheet.write_string(
+                    row_number, self.COL_SCHEDULE_DAY, "Day {}".format(day_num))
                 row_number += 1
 
                 match_num = 0
                 for match in day:
                     match_num += 1
                     row_number += 1
-                    sheet.write(row_number, self.COL_SCHEDULE_MATCH_NUM,
+                    sheet.write_string(
+                        row_number, self.COL_SCHEDULE_MATCH_NUM,
                         "Match {}".format(match_num))
                     row_number += 1
 
                     coords = {}
                     for player in sorted(match.players()):
-                        sheet.write(row_number, self.COL_SCHEDULE_PLAYERS,
-                            player)
+                        sheet.write_string(
+                            row_number, self.COL_SCHEDULE_PLAYERS, player)
                         if player == match.coordinator:
-                            sheet.write(
+                            sheet.write_string(
                                 row_number, self.COL_SCHEDULE_COORDINATOR,
                                 "X", format_hcenter)
                         sheet.write_blank(row_number, self.COL_SCHEDULE_POINTS,
@@ -569,14 +571,22 @@ class ExcelTournamentPrinter:
         format_heading = self.format_hcenter(f)
         format_heading.set_bold()
 
-        sheet.write(row_number, self.COL_STANDINGS_PLAYER, "Player", format_heading)
-        sheet.write(row_number, self.COL_STANDINGS_POINTS, "Points", format_heading)
-        sheet.write(row_number, self.COL_STANDINGS_WINS, "Wins", format_heading)
-        sheet.write(row_number, self.COL_STANDINGS_LOSSES, "Losses", format_heading)
-        sheet.write(row_number, self.COL_STANDINGS_GAMES, "Games", format_heading)
-        sheet.write(row_number, self.COL_STANDINGS_WIN_PERCENTAGE, "Win %", format_heading)
-        sheet.write(row_number, self.COL_STANDINGS_LOSS_PERCENTAGE, "Loss %", format_heading)
-        sheet.write(row_number, self.COL_STANDINGS_MATCHES, "Matches Played", format_heading)
+        sheet.write_string(
+            row_number, self.COL_STANDINGS_PLAYER, "Player", format_heading)
+        sheet.write_string(
+            row_number, self.COL_STANDINGS_POINTS, "Points", format_heading)
+        sheet.write_string(
+            row_number, self.COL_STANDINGS_WINS, "Wins", format_heading)
+        sheet.write_string(
+            row_number, self.COL_STANDINGS_LOSSES, "Losses", format_heading)
+        sheet.write_string(
+            row_number, self.COL_STANDINGS_GAMES, "Games", format_heading)
+        sheet.write_string(
+            row_number, self.COL_STANDINGS_WIN_PERCENTAGE, "Win %", format_heading)
+        sheet.write_string(
+            row_number, self.COL_STANDINGS_LOSS_PERCENTAGE, "Loss %", format_heading)
+        sheet.write_string(
+            row_number, self.COL_STANDINGS_MATCHES, "Matches Played", format_heading)
         row_number += 2
 
         format_percentage = f.add_format()
@@ -645,7 +655,7 @@ class ExcelTournamentPrinter:
                 for x in player_info[player]
             )
 
-            sheet.write(
+            sheet.write_string(
                 row_number, self.COL_STANDINGS_PLAYER, player)
             sheet.write_formula(
                 row_number, self.COL_STANDINGS_POINTS,
@@ -668,6 +678,111 @@ class ExcelTournamentPrinter:
                 row_number, self.COL_STANDINGS_MATCHES,
                 matches_played_formula, format_number)
 
+            row_number += 1
+
+    def write_players(self, f, player_info):
+        for player in sorted(set(self.tournament.players())):
+            cur_player_info = player_info[player]
+            self.write_player(f, player, cur_player_info)
+
+    def write_player(self, f, player, player_info):
+        format_bold = f.add_format()
+        format_bold.set_bold()
+        format_number = f.add_format()
+        format_number.set_num_format(self.NUM_FORMAT_NUMBER)
+
+        sheet = f.add_worksheet(player)
+        row_number = 0
+        sheet.write_string(row_number, 0, player, format_bold)
+        row_number += 2
+
+        sheet.write_string(row_number, 0, "Schedule", format_bold)
+        col_number = 0
+        row_number += 2
+        sheet.write_string(row_number, col_number, "#", format_bold)
+        col_number += 1
+        sheet.write_string(row_number, col_number, "Week", format_bold)
+        col_number += 1
+        sheet.write_string(row_number, col_number, "Day", format_bold)
+        col_number += 1
+        sheet.write_string(row_number, col_number, "Match", format_bold)
+        col_number += 1
+        sheet.write_string(row_number, col_number, "Wins", format_bold)
+        col_number += 1
+        sheet.write_string(row_number, col_number, "Losses", format_bold)
+        col_number += 1
+        sheet.write_string(row_number, col_number, "Player 1", format_bold)
+        col_number += 1
+        sheet.write_string(row_number, col_number, "Player 2", format_bold)
+        col_number += 1
+        sheet.write_string(row_number, col_number, "Player 3", format_bold)
+
+        row_number += 1
+
+        match_index = 0
+        for match_info in player_info:
+            match_index += 1
+            col_number = 0
+
+            sheet.write_string(row_number, col_number,
+                "{}".format(match_index))
+            col_number += 1
+            sheet.write_string(row_number, col_number,
+                "Week {}".format(match_info.week_num))
+            col_number += 1
+            sheet.write_string(row_number, col_number,
+                "Day {}".format(match_info.day_num))
+            col_number += 1
+            sheet.write_string(row_number, col_number,
+                "Match {}".format(match_info.match_num))
+            col_number += 1
+
+            coords = match_info.coords[player]
+            cell = "{}!{}".format(
+                    self.SHEET_NAME_SCHEDULE,
+                    xlsxwriter.utility.xl_rowcol_to_cell(
+                        coords[0],
+                        coords[1],
+                        row_abs=True,
+                        col_abs=True,
+                    )
+            )
+            win_formula = "=IF(ISBLANK({cell}), \"\", {cell})".format(
+                cell=cell)
+            loss_formula = "=IF(ISBLANK({cell}), \"\", 3-{cell})".format(
+                cell=cell)
+            sheet.write_formula(
+                row_number, col_number, win_formula, format_number)
+            col_number += 1
+            sheet.write_formula(
+                row_number, col_number, loss_formula, format_number)
+            col_number += 1
+
+            for other_player in sorted(match_info.match.players()):
+                if other_player == player:
+                    continue
+                sheet.write_string(row_number, col_number, other_player)
+                col_number += 1
+
+            row_number += 1
+
+        row_number += 1
+        sheet.write_string(
+            row_number, 0, "Number of Matches with Other Players", format_bold)
+        row_number += 2
+
+        players = tuple(set(self.tournament.players()))
+        counts = [
+            (self.tournament.num_player_co_appearances(player, x), x)
+            for x in players
+        ]
+        counts.sort(key=lambda x: x[1])
+        counts.sort(key=lambda x: x[0], reverse=True)
+        for (count, other_player) in counts:
+            if other_player == player:
+                continue
+            sheet.write_string(row_number, 0, other_player)
+            sheet.write_number(row_number, 1, count)
             row_number += 1
 
     @staticmethod
