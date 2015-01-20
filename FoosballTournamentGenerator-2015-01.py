@@ -57,6 +57,25 @@ class TournamentGenerator:
 
     def run(self):
         teams = tuple(self.generate_teams())
+        print("Generated {} teams".format(len(teams)))
+        matches = tuple(self.generate_matches(teams))
+        print("Generated {} matches".format(len(matches)))
+
+        opponent_counts = {x: {y: 0 for y in self.names} for x in self.names}
+        for match in matches:
+            for (player, other_team) in ((match[0][0], match[1]), (match[0][1], match[1]), (match[1][0], match[0]), (match[1][1], match[0])):
+                for opponent in other_team:
+                    opponent_counts[player][opponent] += 1
+
+        for player1 in sorted(self.names):
+            opponents = list((opponent_counts[player1][x], x) for x in self.names)
+            opponents.sort(reverse=True)
+
+            print("")
+            print("Opponents of {}".format(player1))
+            for (opponent_count, opponent) in opponents:
+                print("  {} {}".format(opponent_count, opponent))
+
 
     def generate_teams(self):
         names = tuple(self.generate_randomized_ordering(self.names))
@@ -79,6 +98,49 @@ class TournamentGenerator:
             player1 = names[i * 2]
             player2 = names[(i * 2) + 1]
             yield (player1, player2)
+
+    def generate_matches(self, teams):
+        teams = list(teams)
+        assert len(teams) % 2 == 0
+        opponent_counts = {x: {y: 0 for y in self.names} for x in self.names}
+        while teams:
+            yield self._generate_match(teams, opponent_counts)
+
+    def _generate_match(self, teams, opponent_counts):
+        team1_index = self.random_number_generator.randrange(len(teams))
+        team1 = teams[team1_index]
+        del teams[team1_index]
+        del team1_index
+        team1_player1 = team1[0]
+        team1_player2 = team1[1]
+
+        team2_indices = self.generate_randomized_ordering(range(len(teams)))
+        for team2_index in team2_indices:
+            team2 = teams[team2_index]
+            if team1_player1 in team2 or team1_player2 in team2:
+                continue
+
+            team2_player1 = team2[0]
+            team2_player2 = team2[1]
+            count1 = opponent_counts[team1_player1][team2_player1] + opponent_counts[team1_player1][team2_player2]
+            count2 = opponent_counts[team1_player2][team2_player1] + opponent_counts[team1_player2][team2_player2]
+            if count1 > 5 or count2 > 5:
+                continue
+
+            del teams[team2_index]
+
+            opponent_counts[team1[0]][team2[0]] += 1
+            opponent_counts[team1[1]][team2[0]] += 1
+            opponent_counts[team1[0]][team2[1]] += 1
+            opponent_counts[team1[1]][team2[1]] += 1
+            opponent_counts[team2[0]][team1[0]] += 1
+            opponent_counts[team2[1]][team1[0]] += 1
+            opponent_counts[team2[0]][team1[1]] += 1
+            opponent_counts[team2[1]][team1[1]] += 1
+
+            return (team1, team2)
+        else:
+            raise Exception("unable to find match for team: {}".format(team1))
 
     def generate_randomized_ordering(self, elements):
         elements_remaining = list(elements)
