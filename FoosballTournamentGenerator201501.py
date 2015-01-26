@@ -23,11 +23,11 @@ def main():
     print("Generating tournament")
     tournament_generator = FoosballTournamentGenerator(matches, start_date)
     tournament = tournament_generator.generate()
+    text_printer = TournamentTextPrinter(sys.stdout)
+    text_printer.run(tournament)
     print("Writing Tournament to Excel file: {}".format(xlsx_path))
     xlsx_printer = TournamentXlsxPrinter(xlsx_path)
     xlsx_printer.run(tournament)
-    text_printer = TournamentTextPrinter(sys.stdout)
-    text_printer.run(tournament)
 
 def parse_args():
     arg_parser = argparse.ArgumentParser()
@@ -56,6 +56,8 @@ def parse_args():
             arg_parser.error("Invalid start date: {} (must be a Monday, Wednesday, or Friday)"
                 .format(start_date_str))
             raise AssertionError("should never get here")
+
+        start_date = start_date.date()  # convert datetime object to date object
 
     return (parsed_args.names_file, parsed_args.output_excel_file, start_date)
 
@@ -92,6 +94,10 @@ class FoosballTournamentGenerator:
     MAX_GAMES_PER_DAY_PER_PLAYER = 1
     MAX_GAMES_PER_WEEK_PER_PLAYER = 2
 
+    EXCLUDE_DATES = (
+        datetime.date(2015, 2, 16),  # Family Day
+    )
+
     def __init__(self, match_list, start_date):
         self.match_list = match_list
         self.start_date = start_date
@@ -118,23 +124,26 @@ class FoosballTournamentGenerator:
                     day.add_match(match)
                 tournament.add_match_list(day)
 
-                # advance to the next day
-                while True:
-                    cur_date = cur_date + datetime.timedelta(days=1)
-                    if cur_date.weekday() in (0, 2, 4):
-                        break
-
                 # if any players didn't play today, move them to the end of the list so they get
                 # preference in the next day
                 self._move_unused_players_to_end(matches, day_player_counts)
 
+                # advance to the next day
+                new_week = False
+                while True:
+                    cur_date = cur_date + datetime.timedelta(days=1)
+                    if cur_date.weekday() == 0:
+                        new_week = True
+                    if cur_date.weekday() in (0, 2, 4) and cur_date not in self.EXCLUDE_DATES:
+                        break
+
                 # if starting a new week, reset the weekly counts
-                if cur_date.weekday() == 0:
+                if new_week:
                     break
 
         return tournament
 
-    def _find_match_for_day(self, matches, day_occurrence_counts, week_occurrence_counts):
+    def _find_match_for_day(self, matches, day_player_counts, week_player_counts):
         i = len(matches)
         while i > 0:
             i -= 1
@@ -142,7 +151,7 @@ class FoosballTournamentGenerator:
 
             # make sure no players have already maxxed out their max games per day
             for player in match.players():
-                if day_occurrence_counts[player] >= self.MAX_GAMES_PER_DAY_PER_PLAYER:
+                if day_player_counts[player] >= self.MAX_GAMES_PER_DAY_PER_PLAYER:
                     skip_match_due_to_daily_max = True
                     break
             else:
@@ -152,7 +161,7 @@ class FoosballTournamentGenerator:
 
             # make sure no players have already maxxed out their max games per week
             for player in match.players():
-                if week_occurrence_counts[player] >= self.MAX_GAMES_PER_WEEK_PER_PLAYER:
+                if week_player_counts[player] >= self.MAX_GAMES_PER_WEEK_PER_PLAYER:
                     skip_match_due_to_weekly_max = True
                     break
             else:
@@ -162,8 +171,8 @@ class FoosballTournamentGenerator:
 
             # found a match that meets the criteria; stop searching and return it
             for player in match.players():
-                day_occurrence_counts[player] += 1
-                week_occurrence_counts[player] += 1
+                day_player_counts[player] += 1
+                week_player_counts[player] += 1
             del matches[i]
             return match
 
@@ -482,7 +491,7 @@ class TournamentTextPrinter:
             elif match_list.date.weekday() == 0:
                 week_num += 1
 
-            date_str = match_list.date.strftime("%a %b %w")
+            date_str = match_list.date.strftime("%a %b %d")
             self.println("Week {} Day {} {}".format(week_num, day_num, date_str))
             for (match_index, match) in enumerate(match_list):
                 teams_str = " vs. ".join(" & ".join(team.players()) for team in match.teams())
@@ -530,165 +539,43 @@ class TournamentTextPrinter:
 
 class TournamentXlsxPrinter:
 
+    SHEET_NAME_SCHEDULE = "Schedule"
+
+    COL_SCHEDULE_DATE = 0
+    COL_SCHEDULE_PLAYER1 = 1
+    COL_SCHEDULE_PLAYER2 = 2
+    COL_SCHEDULE_POINTS = 3
+
     def __init__(self, path):
         self.path = path
 
     def run(self, tournament):
-        workbook = xlsxwriter.Workbook(self.path)
-        xls_info = self.XlsxInfo()
-        self.write_schedule(tournament, workbook, xls_info)
-        self.write_standings(tournament, workbook, xls_info)
-        self.write_players(tournament, workbook, xls_info)
-        workbook.close()
+        f = xlsxwriter.Workbook(self.path)
+        self.write_schedule(f, tournament)
 
-    def write_schedule(self, tournament, workbook, xls_info):
-        worksheet = workbook.add_worksheet("Schedule")
-        row = 0
+    def write_schedule(self, f, tournament):
+        sheet = f.add_worksheet(self.SHEET_NAME_SCHEDULE)
+        row_number = 0
 
-        worksheet.write(row, 0, "Day")
-        worksheet.write(row, 1, "Match")
-        worksheet.write(row, 2, "Winner X")
-        worksheet.write(row, 3, "Player 1")
-        worksheet.write(row, 4, "Player 2")
-        row += 1
+        format_heading = self.format_hcenter(f)
+        format_heading.set_bold()
 
-        for (day_index, day) in enumerate(tournament):
-            day_label = "Day {}".format(day_index + 1)
-            worksheet.write(row, 0, day_label)
-            row += 1
+        sheet.write_string(row_number, self.COL_SCHEDULE_DATE, "Date", format_heading)
+        sheet.write_string(row_number, self.COL_SCHEDULE_PLAYER1, "Player 1", format_heading)
+        sheet.write_string(row_number, self.COL_SCHEDULE_PLAYER2, "Player 2", format_heading)
+        sheet.write_string(row_number, self.COL_SCHEDULE_POINTS, "Points", format_heading)
+        row_number += 1
 
-            for (match_index, match) in enumerate(day):
-                match_label = "Match {}".format(match_index + 1)
-                worksheet.write(row, 1, match_label)
-                row += 1
+        for match_list in tournament:
+            row_number += 1
+            date_str = match_list.date.strftime("%a %b %d")
+            sheet.write_string(row_number, self.COL_SCHEDULE_DATE, date_str)
 
-                team_cells = []
-                for (team_index, team) in enumerate(match.teams()):
-                    if team_index > 0:
-                        worksheet.write(row, 3, "vs.")
-                        row += 1
-                    col = 3
-                    for player in team.players():
-                        worksheet.write(row, col, player)
-                        col += 1
-                    row += 1
-
-                    team_cells.append((team, row))
-
-                xls_info.schedule_cells.append((match, day_label, match_label, team_cells))
-
-        xls_info.schedule_last_row = row
-
-    def write_standings(self, tournament, workbook, xls_info):
-        worksheet = workbook.add_worksheet("Standings")
-
-        row = 0
-        for player in sorted(frozenset(tournament.players())):
-            worksheet.write(row, 0, player)
-            worksheet.write(row, 1,
-                "="
-                "COUNTIFS(Schedule!C1:C{last_row}, \"X\", Schedule!D1:D{last_row}, \"{name}\")"
-                "+"
-                "COUNTIFS(Schedule!C1:C{last_row}, \"X\", Schedule!E1:E{last_row}, \"{name}\")"
-                .format(
-                    last_row=xls_info.schedule_last_row,
-                    name=player,
-                ))
-            row += 1
-
-    def write_players(self, tournament, workbook, xls_info):
-        for player in sorted(frozenset(tournament.players())):
-            worksheet = workbook.add_worksheet(player)
-            row = 0
-
-
-            # write games
-            worksheet.write(row, 0, "Scheduled Games".format(player))
-            row += 2
-            worksheet.write(row, 0, "Game")
-            worksheet.write(row, 1, "Day")
-            worksheet.write(row, 2, "Match")
-            worksheet.write(row, 3, "WinLoss")
-            worksheet.write(row, 4, "Partner")
-            worksheet.write(row, 5, "Opponent 1")
-            worksheet.write(row, 6, "Opponent 2")
-            row += 1
-            game_number = 1
-            for (match, day_label, match_label, team_cells) in xls_info.schedule_cells:
-                if not match.includes_player(player):
-                    continue
-                worksheet.write(row, 0, "Game #{}".format(game_number))
-                game_number += 1
-                worksheet.write(row, 1, day_label)
-                worksheet.write(row, 2, match_label)
-
-                win_row = None
-                loss_row = None
-                for (team, temp_row) in team_cells:
-                    if team.includes_player(player):
-                        win_row = temp_row
-                    else:
-                        loss_row = temp_row
-
-                worksheet.write(row, 3,
-                    "=IF(Schedule!C{}=\"X\", \"Win\", "
-                        "IF(Schedule!C{}=\"X\", \"Loss\", \"\")"
-                    ")"
-                    .format(win_row, loss_row)
-                )
-
-                col = 4
-
-                for team in match.teams_including_player(player):
-                    for partner in team.players():
-                        if partner != player:
-                            worksheet.write(row, col, partner)
-                            col += 1
-
-                for team in match.teams():
-                    if not team.includes_player(player):
-                        for opponent in team.players():
-                            worksheet.write(row, col, opponent)
-                            col += 1
-
-                row += 1
-            row += 1
-
-            # write partners
-            partner_counts = collections.defaultdict(lambda: 0)
-            for partner in tournament.player_partners(player):
-                partner_counts[partner] += 1
-            partner_counts = [(v, k) for (k, v) in partner_counts.items()]
-            partner_counts.sort(reverse=True)
-
-            worksheet.write(row, 0, "{} Partners".format(player))
-            row += 2
-            for (partner_count, partner) in partner_counts:
-                worksheet.write(row, 0, partner)
-                worksheet.write(row, 1, partner_count)
-                row += 1
-            row += 1
-
-            # write opponents
-            opponent_counts = collections.defaultdict(lambda: 0)
-            for opponent in tournament.player_opponents(player):
-                opponent_counts[opponent] += 1
-            opponent_counts = [(v, k) for (k, v) in opponent_counts.items()]
-            opponent_counts.sort(reverse=True)
-
-            worksheet.write(row, 0, "{} Opponents".format(player))
-            row += 2
-            for (opponent_count, opponent) in opponent_counts:
-                worksheet.write(row, 0, opponent)
-                worksheet.write(row, 1, opponent_count)
-                row += 1
-            row += 1
-
-    class XlsxInfo:
-        def __init__(self):
-            self.schedule_last_row = None
-            self.schedule_cells = []
-
+    @staticmethod
+    def format_hcenter(workbook):
+        format = workbook.add_format()
+        format.set_align("center")
+        return format
 
 def shuffle(seq):
     for i in range(len(seq) - 1):
