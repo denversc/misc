@@ -94,9 +94,9 @@ class FoosballTournamentGenerator:
     MAX_GAMES_PER_DAY_PER_PLAYER = 1
     MAX_GAMES_PER_WEEK_PER_PLAYER = 2
 
-    EXCLUDE_DATES = (
-        datetime.date(2015, 2, 16),  # Family Day
-    )
+    EXCLUDE_DATES = {
+        datetime.date(2015, 2, 16): "Family Day"
+    }
 
     def __init__(self, match_list, start_date):
         self.match_list = match_list
@@ -108,6 +108,7 @@ class FoosballTournamentGenerator:
         players = frozenset(self.match_list.players())
         shuffle(matches)
 
+        coordinator_counts = collections.defaultdict(lambda: 0)
         cur_date = self.start_date
         while len(matches) > 0:
             week_player_counts = collections.defaultdict(lambda: 0)
@@ -117,11 +118,16 @@ class FoosballTournamentGenerator:
                 day_player_counts = collections.defaultdict(lambda: 0)
 
                 # generate matches for the day
-                while True:
-                    match = self._find_match_for_day(matches, day_player_counts, week_player_counts)
-                    if match is None:
-                        break
-                    day.add_match(match)
+                if cur_date in self.EXCLUDE_DATES:
+                    day.date_message = self.EXCLUDE_DATES[cur_date]
+                else:
+                    while True and cur_date:
+                        match = self._find_match_for_day(
+                            matches, day_player_counts, week_player_counts)
+                        if match is None:
+                            break
+                        self._set_match_coordinator(match, coordinator_counts)
+                        day.add_match(match)
                 tournament.add_match_list(day)
 
                 # if any players didn't play today, move them to the end of the list so they get
@@ -134,7 +140,7 @@ class FoosballTournamentGenerator:
                     cur_date = cur_date + datetime.timedelta(days=1)
                     if cur_date.weekday() == 0:
                         new_week = True
-                    if cur_date.weekday() in (0, 2, 4) and cur_date not in self.EXCLUDE_DATES:
+                    if cur_date.weekday() in (0, 2, 4):
                         break
 
                 # if starting a new week, reset the weekly counts
@@ -176,7 +182,19 @@ class FoosballTournamentGenerator:
             del matches[i]
             return match
 
-    def _move_unused_players_to_end(self, matches, player_counts):
+    @staticmethod
+    def _set_match_coordinator(match, coordinator_counts):
+        coordinator = None
+        for player in match.players():
+            cur_count = coordinator_counts[player]
+            if coordinator is None or cur_count < coordinator_count:
+                coordinator = player
+                coordinator_count = cur_count
+        match.coordinator = coordinator
+        coordinator_counts[coordinator] += 1
+
+    @staticmethod
+    def _move_unused_players_to_end(matches, player_counts):
         i = len(matches)
         while i > 0:
             i -= 1
@@ -199,6 +217,7 @@ class FoosballMatch:
     def __init__(self, team1, team2):
         self.team1 = team1
         self.team2 = team2
+        self.coordinator = None
 
     def teams(self):
         yield self.team1
@@ -222,9 +241,10 @@ class FoosballMatch:
 
 class FoosballMatchList:
 
-    def __init__(self, date=None):
+    def __init__(self, date=None, date_message=None):
         self.matches = []
         self.date = date
+        self.date_message = date_message
 
     def add_match(self, match):
         self.matches.append(match)
@@ -493,6 +513,8 @@ class TournamentTextPrinter:
 
             date_str = match_list.date.strftime("%a %b %d")
             self.println("Week {} Day {} {}".format(week_num, day_num, date_str))
+            if match_list.date_message is not None:
+                self.println(match_list.date_message)
             for (match_index, match) in enumerate(match_list):
                 teams_str = " vs. ".join(" & ".join(team.players()) for team in match.teams())
                 self.println("  Match {}: {}".format(match_index + 1, teams_str))
@@ -550,32 +572,125 @@ class TournamentXlsxPrinter:
         self.path = path
 
     def run(self, tournament):
+        players_info = {x: self.PlayerInfo(x) for x in tournament.players()}
         f = xlsxwriter.Workbook(self.path)
-        self.write_schedule(f, tournament)
+        formats = self.Formats(f)
+        self.write_schedule(f, formats, tournament, players_info)
 
-    def write_schedule(self, f, tournament):
+    def write_schedule(self, f, formats, tournament, players_info):
         sheet = f.add_worksheet(self.SHEET_NAME_SCHEDULE)
-        row_number = 0
+        row_index = 0
 
-        format_heading = self.format_hcenter(f)
-        format_heading.set_bold()
-
-        sheet.write_string(row_number, self.COL_SCHEDULE_DATE, "Date", format_heading)
-        sheet.write_string(row_number, self.COL_SCHEDULE_PLAYER1, "Player 1", format_heading)
-        sheet.write_string(row_number, self.COL_SCHEDULE_PLAYER2, "Player 2", format_heading)
-        sheet.write_string(row_number, self.COL_SCHEDULE_POINTS, "Points", format_heading)
-        row_number += 1
+        sheet.write_string(row_index, self.COL_SCHEDULE_DATE, "Date", formats.heading)
+        sheet.write_string(row_index, self.COL_SCHEDULE_PLAYER1, "Player 1", formats.heading)
+        sheet.write_string(row_index, self.COL_SCHEDULE_PLAYER2, "Player 2", formats.heading)
+        sheet.write_string(row_index, self.COL_SCHEDULE_POINTS, "Points", formats.heading)
+        row_index += 1
 
         for match_list in tournament:
-            row_number += 1
-            date_str = match_list.date.strftime("%a %b %d")
-            sheet.write_string(row_number, self.COL_SCHEDULE_DATE, date_str)
 
-    @staticmethod
-    def format_hcenter(workbook):
-        format = workbook.add_format()
-        format.set_align("center")
-        return format
+            # write the date header
+            row_index += 1
+            date_str = match_list.date.strftime("%a %b %d")
+            if match_list.date_message is not None:
+                date_str = "{} ({})".format(date_str, match_list.date_message)
+            for col_index in range(4):
+                sheet.write_blank(row_index, col_index, None, formats.shaded)
+            sheet.write_string(row_index, self.COL_SCHEDULE_DATE, date_str, formats.shaded)
+            row_index += 1
+
+            # write the day's matches
+            day_has_matches = False
+            for match in match_list:
+                day_has_matches = True
+                team_points_cells = []
+
+                teams = tuple(match.teams())
+                for team in teams:
+                    row_index += 1
+                    for (col_index, player) in [
+                        (self.COL_SCHEDULE_PLAYER1, team.player1),
+                        (self.COL_SCHEDULE_PLAYER2, team.player2),
+                    ]:
+                        if player == match.coordinator:
+                            player_str = "{} (MC)".format(player)
+                            player_format = formats.bold
+                        else:
+                            player_str = player
+                            player_format = None
+                        sheet.write_string(row_index, col_index, player_str, player_format)
+                        team_points_cells.append((row_index, self.COL_SCHEDULE_POINTS))
+
+                sheet.write_blank(row_index, self.COL_SCHEDULE_POINTS, None, formats.number)
+
+                # store information about the match for the players
+                for (i, team) in enumerate(teams):
+                    if i == 0:
+                        my_points_cell = team_points_cells[0]
+                        opponent_points_cell = team_points_cells[1]
+                    elif i == 1:
+                        my_points_cell = team_points_cells[1]
+                        opponent_points_cell = team_points_cells[0]
+                    else:
+                        raise AssertionError("invalid i: {!r}".format(i))
+
+                    match_info = self.PlayerInfo.MatchInfo(
+                        match, my_points_cell, opponent_points_cell)
+                    for player in team.players():
+                        players_info[player].matches.append(match_info)
+
+                row_index += 1
+
+            if not day_has_matches:
+                row_index += 1
+                sheet.write_string(row_index, 0, "no matches today", formats.italic)
+                row_index += 1
+
+    class PlayerInfo:
+
+        def __init__(self, name):
+            self.name = name
+            self.matches = []
+
+        def __str__(self):
+            return "{}".format(self.name)
+
+        class MatchInfo:
+
+            def __init__(self, match, my_points_cell, opponent_points_cell):
+                self.match = match
+                self.my_points_cell = my_points_cell
+                self.opponent_points_cell = opponent_points_cell
+
+    class Formats:
+
+        # Microsoft Excel built-in number formats
+        NUM_FORMAT_NUMBER = 1  # e.g. 0
+        NUM_FORMAT_PERCENTAGE_NO_DECIMALS = 9  # e.g. 5%
+        NUM_FORMAT_PERCENTAGE_TWO_DECIMALS = 10  # e.g. 5.25%
+
+        def __init__(self, f):
+            self.heading = f.add_format()
+            self.heading.set_align("center")
+            self.heading.set_bold()
+
+            self.shaded = f.add_format()
+            self.shaded.set_bg_color("#D3D3D3")
+
+            self.italic = f.add_format()
+            self.italic.set_italic()
+
+            self.bold = f.add_format()
+            self.bold.set_bold()
+
+            self.number = f.add_format()
+            self.number.set_num_format(self.NUM_FORMAT_NUMBER)
+
+            self.percent_0_decimals = f.add_format()
+            self.percent_0_decimals.set_num_format(self.NUM_FORMAT_PERCENTAGE_NO_DECIMALS)
+
+            self.percent_2_decimals = f.add_format()
+            self.percent_2_decimals.set_num_format(self.NUM_FORMAT_PERCENTAGE_TWO_DECIMALS)
 
 def shuffle(seq):
     for i in range(len(seq) - 1):
