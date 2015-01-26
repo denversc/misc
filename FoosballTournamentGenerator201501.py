@@ -124,6 +124,10 @@ class FoosballTournamentGenerator:
                     if cur_date.weekday() in (0, 2, 4):
                         break
 
+                # if any players didn't play today, move them to the end of the list so they get
+                # preference in the next day
+                self._move_unused_players_to_end(matches, day_player_counts)
+
                 # if starting a new week, reset the weekly counts
                 if cur_date.weekday() == 0:
                     break
@@ -137,27 +141,49 @@ class FoosballTournamentGenerator:
             match = matches[i]
 
             # make sure no players have already maxxed out their max games per day
-            skip_match_due_to_daily_max = False
             for player in match.players():
                 if day_occurrence_counts[player] >= self.MAX_GAMES_PER_DAY_PER_PLAYER:
                     skip_match_due_to_daily_max = True
                     break
+            else:
+                skip_match_due_to_daily_max = False
             if skip_match_due_to_daily_max:
                 continue
 
             # make sure no players have already maxxed out their max games per week
-            skip_match_due_to_weekly_max = False
             for player in match.players():
                 if week_occurrence_counts[player] >= self.MAX_GAMES_PER_WEEK_PER_PLAYER:
                     skip_match_due_to_weekly_max = True
                     break
+            else:
+                skip_match_due_to_weekly_max = False
             if skip_match_due_to_weekly_max:
                 continue
 
             # found a match that meets the criteria; stop searching and return it
+            for player in match.players():
+                day_occurrence_counts[player] += 1
+                week_occurrence_counts[player] += 1
             del matches[i]
             return match
 
+    def _move_unused_players_to_end(self, matches, player_counts):
+        i = len(matches)
+        while i > 0:
+            i -= 1
+            match = matches[i]
+
+            for player in match.players():
+                if player_counts[player] == 0:
+                    break
+            else:
+                continue
+
+            for player in match.players():
+                player_counts[player] += 1
+
+            del matches[i]
+            matches.append(match)
 
 class FoosballMatch:
 
@@ -447,8 +473,17 @@ class TournamentTextPrinter:
     def print_schedule(self, tournament):
         self.println()
         self.println("Tournament Schedule")
-        for (day_index, match_list) in enumerate(tournament):
-            self.println("Day {}".format(day_index + 1))
+        week_num = None
+        day_num = 0
+        for match_list in tournament:
+            day_num += 1
+            if week_num is None:
+                week_num = 1
+            elif match_list.date.weekday() == 0:
+                week_num += 1
+
+            date_str = match_list.date.strftime("%a %b %w")
+            self.println("Week {} Day {} {}".format(week_num, day_num, date_str))
             for (match_index, match) in enumerate(match_list):
                 teams_str = " vs. ".join(" & ".join(team.players()) for team in match.teams())
                 self.println("  Match {}: {}".format(match_index + 1, teams_str))
