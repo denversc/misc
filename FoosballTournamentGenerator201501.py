@@ -577,6 +577,7 @@ class TournamentXlsxPrinter:
         players_info = {x: self.PlayerInfo(x) for x in tournament.players()}
 
         self.write_schedule(f, formats, tournament, players_info)
+        self.write_standings(f, formats, players_info)
         self.write_players(f, formats, players_info)
 
     def write_schedule(self, f, formats, tournament, players_info):
@@ -660,6 +661,47 @@ class TournamentXlsxPrinter:
                 row_index += 1
                 sheet.write_string(row_index, 0, "no matches today", formats.italic)
                 row_index += 1
+
+    def write_standings(self, f, formats, players_info):
+        sheet = f.add_worksheet("Standings")
+        row_index = 0
+
+        class columns:
+            name = 0
+            wins = 1
+            losses = 2
+            win_percentage = 3
+            matches_played = 4
+
+        sheet.write_string(row_index, columns.name, "Name", formats.heading)
+        sheet.write_string(row_index, columns.wins, "Wins", formats.heading)
+        sheet.write_string(row_index, columns.losses, "Losses", formats.heading)
+        sheet.write_string(row_index, columns.win_percentage, "Win %", formats.heading)
+        sheet.write_string(row_index, columns.matches_played, "Matches Played", formats.heading)
+        row_index += 1
+
+        for name in sorted(players_info):
+            player_info = players_info[name]
+            row_index += 1
+
+            wins_formula = "+".join(x.my_points_cell for x in player_info.matches)
+            losses_formula = "+".join(x.opponent_points_cell for x in player_info.matches)
+            matches_played_formula = "+".join(
+                "IF(ISBLANK({}), 0, 1)".format(x.my_points_cell) for x in player_info.matches)
+
+            sheet.write_string(row_index, columns.name, name)
+            sheet.write_formula(row_index, columns.wins, wins_formula, formats.number)
+            wins_cell = xlsxwriter.utility.xl_rowcol_to_cell(row_index, columns.wins)
+            sheet.write_formula(row_index, columns.losses, losses_formula, formats.number)
+            losses_cell = xlsxwriter.utility.xl_rowcol_to_cell(row_index, columns.losses)
+            sheet.write_formula(
+                row_index, columns.matches_played, matches_played_formula, formats.number)
+
+            win_percentage_formula = "{wins}/({wins}+{losses})".format(
+                wins=wins_cell, losses=losses_cell)
+            sheet.write_formula(
+                row_index, columns.win_percentage, win_percentage_formula,
+                formats.percent_0_decimals)
 
     def write_players(self, f, formats, players_info):
         player_names = tuple(players_info)
@@ -772,9 +814,9 @@ class TournamentXlsxPrinter:
                             opponent_counts[player] += 1
 
         partner_counts = [(partner_counts[x], x) for x in partner_counts]
-        partner_counts.sort(reverse=True)
+        partner_counts.sort(key=lambda x: (-x[0], x[1]))
         opponent_counts = [(opponent_counts[x], x) for x in opponent_counts]
-        opponent_counts.sort(reverse=True)
+        opponent_counts.sort(key=lambda x: (-x[0], x[1]))
 
         # Write partners
         row_index += 1
