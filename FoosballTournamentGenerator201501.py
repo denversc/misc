@@ -561,13 +561,6 @@ class TournamentTextPrinter:
 
 class TournamentXlsxPrinter:
 
-    SHEET_NAME_SCHEDULE = "Schedule"
-
-    COL_SCHEDULE_DATE = 0
-    COL_SCHEDULE_PLAYER1 = 1
-    COL_SCHEDULE_PLAYER2 = 2
-    COL_SCHEDULE_POINTS = 3
-
     def __init__(self, path):
         self.path = path
 
@@ -581,13 +574,20 @@ class TournamentXlsxPrinter:
         self.write_players(f, formats, players_info)
 
     def write_schedule(self, f, formats, tournament, players_info):
-        sheet = f.add_worksheet(self.SHEET_NAME_SCHEDULE)
+        class columns:
+            date = 0
+            player1 = 1
+            player2 = 2
+            points = 3
+
+        sheet_name = "Schedule"
+        sheet = f.add_worksheet(sheet_name)
         row_index = 0
 
-        sheet.write_string(row_index, self.COL_SCHEDULE_DATE, "Date", formats.heading)
-        sheet.write_string(row_index, self.COL_SCHEDULE_PLAYER1, "Player 1", formats.heading)
-        sheet.write_string(row_index, self.COL_SCHEDULE_PLAYER2, "Player 2", formats.heading)
-        sheet.write_string(row_index, self.COL_SCHEDULE_POINTS, "Points", formats.heading)
+        sheet.write_string(row_index, columns.date, "Date", formats.heading)
+        sheet.write_string(row_index, columns.player1, "Player 1", formats.heading)
+        sheet.write_string(row_index, columns.player2, "Player 2", formats.heading)
+        sheet.write_string(row_index, columns.points, "Points", formats.heading)
         row_index += 1
 
         for match_list in tournament:
@@ -599,7 +599,7 @@ class TournamentXlsxPrinter:
                 date_str = "{} ({})".format(date_str, match_list.date_message)
             for col_index in range(4):
                 sheet.write_blank(row_index, col_index, None, formats.shaded)
-            sheet.write_string(row_index, self.COL_SCHEDULE_DATE, date_str, formats.shaded)
+            sheet.write_string(row_index, columns.date, date_str, formats.shaded)
             row_index += 1
 
             # write the day's matches
@@ -612,8 +612,8 @@ class TournamentXlsxPrinter:
                 for team in teams:
                     row_index += 1
                     for (col_index, player) in [
-                        (self.COL_SCHEDULE_PLAYER1, team.player1),
-                        (self.COL_SCHEDULE_PLAYER2, team.player2),
+                        (columns.player1, team.player1),
+                        (columns.player2, team.player2),
                     ]:
                         if player == match.coordinator:
                             player_str = "{} (MC)".format(player)
@@ -622,9 +622,9 @@ class TournamentXlsxPrinter:
                             player_str = player
                             player_format = None
                         sheet.write_string(row_index, col_index, player_str, player_format)
-                    team_points_cells.append((row_index, self.COL_SCHEDULE_POINTS))
+                    team_points_cells.append((row_index, columns.points))
 
-                sheet.write_blank(row_index, self.COL_SCHEDULE_POINTS, None, formats.number)
+                sheet.write_blank(row_index, columns.points, None, formats.number)
 
                 # store information about the match for the players
                 for (i, team) in enumerate(teams):
@@ -637,13 +637,13 @@ class TournamentXlsxPrinter:
                     else:
                         raise AssertionError("invalid i: {!r}".format(i))
 
-                    my_points_cell = "{}!{}".format(self.SHEET_NAME_SCHEDULE,
+                    my_points_cell = "{}!{}".format(sheet_name,
                         xlsxwriter.utility.xl_rowcol_to_cell(
                             my_points_rowcol[0], my_points_rowcol[1],
                             row_abs=True, col_abs=True
                         )
                     )
-                    opponent_points_cell = "{}!{}".format(self.SHEET_NAME_SCHEDULE,
+                    opponent_points_cell = "{}!{}".format(sheet_name,
                         xlsxwriter.utility.xl_rowcol_to_cell(
                             opponent_points_rowcol[0], opponent_points_rowcol[1],
                             row_abs=True, col_abs=True
@@ -712,9 +712,22 @@ class TournamentXlsxPrinter:
     def write_player(self, f, formats, name, info, player_names):
         sheet = f.add_worksheet(name)
         row_index = 0
-
         sheet.write_string(row_index, 0, name, formats.bold)
         row_index += 1
+        row_index = self.write_player_schedule(sheet, formats, info, row_index)
+        row_index = self.write_player_partners_and_opponents(
+            sheet, formats, info, player_names, row_index)
+
+    def write_player_schedule(self, sheet, formats, player, row_index):
+        class columns:
+            match_number = 0
+            date = 1
+            wins = 2
+            losses = 3
+            match_coordinator = 4
+            partner = 5
+            opponent1 = 6
+            opponent2 = 7
 
         # Write schedule heading
         row_index += 1
@@ -725,17 +738,18 @@ class TournamentXlsxPrinter:
 
         # Write schedule
         row_index += 1
-        sheet.write_string(row_index, 0, "#", formats.heading)
-        sheet.write_string(row_index, 1, "Date", formats.heading)
-        sheet.write_string(row_index, 2, "Wins", formats.heading)
-        sheet.write_string(row_index, 3, "Losses", formats.heading)
-        sheet.write_string(row_index, 4, "Partner", formats.heading)
-        sheet.write_string(row_index, 5, "Opponent 1", formats.heading)
-        sheet.write_string(row_index, 6, "Opponent 2", formats.heading)
+        sheet.write_string(row_index, columns.match_number, "#", formats.heading)
+        sheet.write_string(row_index, columns.date, "Date", formats.heading)
+        sheet.write_string(row_index, columns.wins, "Wins", formats.heading)
+        sheet.write_string(row_index, columns.losses, "Losses", formats.heading)
+        sheet.write_string(row_index, columns.match_coordinator, "MC", formats.heading)
+        sheet.write_string(row_index, columns.partner, "Partner", formats.heading)
+        sheet.write_string(row_index, columns.opponent1, "Opponent 1", formats.heading)
+        sheet.write_string(row_index, columns.opponent2, "Opponent 2", formats.heading)
 
         first_match_row = None
         last_match_row = None
-        for (match_index, match_info) in enumerate(info.matches):
+        for (match_index, match_info) in enumerate(player.matches):
             row_index += 1
             if first_match_row is None:
                 first_match_row = row_index
@@ -746,72 +760,87 @@ class TournamentXlsxPrinter:
             win_formula = winloss_template.format(match_info.my_points_cell)
             loss_formula = winloss_template.format(match_info.opponent_points_cell)
 
-            if match_info.match.team1.includes_player(name):
+            if match_info.match.team1.includes_player(player.name):
                 my_team = match_info.match.team1
                 other_team = match_info.match.team2
             else:
                 my_team = match_info.match.team2
                 other_team = match_info.match.team1
 
-            partner = my_team.player1 if my_team.player1 != name else my_team.player2
+            match_coordinator = "X" if match_info.match.coordinator == player.name else ""
+            partner = my_team.player1 if my_team.player1 != player.name else my_team.player2
             opponent1 = other_team.player1
             opponent2 = other_team.player2
 
-            sheet.write_string(row_index, 0, "{}".format(match_index + 1))
-            sheet.write_string(row_index, 1, match_date_str)
-            sheet.write_formula(row_index, 2, win_formula)
-            sheet.write_formula(row_index, 3, loss_formula)
-            sheet.write_string(row_index, 4, partner)
-            sheet.write_string(row_index, 5, opponent1)
-            sheet.write_string(row_index, 6, opponent2)
+            sheet.write_string(row_index, columns.match_number, "{}".format(match_index + 1))
+            sheet.write_string(row_index, columns.date, match_date_str)
+            sheet.write_formula(row_index, columns.wins, win_formula)
+            sheet.write_formula(row_index, columns.losses, loss_formula)
+            sheet.write_string(
+                row_index, columns.match_coordinator, match_coordinator, formats.center)
+            sheet.write_string(row_index, columns.partner, partner)
+            sheet.write_string(row_index, columns.opponent1, opponent1)
+            sheet.write_string(row_index, columns.opponent2, opponent2)
         row_index += 1
 
         # Write schedule totals
         total_wins_formula = "=SUM({}:{})".format(
-            xlsxwriter.utility.xl_rowcol_to_cell(first_match_row, 2, row_abs=True, col_abs=True),
-            xlsxwriter.utility.xl_rowcol_to_cell(last_match_row, 2, row_abs=True, col_abs=True),
+            xlsxwriter.utility.xl_rowcol_to_cell(
+                first_match_row, columns.wins, row_abs=True, col_abs=True),
+            xlsxwriter.utility.xl_rowcol_to_cell(
+                last_match_row, columns.wins, row_abs=True, col_abs=True),
         )
         total_losses_formula = "=SUM({}:{})".format(
-            xlsxwriter.utility.xl_rowcol_to_cell(first_match_row, 3, row_abs=True, col_abs=True),
-            xlsxwriter.utility.xl_rowcol_to_cell(last_match_row, 3, row_abs=True, col_abs=True),
+            xlsxwriter.utility.xl_rowcol_to_cell(
+                first_match_row, columns.losses, row_abs=True, col_abs=True),
+            xlsxwriter.utility.xl_rowcol_to_cell(
+                last_match_row, columns.losses, row_abs=True, col_abs=True),
         )
 
         row_index += 1
         sheet.write_string(row_index, 0, "TOTALS:", formats.bold)
-        sheet.write_formula(row_index, 2, total_wins_formula)
-        sheet.write_formula(row_index, 3, total_losses_formula)
+        sheet.write_formula(row_index, columns.wins, total_wins_formula)
+        sheet.write_formula(row_index, columns.losses, total_losses_formula)
 
         # Write schedule percentages
         percent_template = "={0}/({0}+{1})"
         percent_wins_formula = percent_template.format(
-            xlsxwriter.utility.xl_rowcol_to_cell(row_index, 2, row_abs=True, col_abs=True),
-            xlsxwriter.utility.xl_rowcol_to_cell(row_index, 3, row_abs=True, col_abs=True),
+            xlsxwriter.utility.xl_rowcol_to_cell(
+                row_index, columns.wins, row_abs=True, col_abs=True),
+            xlsxwriter.utility.xl_rowcol_to_cell(
+                row_index, columns.losses, row_abs=True, col_abs=True),
         )
         percent_losses_formula = percent_template.format(
-            xlsxwriter.utility.xl_rowcol_to_cell(row_index, 3, row_abs=True, col_abs=True),
-            xlsxwriter.utility.xl_rowcol_to_cell(row_index, 2, row_abs=True, col_abs=True),
+            xlsxwriter.utility.xl_rowcol_to_cell(
+                row_index, columns.losses, row_abs=True, col_abs=True),
+            xlsxwriter.utility.xl_rowcol_to_cell(
+                row_index, columns.wins, row_abs=True, col_abs=True),
         )
 
         row_index += 1
-        sheet.write_formula(row_index, 2, percent_wins_formula, formats.percent_0_decimals)
-        sheet.write_formula(row_index, 3, percent_losses_formula, formats.percent_0_decimals)
-
+        sheet.write_formula(
+            row_index, columns.wins, percent_wins_formula, formats.percent_0_decimals)
+        sheet.write_formula(
+            row_index, columns.losses, percent_losses_formula, formats.percent_0_decimals)
         row_index += 1
 
+        return row_index
+
+    def write_player_partners_and_opponents(self, sheet, formats, player, player_names, row_index):
         # Calculate partners and opponents
         partner_counts = {x:0 for x in player_names}
         opponent_counts = {x:0 for x in player_names}
-        for match_info in info.matches:
+        for match_info in player.matches:
             match = match_info.match
             for team in match.teams():
-                if team.includes_player(name):
-                    for player in team.players():
-                        if player != name:
-                            partner_counts[player] += 1
+                if team.includes_player(player.name):
+                    for cur_player_name in team.players():
+                        if cur_player_name != player.name:
+                            partner_counts[cur_player_name] += 1
                 else:
-                    for player in team.players():
-                        if player != name:
-                            opponent_counts[player] += 1
+                    for cur_player_name in team.players():
+                        if cur_player_name != player.name:
+                            opponent_counts[cur_player_name] += 1
 
         partner_counts = [(partner_counts[x], x) for x in partner_counts]
         partner_counts.sort(key=lambda x: (-x[0], x[1]))
@@ -826,7 +855,7 @@ class TournamentXlsxPrinter:
         row_index += 1
 
         for (count, partner) in partner_counts:
-            if partner == name:
+            if partner == player.name:
                 continue
             row_index += 1
             sheet.write_string(row_index, 0, partner)
@@ -841,7 +870,7 @@ class TournamentXlsxPrinter:
         row_index += 1
 
         for (count, opponent) in opponent_counts:
-            if opponent == name:
+            if opponent == player.name:
                 continue
             row_index += 1
             sheet.write_string(row_index, 0, opponent)
@@ -894,6 +923,9 @@ class TournamentXlsxPrinter:
 
             self.percent_2_decimals = f.add_format()
             self.percent_2_decimals.set_num_format(self.NUM_FORMAT_PERCENTAGE_TWO_DECIMALS)
+
+            self.center = f.add_format()
+            self.center.set_align("center")
 
 def shuffle(seq):
     for i in range(len(seq) - 1):
