@@ -54,7 +54,7 @@ public class WakerService extends Service {
             }
         }
 
-        return START_STICKY;
+        return START_REDELIVER_INTENT;
     }
 
     @Override
@@ -124,14 +124,14 @@ public class WakerService extends Service {
         @Override
         public void isKeepingAwake(@NonNull BooleanResultCallback callback) {
             logD(LOG_TAG, "isKeepingAwake() callback=" + callback);
-            sendMessage(HandlerCallbackImpl.MSG_IS_KEEPING_AWAKEED, callback);
+            sendMessage(HandlerCallbackImpl.MSG_IS_KEEPING_AWAKE, callback);
         }
 
         @Override
         public void setKeepAwake(boolean value) {
             logD(LOG_TAG, "setKeepingAwake() " + value);
             final int arg1 = value ? 1 : 0;
-            sendMessage(HandlerCallbackImpl.MSG_SET_KEEP_AWAKEED, arg1);
+            sendMessage(HandlerCallbackImpl.MSG_SET_KEEP_AWAKE, arg1);
         }
 
         private void sendMessage(int what, @Nullable Object obj) {
@@ -159,20 +159,21 @@ public class WakerService extends Service {
 
     private class HandlerCallbackImpl implements Handler.Callback {
 
-        public static final int MSG_IS_KEEPING_AWAKEED = 1;
-        public static final int MSG_SET_KEEP_AWAKEED = 2;
+        public static final int MSG_IS_KEEPING_AWAKE = 1;
+        public static final int MSG_SET_KEEP_AWAKE = 2;
 
         @Override
         public boolean handleMessage(Message msg) {
             switch (msg.what) {
-                case MSG_IS_KEEPING_AWAKEED: {
+                case MSG_IS_KEEPING_AWAKE: {
                     final BooleanResultCallback callback = (BooleanResultCallback) msg.obj;
                     final boolean isKeepingAwake = isKeepingAwake();
                     callback.setResult(isKeepingAwake);
                     return true;
                 }
-                case MSG_SET_KEEP_AWAKEED: {
+                case MSG_SET_KEEP_AWAKE: {
                     final boolean value = (msg.arg1 == 1) ? true : false;
+                    setKeepAwake(value);
                     return true;
                 }
                 default:
