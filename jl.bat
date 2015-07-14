@@ -1,1 +1,0 @@
-javaloader -u load %*
