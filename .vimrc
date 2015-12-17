@@ -15,6 +15,7 @@ set expandtab
 set smarttab
 set autoindent
 set nobackup
+set cursorline
 
 set hlsearch
 set incsearch
