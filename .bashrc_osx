@@ -1,0 +1,6 @@
+export PS1='\u \[\033[32;1m\]\w\[\033[m\] $ '
+
+export CLICOLOR=1
+export LSCOLORS=GxFxCxDxBxegedabagaced
+
+export PATH=$PATH:$HOME/misc
