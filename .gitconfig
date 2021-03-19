@@ -12,6 +12,7 @@
 	dtc = difftool --cached
 	dc = diff --cached
 	st = status
+	lf = diff-tree --no-commit-id --name-only -r
 [push]
 	default = upstream
 [pull]
