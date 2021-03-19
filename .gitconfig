@@ -1,19 +1,19 @@
 [user]
-	name = Denver Coneybeare
+  name = Denver Coneybeare
 [color]
-	ui = auto
+  ui = auto
 [core]
-	eol = nl
-	editor = vim
+  eol = nl
+  editor = vim
 [alias]
-	su = status -uall
-	co = checkout
-	dt = difftool
-	dtc = difftool --cached
-	dc = diff --cached
-	st = status
-	lf = diff-tree --no-commit-id --name-only -r
+  su = status -uall
+  co = checkout
+  dt = difftool
+  dtc = difftool --cached
+  dc = diff --cached
+  st = status
+  lf = diff-tree --no-commit-id --name-only -r
 [push]
-	default = upstream
+  default = upstream
 [pull]
-	ff = only
+  ff = only
