@@ -4,13 +4,15 @@ set nocompatible
 call pathogen#infect()
 call pathogen#helptags()
 
+set dir=/Users/dconeybe/.vimswap
 colorscheme Tomorrow-Night-Bright
 
 syntax on
 
-set tabstop=4
-set softtabstop=4
-set shiftwidth=4
+set autoread
+set tabstop=2
+set softtabstop=2
+set shiftwidth=2
 set expandtab
 set smarttab
 set autoindent
