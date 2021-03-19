@@ -8,6 +8,8 @@
 [alias]
 	su = status -uall
 	co = checkout
+	dt = difftool
+	dtc = difftool --cached
 	dc = diff --cached
 	st = status
 [push]
