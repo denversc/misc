@@ -1,33 +1,20 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import io
+import logging
 import os
+import pathlib
 import shutil
 import subprocess
-import sys
-import urllib2
-
-###############################################################################
+import urllib.request
 
 def main():
+    logging.basicConfig(level=logging.INFO)
     app = VimSetup()
     app.run()
-    return 0
 
-###############################################################################
+class VimSetup:
 
-class VimSetup(object):
-
-    def __init__(self, log_func=print):
-        self.log_func = log_func
-
-    def run(self):
-        src_dir_path = os.path.abspath(".")
-        dest_dir_path = os.path.expanduser("~")
+    def run(self) -> None:
+        src_dir_path = pathlib.Path.cwd()
+        dest_dir_path = pathlib.Path.home()
         self.create_rc_files(src_dir_path, dest_dir_path)
         autoload_dir_path = self.create_autoload_dir(dest_dir_path)
         self.install_pathogen(autoload_dir_path)
@@ -35,36 +22,37 @@ class VimSetup(object):
         self.install_tomorrow_theme(bundle_dir_path)
         self.install_easymotion(bundle_dir_path)
 
-    def create_rc_files(self, src_dir_path, dest_dir_path):
+    def create_rc_files(self, src_dir_path: pathlib.Path, dest_dir_path: pathlib.Path) -> None:
         for filename in (".vimrc", ".gvimrc"):
-            dest_path = os.path.join(dest_dir_path, filename)
-            src_path = os.path.join(src_dir_path, filename)
-            self.log("Creating {}".format(dest_path))
-            with io.open(dest_path, "wt", encoding="utf-8") as f:
-                print("source {}".format(src_path), file=f)
+            dest_path = dest_dir_path / filename
+            src_path = src_dir_path / filename
+            logging.info("Creating %s", dest_path)
+            with dest_path.open("wt", encoding="utf-8") as f:
+                print(f"source {src_path}", file=f)
 
-    def create_autoload_dir(self, dest_dir_path):
+    def create_autoload_dir(self, dest_dir_path: pathlib.Path) -> pathlib.Path:
         if os.name == "nt":
-            path = os.path.join(dest_dir_path, "vimfiles", "autoload")
+            path = dest_dir_path / "vimfiles" / "autoload"
         elif os.name == "posix":
-            path = os.path.join(dest_dir_path, ".vim", "autoload")
+            path = dest_dir_path / ".vim" / "autoload"
         else:
-            raise self.Error("unsupported OS: {}".format(os.name))
-        self.mkdir(path)
+            raise self.Error(f"unsupported OS: {os.name}")
+        logging.info("Creating directory: %s", path)
+        path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def install_pathogen(self, autoload_dir_path):
-        self.log("Installing pathogen.vim")
-        pathogen_vim_path = os.path.join(autoload_dir_path, "pathogen.vim")
+    def install_pathogen(self, autoload_dir_path: pathlib.Path) -> None:
+        logging.info("Installing pathogen.vim")
+        pathogen_vim_path = autoload_dir_path / "pathogen.vim"
         pathogen_vim_url = "https://raw.github.com/tpope/vim-pathogen/" \
             "master/autoload/pathogen.vim"
         self.download_file(pathogen_vim_url, pathogen_vim_path)
 
-    def download_file(self, url, dest_path):
-        self.log("Downloading {} to {}".format(url, dest_path))
-        infile = urllib2.urlopen(url)
+    def download_file(self, url: str, dest_path: pathlib.Path) -> None:
+        logging.info("Downloading %s to %s", url, dest_path)
+        infile = urllib.request.urlopen(url)
         try:
-            with io.open(dest_path, "wb") as outfile:
+            with dest_path.open("wb") as outfile:
                 while True:
                     buf = infile.read(2048)
                     if len(buf) == 0:
@@ -73,58 +61,41 @@ class VimSetup(object):
         finally:
             infile.close()
 
-    def create_bundle_dir(self, dest_dir_path):
+    def create_bundle_dir(self, dest_dir_path: pathlib.Path) -> pathlib.Path:
         if os.name == "nt":
-            path = os.path.join(dest_dir_path, "vimfiles", "bundle")
+            path = dest_dir_path / "vimfiles" / "bundle"
         elif os.name == "posix":
-            path = os.path.join(dest_dir_path, ".vim", "bundle")
+            path = dest_dir_path / ".vim" / "bundle"
         else:
-            raise self.Error("unsupported OS: {}".format(os.name))
-        self.mkdir(path)
+            raise self.Error(f"unsupported OS: {os.name}")
+        logging.info("Creating directory: %s", path)
+        path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def install_tomorrow_theme(self, bundle_dir_path):
-        self.log("Installing Tomorrow Night color scheme")
-        install_dir_path = os.path.join(bundle_dir_path, "vim-tomorrow-theme",
-            "colors")
-        self.mkdir(install_dir_path)
+    def install_tomorrow_theme(self, bundle_dir_path: pathlib.Path) -> None:
+        logging.info("Installing Tomorrow Night color scheme")
+        install_dir_path = bundle_dir_path / "vim-tomorrow-theme" / "colors"
+        logging.info("Creating directory: %s", install_dir_path)
+        install_dir_path.mkdir(parents=True, exist_ok=True)
         vim_url = "https://raw.github.com/chriskempson/tomorrow-theme/" \
             "master/vim/colors/Tomorrow-Night-Bright.vim"
-        vim_path = os.path.join(install_dir_path, "Tomorrow-Night-Bright.vim")
+        vim_path = install_dir_path / "Tomorrow-Night-Bright.vim"
         self.download_file(vim_url, vim_path)
 
-    def install_easymotion(self, bundle_dir_path):
+    def install_easymotion(self, bundle_dir_path: pathlib.Path) -> None:
         git_repo_url = "https://github.com/Lokaltog/vim-easymotion.git"
-        install_dir_path = os.path.join(bundle_dir_path, "easymotion")
-        if os.path.isdir(install_dir_path):
-            self.log("Deleting directory: {}".format(install_dir_path))
+        install_dir_path = bundle_dir_path / "easymotion"
+        if install_dir_path.is_dir():
+            logging.info("Deleting directory: %s", install_dir_path)
             shutil.rmtree(install_dir_path)
         self.git_clone(git_repo_url, install_dir_path)
 
-    def mkdir(self, path):
-        self.log("Creating directory: {}".format(path))
-        if not os.path.isdir(path):
-            os.makedirs(path)
+    def git_clone(self, repo_url: str, dest_dir_path: pathlib.Path) -> None:
+        logging.info("Cloning Git repository %s into %s", repo_url, dest_dir_path)
+        args = ["git", "clone", repo_url, str(dest_dir_path)]
+        logging.info("Running command: %s", subprocess.list2cmdline(args))
+        subprocess.check_call(args)
 
-    def git_clone(self, repo_url, dest_dir_path):
-        self.log("Cloning Git repository {} into {}"
-            .format(repo_url, dest_dir_path))
-        args = ["git", "clone", repo_url, dest_dir_path]
-        args_str = subprocess.list2cmdline(args)
-        self.log(args_str)
-        process = subprocess.Popen(args)
-        process.wait()
-        if process.returncode != 0:
-            raise Exception("command completed with non-zero exit code {}: {}"
-                .format(process.returncode, args_str))
-
-    def log(self, message):
-        log_func = self.log_func
-        if log_func is not None:
-            log_func(message)
-
-###############################################################################
 
 if __name__ == "__main__":
-    exit_code = main()
-    sys.exit(exit_code)
+    main()
