@@ -4,7 +4,7 @@
   ui = auto
 [core]
   eol = nl
-  editor = vim
+  editor = nvim
 [alias]
   su = status -uall
   co = checkout
