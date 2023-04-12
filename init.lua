@@ -27,3 +27,21 @@ vim.opt.wrap = false
 
 -- Show line numbers in the right column.
 vim.opt.number = true
+
+-- Set some GUI options for Neovide.
+if vim.g.neovide then
+  vim.opt.guifont = 'Monospace:h16'
+
+  -- Whether the mouse will be hidden upon starting to type.
+  -- Moving the mouse makes it visible again.
+  -- https://neovide.dev/configuration.html#hiding-the-mouse-when-typing
+  vim.g.neovide_hide_mouse_when_typing = true
+
+  -- Determines whether the window size from the previous session will be used on startup.
+  -- https://neovide.dev/configuration.html#remember-previous-window-size
+  vim.g.neovide_remember_window_size = true
+
+  -- The time it takes for the cursor to complete it's animation, in seconds. Set to 0 to disable.
+  -- https://neovide.dev/configuration.html#animation-length
+  vim.g.neovide_cursor_animation_length = 0
+end
