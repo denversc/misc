@@ -30,7 +30,11 @@ vim.opt.number = true
 
 -- Set some GUI options for Neovide.
 if vim.g.neovide then
-  vim.opt.guifont = 'Monospace:h16'
+  if vim.fn.has('mac') == 1 then
+    vim.opt.guifont = 'PT Mono:h16'
+  else
+    vim.opt.guifont = 'Monospace:h16'
+  end
 
   -- Whether the mouse will be hidden upon starting to type.
   -- Moving the mouse makes it visible again.
