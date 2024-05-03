@@ -43,7 +43,7 @@ func parseArgs() (parsedArgs ParsedArgs, err error) {
 
 	args := os.Args[1:]
 	if len(args) == 0 {
-		parsedArgs.Length = 6
+		parsedArgs.Length = 10
 	} else if len(args) > 1 {
 		err = fmt.Errorf("unexpected argument: %v", args[1])
 	} else {
