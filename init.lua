@@ -56,4 +56,8 @@ if vim.g.neovide then
   -- The time it takes for the cursor to complete it's animation, in seconds. Set to 0 to disable.
   -- https://neovide.dev/configuration.html#animation-length
   vim.g.neovide_cursor_animation_length = 0
+
+  -- How long the scroll animation takes to complete, measured in seconds. Set to 0 to disable.
+  -- https://neovide.dev/configuration.html#scroll-animation-length
+  vim.g.neovide_scroll_animation_length = 0
 end
