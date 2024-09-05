@@ -3,7 +3,7 @@
 [color]
   ui = auto
 [core]
-  eol = nl
+  eol = lf
   editor = nvim
 [alias]
   su = status -uall
