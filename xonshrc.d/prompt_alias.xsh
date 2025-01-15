@@ -10,6 +10,8 @@ def hostname_color():
   match $HOSTNAME:
     case "dconeybe2.c.googlers.com":
       return "GREEN"
+    case "dconeybe-macbookpro3.roam.internal":
+      return "BLUE"
   return "RED"
 
 $PROMPT = ("{BACKGROUND_" + hostname_color() + "}{WHITE}{user}@{hostname}{RESET} "
