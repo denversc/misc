@@ -8,12 +8,20 @@ xontrib load coreutils
 # See https://docs.python.org/3.13/library/time.html#time.strftime
 $PROMPT_FIELDS["time_format"] = "%a %b %d, %Y %H:%M:%S"
 
-$PROMPT = ("{BACKGROUND_RED}{WHITE}{user}@{hostname}{RESET} "
+def hostname_color():
+  match $HOSTNAME:
+    case "dconeybe2.c.googlers.com":
+      return "GREEN"
+  return "RED"
+
+$PROMPT = ("{BACKGROUND_" + hostname_color() + "}{WHITE}{user}@{hostname}{RESET} "
   "{BOLD_YELLOW}{cwd}{RESET}"
   "{branch_color}{curr_branch: {}}{RESET}"
   "{RED}{last_return_code_if_nonzero: [retcode={BOLD_INTENSE_RED}{}{RED}]{RESET}}"
   "\n{BOLD_BLUE}{prompt_end}{RESET} "
 )
+
+del hostname_color
 
 $RIGHT_PROMPT = "{FAINT_WHITE}[{localtime}]"
 
