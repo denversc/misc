@@ -1,3 +1,4 @@
 .bash_history
 .gitconfig
 *.swp
+__pycache__/
