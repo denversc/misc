@@ -1,31 +1,32 @@
 import argparse
+import io
 import os
 import random
 import subprocess
 import textwrap
 
 from collections.abc import Sequence
-from typing import NamedTuple
+from typing import NamedTuple, TextIO
+
+from dconeybe.xonsh.aliases.typing import ExitCode, SubprocessSpec
 
 
-class RndResult(NamedTuple):
-  stdout: str | None
-  stderr: str | None
-  exit_code: int
-
-
-def rnd(args: Sequence[str]) -> RndResult | str:
-  arg_parser = _RndArgumentParser()
+def rnd(
+  args: Sequence[str],
+  stdout: TextIO,
+  stderr: TextIO,
+  spec: SubprocessSpec,
+) -> ExitCode | None:
+  arg_parser = _RndArgumentParser(spec.args[0])
   try:
     parsed_args = arg_parser.parse_args(args)
   except argparse.ArgumentError as e:
-    message = textwrap.dedent(f"""
-      ERROR: {e}
-      Run with -h/--help for help.
-    """).strip()
-    return (None, message, 2)
+    print(f"ERROR: {e}", file=stderr)
+    print("Run with -h/--help for help.", file=stderr)
+    return 2
   except arg_parser.Exit as e:
-    return (None, e.message, e.status)
+    print(e.message, file=stdout if e.status == 0 else stderr)
+    return e.status
     
   if parsed_args.generate_type in (None, "string"):
     random_characters = random.choices(_ALPHABET, k=parsed_args.length)
@@ -47,7 +48,7 @@ def rnd(args: Sequence[str]) -> RndResult | str:
       + " (error code apd622j9pz)"
     )
 
-  return str(result)
+  print(result, file=stdout)
 
 
 _ALPHABET_LETTERS = "abcdefghjkmnpqrstvwxyz"
@@ -56,9 +57,9 @@ _ALPHABET = _ALPHABET_LETTERS + _ALPHABET_NUMBERS
 
 
 class _RndArgumentParser(argparse.ArgumentParser):
-  def __init__(self):
+  def __init__(self, prog: str) -> None:
     super().__init__(
-      prog="rnd",
+      prog=prog,
       usage="%(prog)s [options] [--help]",
       exit_on_error=False,
     )

@@ -21,6 +21,10 @@ del prompt, dconeybe_prompt
 # https://xon.sh/tutorial.html#aliases
 ###############################################################################
 
-from dconeybe.xonsh import rnd as dconeybe_rnd
+from dconeybe.xonsh.aliases import rnd as dconeybe_rnd
 aliases["rnd"] = dconeybe_rnd.rnd
 del dconeybe_rnd
+
+from dconeybe.xonsh.aliases import abspath as dconeybe_abspath
+aliases["abspath"] = dconeybe_abspath.abspath
+del dconeybe_abspath
