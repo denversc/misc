@@ -1,0 +1,36 @@
+name: xonshlib
+
+on:
+  workflow_dispatch:
+    inputs:
+      pythonVersion:
+  pull_request:
+    paths:
+      - xonshlib/**
+      - .github/workflows/xonshlib.yml
+  schedule:
+    - cron: '0 11 * * *' # Run nightly at 11am UTC (3am Pacific, 6am Eastern)
+
+env:
+  XONSHLIB_PYTHON_VERSION: ${{ inputs.pythonVersion || '17' }}
+
+defaults:
+  run:
+    shell: bash
+    working-directory: xonshlib
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    continue-on-error: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.XONSHLIB_PYTHON_VERSION }}
+      - run: pip install -r requirements.txt
+      - name: pytest
