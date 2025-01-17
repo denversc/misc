@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pytest:
+  pytest (unit tests):
     continue-on-error: false
     runs-on: ubuntu-latest
     steps:
@@ -35,3 +35,39 @@ jobs:
       - run: pip install -r requirements.txt
       - name: pytest
         run: pytest --verbose --full-trace --color=no --strict-config
+
+  pyink (code format):
+    continue-on-error: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.XONSHLIB_PYTHON_VERSION }}
+      - run: pip install -r requirements.txt
+      - name: pyink
+        run: pyink --check --verbose --no-color .
+
+  pyright (type annotation check):
+    continue-on-error: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.XONSHLIB_PYTHON_VERSION }}
+      - run: pip install -r requirements.txt
+      - name: pyright
+        run: pyright --verbose --warnings
+
+  flake8 (code linter):
+    continue-on-error: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.XONSHLIB_PYTHON_VERSION }}
+      - run: pip install -r requirements.txt
+      - name: flake8
+        run: flake8 --verbose --color=never --count --show-source --doctests
