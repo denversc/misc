@@ -16,7 +16,6 @@ class Prompt:
     return (
       "{BACKGROUND_" + self._hostname_color() + "}{WHITE}{user}@{hostname}{RESET} "
       "{BOLD_YELLOW}{cwd}{RESET}"
-      "{BOLD_WHITE}{curr_branch: [git_branch={}]}{RESET}"
       "{RED}{last_return_code_if_nonzero: [retcode={BOLD_INTENSE_RED}{}{RED}]{RESET}}"
       "\n{BOLD_BLUE}{prompt_end}{RESET} "
     )
