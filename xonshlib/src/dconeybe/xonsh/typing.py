@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Protocol, NamedTuple, NewType
 
 class SubprocessSpec(Protocol):
-  args: tuple[str]
+  args: Sequence[str]
 
 ExitCode = NewType('ExitCode', int)
 
@@ -19,7 +20,6 @@ class StdoutStderrExitCode(NamedTuple):
   stdout: str | None
   stderr: str | None
   exit_code: ExitCode
-
 
 # See https://xon.sh/tutorial.html#callable-aliases
 CallableAliasResult = (

@@ -1,6 +1,7 @@
+from collections.abc import Sequence
 import dataclasses
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class FakeSubprocessSpec:
-  args: tuple[str]
+  args: Sequence[str]
 

@@ -22,7 +22,7 @@ def rnd(
   arg_parse_result = arg_parser.parse_args(args, stdout, stderr)
   if isinstance(arg_parse_result, int):
     return ExitCode(arg_parse_result)
-  parsed_args: _RndArgumentParser.ParsedArgs = arg_parse_result
+  parsed_args: _RndParsedArgs = arg_parse_result
   del arg_parser
   del arg_parse_result
     
@@ -42,7 +42,8 @@ def rnd(
     case "uint64":
       result = random.randint(0, 2**64)
     case _ as generate_type:
-      typing.assert_never(
+      typing.assert_never(parsed_args.generate_type)
+      raise Exception(
         f"unsupported generate_type: {generate_type}"
         + " (error code apd622j9pz)"
       )
@@ -56,12 +57,13 @@ _ALPHABET_NUMBERS = "23456789"
 _ALPHABET = _ALPHABET_LETTERS + _ALPHABET_NUMBERS
 
 
-class _RndArgumentParser(AliasArgumentParser["_RndArgumentParser.ParsedArgs"]):
+class _RndParsedArgs(Protocol):
+  length: int
+  first_char_alpha: bool
+  generate_type: Literal["string", "int32", "int64", "uint32", "uint64"]
 
-  class ParsedArgs(Protocol):
-    length: int
-    first_char_alpha: bool
-    generate_type: Literal["string", "int32", "int64", "uint32", "uint64"]
+
+class _RndArgumentParser(AliasArgumentParser[_RndParsedArgs]):
 
   def __init__(self, prog: str) -> None:
     super().__init__(

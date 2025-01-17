@@ -28,7 +28,7 @@ def test_should_add_both_of_the_notes_in_order(note1, note2):
   assert exc_info.value.__notes__ == [note1, note2]
 
 @hypothesis.given(st.text(), st.text(), st.text(), st.text())
-def test_should_add_both_of_the_notes_in_order(note1, note2, note3, note4):
+def test_should_add_all_of_the_notes_in_order(note1, note2, note3, note4):
   with pytest.raises(Z3v96tvmw3Error) as exc_info:
     with ExceptionNotes(note1, note2, note3, note4):
       raise Z3v96tvmw3Error()

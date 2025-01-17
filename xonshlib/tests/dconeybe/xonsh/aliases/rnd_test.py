@@ -6,7 +6,7 @@ import dataclasses
 import io
 import os
 import re
-from typing import NamedTuple, Self
+from typing import NamedTuple, Self, Sequence
 
 import hypothesis
 import hypothesis.strategies as st
@@ -200,7 +200,7 @@ class TestRndLengthArgument:
   @hypothesis.given(length=st.text())
   @hypothesis.example(length="")
   @hypothesis_disable_function_scoped_fixture_health_check
-  def test_should_fail_with_non_positive_length(
+  def test_should_fail_with_non_integer_length(
       self,
       rnd_args_factory: RndArgsFactory,
       length: str,
@@ -275,8 +275,8 @@ class TestRndReportsInvalidArgs:
 
 
 class RndArgs(NamedTuple):
-  stdout: io.StringIO()
-  stderr: io.StringIO()
+  stdout: io.StringIO
+  stderr: io.StringIO
   spec: SubprocessSpec
 
   @staticmethod
@@ -284,7 +284,7 @@ class RndArgs(NamedTuple):
     return RndArgs(
         stdout = io.StringIO(),
         stderr = io.StringIO(),
-        spec = FakeSubprocessSpec("cg8xk8mkkb"),
+        spec = FakeSubprocessSpec(["cg8xk8mkkb"]),
     )
 
 

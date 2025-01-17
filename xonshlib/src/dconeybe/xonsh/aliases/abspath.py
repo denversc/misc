@@ -19,7 +19,7 @@ def abspath(
   arg_parse_result = arg_parser.parse_args(args, stdout, stderr)
   if isinstance(arg_parse_result, int):
     return ExitCode(arg_parse_result)
-  parsed_args: _AbspathArgumentParser.ParsedArgs = arg_parse_result
+  parsed_args: _AbspathParsedArgs = arg_parse_result
   del arg_parser
   del arg_parse_result
 
@@ -29,10 +29,10 @@ def abspath(
   return ExitCode(0)
 
 
-class _AbspathArgumentParser(AliasArgumentParser["_AbspathArgumentParser.ParsedArgs"]):
-
-  class ParsedArgs(Protocol):
+class _AbspathParsedArgs(Protocol):
     paths: Sequence[str]
+
+class _AbspathArgumentParser(AliasArgumentParser[_AbspathParsedArgs]):
 
   def __init__(self, prog: str) -> None:
     super().__init__(
