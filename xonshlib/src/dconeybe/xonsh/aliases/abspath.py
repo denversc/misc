@@ -4,7 +4,7 @@ import os
 from collections.abc import Sequence
 from typing import TextIO
 
-from dconeybe.xonsh.aliases.typing import ExitCode, SubprocessSpec
+from dconeybe.xonsh.typing import ExitCode, SubprocessSpec
 
 
 def abspath(

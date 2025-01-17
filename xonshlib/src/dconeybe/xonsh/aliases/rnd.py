@@ -8,7 +8,7 @@ import textwrap
 from collections.abc import Sequence
 from typing import NamedTuple, TextIO
 
-from dconeybe.xonsh.aliases.typing import ExitCode, SubprocessSpec
+from dconeybe.xonsh.typing import ExitCode, SubprocessSpec
 
 
 def rnd(
