@@ -31,7 +31,12 @@ class ExceptionNotes:
   def __enter__(self) -> None:
     pass
 
-  def __exit__(self, exc_type, exc_value, traceback) -> None:
+  def __exit__[T: BaseException](
+      self,
+      exc_type: type[T] | None,
+      exc_value: T | None,
+      traceback: object | None,
+  ) -> None:
     if exc_value is not None:
       for note in self._notes:
         exc_value.add_note(note)

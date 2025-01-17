@@ -16,7 +16,7 @@ def abspath(
   spec: SubprocessSpec,
 ) -> ExitCode:
   arg_parser = _AbspathArgumentParser(spec.args[0])
-  arg_parse_result = arg_parser.parse_args(args, stdout, stderr)
+  arg_parse_result = arg_parser.parse_alias_args(args, stdout, stderr)
   if isinstance(arg_parse_result, int):
     return ExitCode(arg_parse_result)
   parsed_args: _AbspathParsedArgs = arg_parse_result

@@ -5,4 +5,4 @@ testpaths = ["tests"]
 [tool.pyright]
 include = ["**/*.py"]
 extraPaths = ["src", "testing"]
-typeCheckingMode = "basic"
+typeCheckingMode = "strict"

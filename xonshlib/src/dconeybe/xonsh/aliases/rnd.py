@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 import random
 import textwrap
 import typing
@@ -19,7 +18,7 @@ def rnd(
   spec: SubprocessSpec,
 ) -> ExitCode:
   arg_parser = _RndArgumentParser(spec.args[0])
-  arg_parse_result = arg_parser.parse_args(args, stdout, stderr)
+  arg_parse_result = arg_parser.parse_alias_args(args, stdout, stderr)
   if isinstance(arg_parse_result, int):
     return ExitCode(arg_parse_result)
   parsed_args: _RndParsedArgs = arg_parse_result
@@ -27,7 +26,7 @@ def rnd(
   del arg_parse_result
     
   match parsed_args.generate_type:
-    case None | "string":
+    case "string":
       random_characters = random.choices(_ALPHABET, k=parsed_args.length)
       random_characters = list(random_characters)
       if parsed_args.first_char_alpha:

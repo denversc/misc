@@ -20,7 +20,7 @@ class AliasArgumentParser[T](argparse.ArgumentParser):
       self._positive_int_type
     )
 
-  def parse_args(self, args: Sequence[str], stdout: TextIO, stderr: TextIO) -> ExitCode | T:
+  def parse_alias_args(self, args: Sequence[str], stdout: TextIO, stderr: TextIO) -> ExitCode | T:
     try:
       parsed_args = super().parse_args(args)
     except argparse.ArgumentError as e:

@@ -4,7 +4,6 @@ import collections
 from collections.abc import Callable, Iterable
 import dataclasses
 import io
-import os
 import re
 from typing import NamedTuple, Self, Sequence
 
@@ -37,7 +36,7 @@ class TestRndStringGeneratedType:
       rnd.rnd(args, *rnd_args)
       outputs.append(rnd_args.stdout.getvalue().strip())
 
-    counts = collections.defaultdict(lambda: 0)
+    counts: dict[str, int] = collections.defaultdict(lambda: 0)
     for output in outputs:
       counts[output] += 1
     for (output, count) in counts.items():
@@ -125,7 +124,7 @@ class TestRndIntGeneratedTypes:
       rnd.rnd([type_arg.arg], *rnd_args)
       outputs.append(rnd_args.stdout.getvalue().strip())
 
-    counts = collections.defaultdict(lambda: 0)
+    counts: dict[str, int] = collections.defaultdict(lambda: 0)
     for output in outputs:
       counts[output] += 1
     for (output, count) in counts.items():
@@ -249,7 +248,7 @@ class TestRndFirstCharAlphaArgument:
 
   def test_no_first_char_alpha_specified(self, rnd_args_factory: RndArgsFactory):
     generated_strings: list[str] = []
-    for i in range(100):
+    for _ in range(100):
       rnd_args = rnd_args_factory()
       rnd.rnd(["--no-first-char-alpha"], *rnd_args)
       generated_strings.append(rnd_args.stdout.getvalue().strip())
