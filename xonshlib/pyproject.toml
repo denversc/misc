@@ -1,3 +1,6 @@
+[project]
+requires-python = ">= 3.13"
+
 [tool.pytest.ini_options]
 pythonpath = ["src", "testing"]
 testpaths = ["tests"]
@@ -6,3 +9,7 @@ testpaths = ["tests"]
 include = ["**/*.py"]
 extraPaths = ["src", "testing"]
 typeCheckingMode = "strict"
+
+[tool.pyink]
+line-length = 100
+pyink-indentation = 2

@@ -12,10 +12,13 @@ import hypothesis.strategies as st
 import pytest
 
 from dconeybe.testing.assertions import contains_with_non_abutting_text
-from dconeybe.testing.hypothesis import disable_function_scoped_fixture_health_check as hypothesis_disable_function_scoped_fixture_health_check
+from dconeybe.testing.hypothesis import (
+    disable_function_scoped_fixture_health_check as hypothesis_disable_function_scoped_fixture_health_check,
+)
 from dconeybe.xonsh.aliases import rnd
 from dconeybe.xonsh.testing import FakeSubprocessSpec
 from dconeybe.xonsh.typing import SubprocessSpec
+
 
 class TestRndStringGeneratedType:
 
@@ -29,7 +32,9 @@ class TestRndStringGeneratedType:
     assert len(result) == 10
 
   @pytest.mark.parametrize("args", string_generating_args)
-  def test_should_generate_unique_values(self, rnd_args_factory: RndArgsFactory, args: Sequence[str]):
+  def test_should_generate_unique_values(
+      self, rnd_args_factory: RndArgsFactory, args: Sequence[str]
+  ):
     outputs: list[str] = []
     for _ in range(100):
       rnd_args = rnd_args_factory()
@@ -39,7 +44,7 @@ class TestRndStringGeneratedType:
     counts: dict[str, int] = collections.defaultdict(lambda: 0)
     for output in outputs:
       counts[output] += 1
-    for (output, count) in counts.items():
+    for output, count in counts.items():
       assert count == 1, f"output={output!r}, outputs={outputs!r}"
 
   @pytest.mark.parametrize("args", string_generating_args)
@@ -75,27 +80,27 @@ class TestRndIntGeneratedTypes:
     def all(cls) -> Iterable[Self]:
       for arg in ["--int32", "--i32"]:
         yield cls(
-          arg=arg,
-          min_value=-(2**31),
-          max_value=(2**31)-1,
+            arg=arg,
+            min_value=-(2**31),
+            max_value=(2**31) - 1,
         )
       for arg in ["--int64", "--i64"]:
         yield cls(
-          arg=arg,
-          min_value=-(2**63),
-          max_value=(2**63)-1,
+            arg=arg,
+            min_value=-(2**63),
+            max_value=(2**63) - 1,
         )
       for arg in ["--uint32", "--u32"]:
         yield cls(
-          arg=arg,
-          min_value=0,
-          max_value=2**32,
+            arg=arg,
+            min_value=0,
+            max_value=2**32,
         )
       for arg in ["--uint64", "--u64"]:
         yield cls(
-          arg=arg,
-          min_value=0,
-          max_value=2**64,
+            arg=arg,
+            min_value=0,
+            max_value=2**64,
         )
 
   type_arg_infos = tuple(TypeArgInfo.all())
@@ -127,7 +132,7 @@ class TestRndIntGeneratedTypes:
     counts: dict[str, int] = collections.defaultdict(lambda: 0)
     for output in outputs:
       counts[output] += 1
-    for (output, count) in counts.items():
+    for output, count in counts.items():
       assert count == 1, f"output={output!r}, outputs={outputs!r}"
 
   @pytest.mark.parametrize("type_arg", type_arg_infos)
@@ -204,6 +209,7 @@ class TestRndLengthArgument:
       rnd_args_factory: RndArgsFactory,
       length: str,
   ):
+    hypothesis.assume(not can_be_parsed_as_int(length))
     rnd_args = rnd_args_factory()
     exit_code = rnd.rnd([f"--length={length}"], *rnd_args)
 
@@ -222,7 +228,9 @@ class TestRndLengthArgument:
       generated_type_arg: str,
   ):
     rnd_args_with_length = rnd_args_factory()
-    exit_code_with_length = rnd.rnd([generated_type_arg, f"--length={length}"], *rnd_args_with_length)
+    exit_code_with_length = rnd.rnd(
+        [generated_type_arg, f"--length={length}"], *rnd_args_with_length
+    )
     rnd_args_without_length = rnd_args_factory()
     exit_code_without_length = rnd.rnd([generated_type_arg], *rnd_args_without_length)
 
@@ -254,9 +262,7 @@ class TestRndFirstCharAlphaArgument:
       generated_strings.append(rnd_args.stdout.getvalue().strip())
 
     count_with_first_char_alpha = sum(
-        (1 if generated_string[0].isalpha() else 0)
-        for generated_string
-        in generated_strings
+        (1 if generated_string[0].isalpha() else 0) for generated_string in generated_strings
     )
     assert count_with_first_char_alpha < 90, f"generated_strings={generated_strings!r}"
 
@@ -272,7 +278,6 @@ class TestRndReportsInvalidArgs:
     assert len(rnd_args.stdout.getvalue()) == 0
 
 
-
 class RndArgs(NamedTuple):
   stdout: io.StringIO
   stderr: io.StringIO
@@ -281,9 +286,9 @@ class RndArgs(NamedTuple):
   @staticmethod
   def new_test_instance() -> RndArgs:
     return RndArgs(
-        stdout = io.StringIO(),
-        stderr = io.StringIO(),
-        spec = FakeSubprocessSpec(["cg8xk8mkkb"]),
+        stdout=io.StringIO(),
+        stderr=io.StringIO(),
+        spec=FakeSubprocessSpec(["cg8xk8mkkb"]),
     )
 
 
@@ -298,6 +303,16 @@ def rnd_args_factory() -> RndArgsFactory:
 
 
 RndArgsFactory = Callable[[], RndArgs]
+
+
+def can_be_parsed_as_int(s: str) -> bool:
+  try:
+    int(s)
+  except ValueError:
+    return False
+  else:
+    return True
+
 
 
 ALPHABET_LETTERS = "abcdefghjkmnpqrstvwxyz"

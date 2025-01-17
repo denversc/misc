@@ -10,10 +10,10 @@ from dconeybe.xonsh.typing import ExitCode, SubprocessSpec
 
 
 def abspath(
-  args: Sequence[str],
-  stdout: TextIO,
-  stderr: TextIO,
-  spec: SubprocessSpec,
+    args: Sequence[str],
+    stdout: TextIO,
+    stderr: TextIO,
+    spec: SubprocessSpec,
 ) -> ExitCode:
   arg_parser = _AbspathArgumentParser(spec.args[0])
   arg_parse_result = arg_parser.parse_alias_args(args, stdout, stderr)
@@ -30,18 +30,19 @@ def abspath(
 
 
 class _AbspathParsedArgs(Protocol):
-    paths: Sequence[str]
+  paths: Sequence[str]
+
 
 class _AbspathArgumentParser(AliasArgumentParser[_AbspathParsedArgs]):
 
   def __init__(self, prog: str) -> None:
     super().__init__(
-      prog=prog,
-      usage="%(prog)s [options] <path> [path2 [path3 [ ... ]]]",
+        prog=prog,
+        usage="%(prog)s [options] <path> [path2 [path3 [ ... ]]]",
     )
     self.add_argument(
-      "paths",
-      nargs="+",
-      default=[],
-      help="The paths whose absolute path to print."
+        "paths",
+        nargs="+",
+        default=[],
+        help="The paths whose absolute path to print.",
     )

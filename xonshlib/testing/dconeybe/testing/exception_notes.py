@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 class ExceptionNotes:
   """
   Context manager that adds "notes" to the exception raised in the context, if
@@ -31,12 +32,9 @@ class ExceptionNotes:
   def __enter__(self) -> None:
     pass
 
-  def __exit__[T: BaseException](
-      self,
-      exc_type: type[T] | None,
-      exc_value: T | None,
-      traceback: object | None,
-  ) -> None:
+  def __exit__[
+      T: BaseException
+  ](self, exc_type: type[T] | None, exc_value: T | None, traceback: object | None,) -> None:
     if exc_value is not None:
       for note in self._notes:
         exc_value.add_note(note)
