@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 class ExceptionNotes:
   """
   Context manager that adds "notes" to the exception raised in the context, if
