@@ -18,3 +18,4 @@ pyink-indentation = 2
 indent-size = 2
 max-line-length = 100
 exclude = ["__pycache__"]
+doctests = true
