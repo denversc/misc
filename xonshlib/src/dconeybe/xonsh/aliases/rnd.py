@@ -39,7 +39,7 @@ def rnd(
       result = random.randint(0, 2**32)
     case "int64":
       result = random.randint(-(2**63), (2**63)-1)
-    case "uint64z":
+    case "uint64":
       result = random.randint(0, 2**64)
     case _ as generate_type:
       typing.assert_never(
