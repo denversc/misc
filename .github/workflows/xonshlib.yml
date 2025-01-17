@@ -33,4 +33,4 @@ jobs:
         with:
           python-version: ${{ env.XONSHLIB_PYTHON_VERSION }}
       - run: pip install -r requirements.txt
-      - name: pytest
+      - run: pytest
