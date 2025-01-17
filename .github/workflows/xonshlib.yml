@@ -33,4 +33,5 @@ jobs:
         with:
           python-version: ${{ env.XONSHLIB_PYTHON_VERSION }}
       - run: pip install -r requirements.txt
-      - run: pytest
+      - name: pytest
+        run: pytest --verbose --full-trace --color=no --strict-config
