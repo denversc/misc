@@ -24,7 +24,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pytest (unit tests):
+  pytest:
+    name: pytest (unit tests)
     continue-on-error: false
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +37,8 @@ jobs:
       - name: pytest
         run: pytest --verbose --full-trace --color=no --strict-config
 
-  pyink (code format):
+  pyink:
+    name: pyink (code format)
     continue-on-error: false
     runs-on: ubuntu-latest
     steps:
@@ -48,7 +50,8 @@ jobs:
       - name: pyink
         run: pyink --check --verbose --no-color .
 
-  pyright (type annotation check):
+  pyright:
+    name: pyright (type annotation check)
     continue-on-error: false
     runs-on: ubuntu-latest
     steps:
@@ -60,7 +63,8 @@ jobs:
       - name: pyright
         run: pyright --verbose --warnings
 
-  flake8 (code linter):
+  flake8:
+    name: flake8 (code linter)
     continue-on-error: false
     runs-on: ubuntu-latest
     steps:
