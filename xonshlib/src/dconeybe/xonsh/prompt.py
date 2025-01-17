@@ -27,8 +27,5 @@ class Prompt:
     return "{FAINT_WHITE}[{localtime}]"
 
   def _hostname_color(self):
-    colors = {
-        "dconeybe2.c.googlers.com": "GREEN",
-        "dconeybe-macbookpro3.roam.internal": "BLUE",
-    }
+    colors = {"dconeybe2.c.googlers.com": "GREEN", "dconeybe-macbookpro3.roam.internal": "BLUE"}
     return colors.get(self.hostname, "RED")

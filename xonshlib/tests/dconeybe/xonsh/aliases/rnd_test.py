@@ -12,9 +12,7 @@ import hypothesis.strategies as st
 import pytest
 
 from dconeybe.testing.assertions import contains_with_non_abutting_text
-from dconeybe.testing.hypothesis import (
-    disable_function_scoped_fixture_health_check as hypothesis_disable_function_scoped_fixture_health_check,
-)
+from dconeybe.testing.hypothesis import disable_function_scoped_fixture_health_check as hypothesis_disable_function_scoped_fixture_health_check
 from dconeybe.xonsh.aliases import rnd
 from dconeybe.xonsh.testing import FakeSubprocessSpec
 from dconeybe.xonsh.typing import SubprocessSpec
@@ -312,7 +310,6 @@ def can_be_parsed_as_int(s: str) -> bool:
     return False
   else:
     return True
-
 
 
 ALPHABET_LETTERS = "abcdefghjkmnpqrstvwxyz"

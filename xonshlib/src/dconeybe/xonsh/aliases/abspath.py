@@ -41,8 +41,5 @@ class _AbspathArgumentParser(AliasArgumentParser[_AbspathParsedArgs]):
         usage="%(prog)s [options] <path> [path2 [path3 [ ... ]]]",
     )
     self.add_argument(
-        "paths",
-        nargs="+",
-        default=[],
-        help="The paths whose absolute path to print.",
+        "paths", nargs="+", default=[], help="The paths whose absolute path to print."
     )
