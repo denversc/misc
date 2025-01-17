@@ -1,0 +1,23 @@
+# Created by running: pip install pytest pyright pyink flake8 flake8-pyproject hypothesis
+
+attrs==24.3.0
+black==24.10.0
+click==8.1.8
+flake8==7.1.1
+Flake8-pyproject==1.2.3
+hypothesis==6.124.0
+iniconfig==2.0.0
+mccabe==0.7.0
+mypy-extensions==1.0.0
+nodeenv==1.9.1
+packaging==24.2
+pathspec==0.12.1
+platformdirs==4.3.6
+pluggy==1.5.0
+pycodestyle==2.12.1
+pyflakes==3.2.0
+pyink==24.10.1
+pyright==1.1.392.post0
+pytest==8.3.4
+sortedcontainers==2.4.0
+typing_extensions==4.12.2
