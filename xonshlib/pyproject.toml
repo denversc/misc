@@ -13,3 +13,8 @@ typeCheckingMode = "strict"
 [tool.pyink]
 line-length = 100
 pyink-indentation = 2
+
+[tool.flake8]
+indent-size = 2
+max-line-length = 100
+exclude = ["__pycache__"]
