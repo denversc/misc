@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 ###############################################################################
 # xonsh prompt setup
 # https://xon.sh/tutorial.html#customizing-the-prompt

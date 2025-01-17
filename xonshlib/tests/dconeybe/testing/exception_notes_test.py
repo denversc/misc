@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 import hypothesis
 import hypothesis.strategies as st

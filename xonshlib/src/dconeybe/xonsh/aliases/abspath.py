@@ -1,9 +1,11 @@
-import argparse
+from __future__ import annotations
+
 import os
 
 from collections.abc import Sequence
-from typing import TextIO
+from typing import Protocol, TextIO
 
+from dconeybe.xonsh.aliases.argparse import AliasArgumentParser
 from dconeybe.xonsh.typing import ExitCode, SubprocessSpec
 
 
@@ -12,29 +14,30 @@ def abspath(
   stdout: TextIO,
   stderr: TextIO,
   spec: SubprocessSpec,
-) -> ExitCode | None:
+) -> ExitCode:
   arg_parser = _AbspathArgumentParser(spec.args[0])
-  try:
-    parsed_args = arg_parser.parse_args(args)
-  except argparse.ArgumentError as e:
-    print(f"ERROR: {e}", file=stderr)
-    print("Run with -h/--help for help.", file=stderr)
-    return 2
-  except arg_parser.Exit as e:
-    print(e.message, file=stdout if e.status == 0 else stderr)
-    return e.status
+  arg_parse_result = arg_parser.parse_args(args, stdout, stderr)
+  if isinstance(arg_parse_result, int):
+    return ExitCode(arg_parse_result)
+  parsed_args: _AbspathArgumentParser.ParsedArgs = arg_parse_result
+  del arg_parser
+  del arg_parse_result
 
-  paths: tuple[str] = tuple(parsed_args.paths)
-  for path in paths:
+  for path in parsed_args.paths:
     print(os.path.abspath(os.path.normpath(os.path.expanduser(path))))
 
+  return ExitCode(0)
 
-class _AbspathArgumentParser(argparse.ArgumentParser):
+
+class _AbspathArgumentParser(AliasArgumentParser["_AbspathArgumentParser.ParsedArgs"]):
+
+  class ParsedArgs(Protocol):
+    paths: Sequence[str]
+
   def __init__(self, prog: str) -> None:
     super().__init__(
       prog=prog,
-      usage="%(prog)s [options] [paths] [--help]",
-      exit_on_error=False,
+      usage="%(prog)s [options] <path> [path2 [path3 [ ... ]]]",
     )
     self.add_argument(
       "paths",
@@ -42,12 +45,3 @@ class _AbspathArgumentParser(argparse.ArgumentParser):
       default=[],
       help="The paths whose absolute path to print."
     )
-
-  def exit(self, status=0, message=None):
-    raise self.Exit(status, message)
-
-  class Exit(Exception):
-    def __init__(self, status, message):
-      super().__init__(message)
-      self.message = message
-      self.status = status
