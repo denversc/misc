@@ -12,7 +12,7 @@ on:
     - cron: '0 11 * * *' # Run nightly at 11am UTC (3am Pacific, 6am Eastern)
 
 env:
-  XONSHLIB_PYTHON_VERSION: ${{ inputs.pythonVersion || '17' }}
+  XONSHLIB_PYTHON_VERSION: ${{ inputs.pythonVersion || '3.13' }}
 
 defaults:
   run:
