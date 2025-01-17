@@ -61,7 +61,7 @@ jobs:
           python-version: ${{ env.XONSHLIB_PYTHON_VERSION }}
       - run: pip install -r requirements.txt
       - name: pyright
-        run: pyright --verbose --warnings
+        run: pyright --warnings --stats
 
   flake8:
     name: flake8 (code linter)
