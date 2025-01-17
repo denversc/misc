@@ -2,7 +2,7 @@ import pytest
 import hypothesis
 import hypothesis.strategies as st
 
-from dconeybe.xonsh.testing.exception_notes import ExceptionNotes
+from dconeybe.testing.exception_notes import ExceptionNotes
 
 @hypothesis.given(st.text())
 def test_should_do_nothing_if_no_exception(note):

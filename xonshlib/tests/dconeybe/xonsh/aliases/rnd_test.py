@@ -1,50 +1,83 @@
+from __future__ import annotations
+
+import collections
+from collections.abc import Callable
 import io
 import os
-import collections
+from typing import NamedTuple
 
+import pytest
+
+from dconeybe.testing.exception_notes import ExceptionNotes
 from dconeybe.xonsh.aliases import rnd
-from dconeybe.xonsh.aliases.typing import Stdout
-from dconeybe.xonsh.testing.exception_notes import ExceptionNotes
+from dconeybe.xonsh.testing import FakeSubprocessSpec
+from dconeybe.xonsh.typing import Stdout, SubprocessSpec
 
-def test_rnd_empty_args_should_end_with_newline():
-  stdout, stderr = io.StringIO(), io.StringIO()
-  rnd.rnd([], stdout, stderr)
+class TestRndEmptyArgs:
 
-  stdout_string = stdout.getvalue()
-  assert stdout_string.endswith("\n")
+  def test_should_not_write_to_stderr(self, rnd_args: RndArgs):
+    rnd.rnd([], *rnd_args)
 
-def test_rnd_empty_args_should_not_write_to_stderr():
-  stdout, stderr = io.StringIO(), io.StringIO()
-  rnd.rnd([], stdout, stderr)
+    stderr_string = rnd_args.stderr.getvalue()
+    assert stderr_string == ""
 
-  assert stderr.getvalue() == ""
+  def test_should_return_zero(self, rnd_args: RndArgs):
+    rnd_return_value = rnd.rnd([], *rnd_args)
 
-def test_rnd_empty_args_should_return_none():
-  stdout, stderr = io.StringIO(), io.StringIO()
-  rnd_return_value = rnd.rnd([], stdout, stderr)
+    assert rnd_return_value == 0
 
-  assert rnd_return_value is None
+  def test_stdout_should_end_with_newline(self, rnd_args: RndArgs):
+    rnd.rnd([], *rnd_args)
 
-def test_rnd_empty_args_should_generate_string_with_default_length():
-  stdout, stderr = io.StringIO(), io.StringIO()
-  rnd.rnd([], stdout, stderr)
+    stdout_string = rnd_args.stdout.getvalue()
+    assert stdout_string.endswith("\n")
 
-  result = stdout.getvalue().strip()
-  assert len(result) == 10
+  def test_should_generate_string_with_default_length(self, rnd_args: RndArgs):
+    rnd.rnd([], *rnd_args)
 
-def test_rnd_empty_args_should_generate_unique_strings():
-  results: list[Stdout] = []
-  for _ in range(100):
-    stdout, stderr = io.StringIO(), io.StringIO()
-    rnd.rnd([], stdout, stderr)
-    results.append(stdout.getvalue().strip())
+    result = rnd_args.stdout.getvalue().strip()
+    assert len(result) == 10
 
-  counts = collections.defaultdict(lambda: 0)
-  for result in results:
-    counts[result] += 1
-  for (result, count) in counts.items():
-    with ExceptionNotes(f"result={result!r}", f"results={results!r}"):
-      assert count == 1
+  def test_should_generate_unique_strings(self, rnd_args_factory: RndArgsFactory):
+    results: list[Stdout] = []
+    for _ in range(100):
+      rnd_args = rnd_args_factory()
+      rnd.rnd([], *rnd_args)
+      results.append(rnd_args.stdout.getvalue().strip())
+
+    counts = collections.defaultdict(lambda: 0)
+    for result in results:
+      counts[result] += 1
+    for (result, count) in counts.items():
+      with ExceptionNotes(f"result={result!r}", f"results={results!r}"):
+        assert count == 1
+
+
+class RndArgs(NamedTuple):
+  stdout: io.StringIO()
+  stderr: io.StringIO()
+  spec: SubprocessSpec
+
+  @staticmethod
+  def new_test_instance() -> RndArgs:
+    return RndArgs(
+        stdout = io.StringIO(),
+        stderr = io.StringIO(),
+        spec = FakeSubprocessSpec("cg8xk8mkkb"),
+    )
+
+
+@pytest.fixture
+def rnd_args() -> RndArgs:
+  return RndArgs.new_test_instance()
+
+
+@pytest.fixture
+def rnd_args_factory() -> RndArgsFactory:
+  return RndArgs.new_test_instance
+
+
+RndArgsFactory = Callable[[], RndArgs]
 
 
 ALPHABET_LETTERS = "abcdefghjkmnpqrstvwxyz"

@@ -16,17 +16,17 @@ def rnd(
   stdout: TextIO,
   stderr: TextIO,
   spec: SubprocessSpec,
-) -> ExitCode | None:
+) -> ExitCode:
   arg_parser = _RndArgumentParser(spec.args[0])
   try:
     parsed_args = arg_parser.parse_args(args)
   except argparse.ArgumentError as e:
     print(f"ERROR: {e}", file=stderr)
     print("Run with -h/--help for help.", file=stderr)
-    return 2
+    return ExitCode(2)
   except arg_parser.Exit as e:
     print(e.message, file=stdout if e.status == 0 else stderr)
-    return e.status
+    return ExitCode(e.status)
     
   if parsed_args.generate_type in (None, "string"):
     random_characters = random.choices(_ALPHABET, k=parsed_args.length)
@@ -49,6 +49,7 @@ def rnd(
     )
 
   print(result, file=stdout)
+  return ExitCode(0)
 
 
 _ALPHABET_LETTERS = "abcdefghjkmnpqrstvwxyz"
