@@ -43,3 +43,4 @@ $HISTCONTROL = set(["ignoredups", "ignoreerr", "ignorespace", "erasedups"])
 $VI_MODE = True
 $XONSH_HISTORY_BACKEND = "sqlite"
 $XONSH_HISTORY_SIZE = "10000 commands"
+$XONSH_USE_SYSTEM_CLIPBOARD = False
