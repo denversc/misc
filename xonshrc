@@ -16,6 +16,10 @@ from xontrib.macro.data import Write
 from xontrib.macro.data import XmlBlock
 from xontrib.macro.run import Once
 
+# Requires: pip install xontrib-vox
+# https://xon.sh/python_virtual_environments.html
+xontrib load vox
+
 ###############################################################################
 # xonsh prompt
 # https://xon.sh/tutorial.html#customizing-the-prompt
