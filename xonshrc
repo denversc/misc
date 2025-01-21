@@ -4,6 +4,18 @@
 
 xontrib load coreutils
 
+# Requires: pip install xontrib-dalias
+# https://github.com/anki-code/xontrib-dalias
+xontrib load dalias
+
+# Requires: pip install xontrib-macro
+# https://github.com/anki-code/xontrib-macro
+xontrib load macro
+from xonsh.contexts import Block
+from xontrib.macro.data import Write
+from xontrib.macro.data import XmlBlock
+from xontrib.macro.run import Once
+
 ###############################################################################
 # xonsh prompt
 # https://xon.sh/tutorial.html#customizing-the-prompt
