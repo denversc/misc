@@ -45,7 +45,7 @@ time_format=$(tmux_get @tmux_power_time_format '%H:%M %Z')
 date_format=$(tmux_get @tmux_power_date_format '%a %b %d, %Y')
 
 # short for Theme-Colour
-TC=$(tmux_get '@tmux_power_theme' 'everforest')
+TC=$(tmux_get '@tmux_power_theme' 'gold')
 case $TC in
     'gold' )
         TC='#ffb86c'
