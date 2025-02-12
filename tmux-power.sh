@@ -3,7 +3,7 @@
 # Adapted from https://github.com/wfxr/tmux-power/blob/e68f9e6fb42cf372c2f17b51edc63abb4f6e9558/tmux-power.tmux
 
 # To use this configuration file, run:
-# mkdir -p $HOME/.config/tmux && echo "run-shell $PWD/tmux-power.sh" >> $HOME/.config/tmux/tmux.conf
+# mkdir -p $HOME/.config/tmux && (echo "set-option -g @tmux_power_theme \"moon\"" && echo "run-shell $PWD/tmux-power.sh") >> $HOME/.config/tmux/tmux.conf
 
 #===============================================================================
 #   Author: Wenxuan
