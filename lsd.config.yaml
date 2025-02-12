@@ -1,5 +1,5 @@
 # To use this configuration file, run:
-# mkdir -p $PWD/lsd.config.yaml && ln -sf $PWD/lsd.config.yaml $HOME/.config/lsd/config.yaml
+# mkdir -p $HOME/.config/lsd && ln -sf $PWD/lsd.config.yaml $HOME/.config/lsd/config.yaml
 
 # == Classic ==
 # This is a shorthand to override some of the options to be backwards compatible
