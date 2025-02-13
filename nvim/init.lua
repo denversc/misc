@@ -1,4 +1,4 @@
-dofile('$HOME/misc/init.lua')
+dofile('$HOME/misc/nvim.init.lua')
 
 require("config.lazy")
 
