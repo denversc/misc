@@ -102,13 +102,19 @@ tmux_set @prefix_highlight_output_suffix "#[fg=$TC]#[bg=$G0]$rarrow"
 tmux_set status-left-bg "$G0"
 tmux_set status-left-length 150
 
+if [[ $HOSTNAME == "dconeybe2.c.googlers.com" ]] ; then
+  readonly LS_HOSTNAME="lb"
+else
+  readonly LS_HOSTNAME="#h"
+fi
+
 # user@host
 if "$show_user" && "$show_host"; then
-    LS="#[fg=$G0,bg=$TC,bold] $user_icon $(whoami)@#h #[fg=$TC,bg=$G2,nobold]$rarrow"
+    LS="#[fg=$G0,bg=$TC,bold] $user_icon $(whoami)@${LS_HOSTNAME} #[fg=$TC,bg=$G2,nobold]$rarrow"
 elif "$show_user"; then
     LS="#[fg=$G0,bg=$TC,bold] $user_icon $(whoami) #[fg=$TC,bg=$G2,nobold]$rarrow"
 elif "$show_host"; then
-    LS="#[fg=$G0,bg=$TC,bold] #h #[fg=$TC,bg=$G2,nobold]$rarrow"
+    LS="#[fg=$G0,bg=$TC,bold] ${LS_HOSTNAME} #[fg=$TC,bg=$G2,nobold]$rarrow"
 fi
 
 # session
