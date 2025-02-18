@@ -47,6 +47,8 @@ del dconeybe_abspath
 
 aliases["ls"] = "lsd"
 
+aliases["good"] = "echo 'SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'"
+
 ###############################################################################
 # xonsh settings
 # https://xon.sh/envvars.html
