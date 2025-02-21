@@ -20,7 +20,7 @@ class Prompt:
         "{BACKGROUND_" + self._hostname_color() + "}{WHITE}{user}@{hostname}{RESET} "
         "{BOLD_YELLOW}{cwd}{RESET}"
         "{RED}{last_return_code_if_nonzero: [retcode={BOLD_INTENSE_RED}{}{RED}]{RESET}}"
-        "\n{BOLD_BLUE}{RESET} "
+        "\n{BOLD_BLUE} {RESET} "
     )
 
   def right_prompt(self) -> str:
