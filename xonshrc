@@ -49,6 +49,10 @@ aliases["ls"] = "lsd"
 
 aliases["good"] = "echo 'SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'"
 
+# Show a desktop notification (a.k.a. "popup").
+# https://sw.kovidgoyal.net/kitty/kittens/notify/
+aliases["pop"] = ["kitten", "notify"]
+
 ###############################################################################
 # xonsh settings
 # https://xon.sh/envvars.html
