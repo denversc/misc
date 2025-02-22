@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 ###############################################################################
 # xonsh prompt setup
 # https://xon.sh/tutorial.html#customizing-the-prompt
@@ -16,12 +18,23 @@ class Prompt:
     return "%a %b %d, %Y %H:%M:%S"
 
   def prompt(self) -> str:
-    return (
-        "{BACKGROUND_" + self._hostname_color() + "}{WHITE}{user}@{hostname}{RESET} "
-        "{BOLD_YELLOW}{cwd}{RESET}"
-        "{RED}{last_return_code_if_nonzero: [retcode={BOLD_INTENSE_RED}{}{RED}]{RESET}}"
-        "\n{BOLD_BLUE} {RESET} "
-    )
+    return "".join(self._prompt_chunks())
+
+  def _prompt_chunks(self) -> Iterable[str]:
+      yield "{BACKGROUND_" + self._hostname_color() + "}{WHITE}"
+      yield "{hostname}"
+      yield "{RESET} "
+
+      yield "{BOLD_YELLOW}{cwd}{RESET}"
+
+      yield "{last_return_code_if_nonzero:"
+      yield " {RED}[retcode={BOLD_INTENSE_RED}{}{RED}]{RESET}"
+      yield "}"
+
+      yield "\n"
+
+      yield "{BOLD_BLUE} "
+      yield "{RESET} "
 
   def right_prompt(self) -> str:
     return "{FAINT_WHITE}[{localtime}]"
