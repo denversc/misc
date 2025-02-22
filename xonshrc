@@ -20,6 +20,9 @@ from xontrib.macro.run import Once
 # https://xon.sh/python_virtual_environments.html
 xontrib load vox
 
+# Requires: pip install xontrib-kitty
+xontrib load kitty
+
 ###############################################################################
 # xonsh prompt
 # https://xon.sh/tutorial.html#customizing-the-prompt
