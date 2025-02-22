@@ -45,7 +45,7 @@ from dconeybe.xonsh.aliases import abspath as dconeybe_abspath
 aliases["abspath"] = dconeybe_abspath.abspath
 del dconeybe_abspath
 
-aliases["ls"] = "lsd"
+aliases["ls"] = ["lsd", "--hyperlink=always"]
 
 aliases["good"] = "echo 'SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'"
 
