@@ -35,6 +35,10 @@ $PROMPT = prompt.prompt()
 $RIGHT_PROMPT = prompt.right_prompt()
 del prompt, dconeybe_prompt
 
+# Requires pip install xontrib-term-integrations
+# This _must_ be imported _after_ setting $PROMPT.
+xontrib load term_integration
+
 ###############################################################################
 # xonsh aliases
 # https://xon.sh/tutorial.html#aliases
