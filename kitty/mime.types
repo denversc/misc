@@ -1,0 +1,23 @@
+# Custom MIME type mappings for Kitty.
+# The format of this file matches https://github.com/apache/httpd/blob/b0dce544dd/docs/conf/mime.types
+# See https://github.com/apache/httpd/blob/b0dce544dd0c9354767f53796c9c0cfc8e413341/docs/conf/mime.types
+# Copy this file to $HOME/.config/kitty
+
+# NOTE: Keep lines below sorted.
+
+text/plain cjs
+text/plain conf
+text/plain cts
+text/plain js
+text/plain json
+text/plain kt
+text/plain kt
+text/plain kts
+text/plain kts
+text/plain mjs
+text/plain mts
+text/plain rs
+text/plain text
+text/plain toml
+text/plain ts
+text/plain txt
