@@ -60,6 +60,10 @@ aliases["good"] = "echo 'SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'"
 # https://sw.kovidgoyal.net/kitty/kittens/notify/
 aliases["pop"] = ["kitten", "notify"]
 
+# Enable hyperlinks in ripgrep.
+# https://sw.kovidgoyal.net/kitty/kittens/hyperlinked_grep
+aliases["rg"] = ["rg", "--hyperlink-format=kitty"]
+
 ###############################################################################
 # xonsh settings
 # https://xon.sh/envvars.html
