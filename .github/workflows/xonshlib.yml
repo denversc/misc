@@ -48,7 +48,7 @@ jobs:
           python-version: ${{ env.XONSHLIB_PYTHON_VERSION }}
       - run: pip install -r requirements.txt
       - name: pyink
-        run: pyink --check --verbose --no-color .
+        run: pyink --check --diff --verbose --no-color .
 
   pyright:
     name: pyright (type annotation check)
