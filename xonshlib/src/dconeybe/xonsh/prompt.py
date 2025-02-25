@@ -21,20 +21,20 @@ class Prompt:
     return "".join(self._prompt_chunks())
 
   def _prompt_chunks(self) -> Iterable[str]:
-      yield "{BACKGROUND_" + self._hostname_color() + "}{WHITE}"
-      yield "{hostname}"
-      yield "{RESET} "
+    yield "{BACKGROUND_" + self._hostname_color() + "}{WHITE}"
+    yield "{hostname}"
+    yield "{RESET} "
 
-      yield "{BOLD_YELLOW}{cwd}{RESET}"
+    yield "{BOLD_YELLOW}{cwd}{RESET}"
 
-      yield "{last_return_code_if_nonzero:"
-      yield " {RED}[retcode={BOLD_INTENSE_RED}{}{RED}]{RESET}"
-      yield "}"
+    yield "{last_return_code_if_nonzero:"
+    yield " {RED}[retcode={BOLD_INTENSE_RED}{}{RED}]{RESET}"
+    yield "}"
 
-      yield "\n"
+    yield "\n"
 
-      yield "{BOLD_BLUE} "
-      yield "{RESET} "
+    yield "{BOLD_BLUE} "
+    yield "{RESET} "
 
   def right_prompt(self) -> str:
     return "{FAINT_WHITE}[{localtime}]"
