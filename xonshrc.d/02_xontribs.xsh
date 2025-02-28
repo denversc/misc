@@ -22,3 +22,6 @@ xontrib load kitty
 # Requires pip install xontrib-term-integrations
 # This _must_ be imported _after_ setting $PROMPT.
 xontrib load term_integration
+
+# Requires pip install xontrib-jedi
+xontrib load jedi
