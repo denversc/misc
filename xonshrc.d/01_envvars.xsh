@@ -10,3 +10,9 @@ $VI_MODE = True
 $XONSH_HISTORY_BACKEND = "sqlite"
 $XONSH_HISTORY_SIZE = "10000 commands"
 $XONSH_USE_SYSTEM_CLIPBOARD = False
+
+# Setup JAVA_HOME based on the JDK installed and/or configured by asdf.
+# See https://github.com/halcyon/asdf-java#java_home
+asdf_javahome_script = p"$ASDF_DATA_DIR/plugins/java/set-java-home.xsh"
+if asdf_javahome_script.exists():
+  source @(asdf_javahome_script)
