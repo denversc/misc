@@ -25,3 +25,6 @@ xontrib load term_integration
 
 # Requires pip install xontrib-jedi
 xontrib load jedi
+
+# Requires pip install xontrib-zoxide
+xontrib load zoxide
