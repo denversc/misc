@@ -1,26 +1,16 @@
 # To use this file, run:
-# ln -sf ../xonsh.rc.local.macbookpro3.xsh xonshrc.d/00_local.xsh
+# ln -sf ../xonsh.rc.local.macbookpro3.xsh xonshrc.d/01_local.xsh
 
 import os
 import sys
 
 sys.path.append($HOME + "/misc/xonshlib/src")
 
+# Store tracebacks into this file for debugging purposes.
+# https://xon.sh/envvars.html#xonsh-traceback-logfile
+$XONSH_TRACEBACK_LOGFILE = $HOME + "/.local/state/xonsh/traceback.log.txt"
+
 if $XONSH_LOGIN:
-
-  # Suppress detailed tracebacks, which are occasionally useful but normally
-  # noisy and distracting.
-  # https://xon.sh/envvars.html#xonsh-show-traceback
-  $XONSH_SHOW_TRACEBACK = False
-
-  # Store tracebacks into this file for debugging purposes.
-  # https://xon.sh/envvars.html#xonsh-traceback-logfile
-  $XONSH_TRACEBACK_LOGFILE = $HOME + "/.local/state/xonsh/traceback.log.txt"
-
-  # Disable suggesting commands when an unknown command is entered.
-  # I generally just find this annoying and not helpful.
-  # https://xon.sh/envvars.html#suggest-commands
-  $SUGGEST_COMMANDS = False
 
   # https://wiki.archlinux.org/title/XDG_Base_Directory
   $PATH.append($HOME + ".local/bin")

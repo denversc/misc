@@ -13,6 +13,11 @@ if $XONSH_INTERACTIVE:
   $XONSH_HISTORY_SIZE = "10000 commands"
   $XONSH_USE_SYSTEM_CLIPBOARD = False
 
+  # Disable suggesting commands when an unknown command is entered.
+  # I generally just find this annoying and not helpful.
+  # https://xon.sh/envvars.html#suggest-commands
+  $SUGGEST_COMMANDS = False
+
   # Setup JAVA_HOME based on the JDK installed and/or configured by asdf.
   # See https://github.com/halcyon/asdf-java#java_home
   asdf_javahome_script = p"$ASDF_DATA_DIR/plugins/java/set-java-home.xsh"
