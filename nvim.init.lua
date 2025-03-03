@@ -30,9 +30,9 @@ vim.opt.number = true
 
 -- Set some GUI options for Neovide.
 if vim.g.neovide then
-  if vim.fn.has('mac') == 1 then
-    vim.opt.guifont = 'PT Mono:h16'
+  vim.opt.guifont = 'JetBrainsMonoNL Nerd Font:h16'
 
+  if vim.fn.has('mac') == 1 then
     -- Allow clipboard copy paste in neovim
     -- https://github.com/neovide/neovide/issues/1263#issuecomment-1100895622
     vim.g.neovide_input_use_logo = 1
@@ -40,8 +40,6 @@ if vim.g.neovide then
     vim.api.nvim_set_keymap('!', '<D-v>', '<C-R>+', { noremap = true, silent = true})
     vim.api.nvim_set_keymap('t', '<D-v>', '<C-R>+', { noremap = true, silent = true})
     vim.api.nvim_set_keymap('v', '<D-v>', '<C-R>+', { noremap = true, silent = true})
-  else
-    vim.opt.guifont = 'Monospace:h16'
   end
 
   -- Whether the mouse will be hidden upon starting to type.
