@@ -1,5 +1,5 @@
 # To use this file, run:
-# ln -sf ../xonsh.rc.local.cloudtop.xsh xonshrc.d/00_local.xsh
+# ln -sf ../xonsh.rc.local.cloudtop.xsh xonshrc.d/01_local.xsh
 
 import os
 import sys
@@ -36,6 +36,23 @@ if $XONSH_LOGIN:
   $PAGER = nvim_path + " -R -S " + $HOME + "/misc/nvim_git_pager.lua"
   $MANPAGER = nvim_path + " +Man!"
   del nvim_path
+
+  # Ensure cargo-installed rustc overrides others.
+  $PATH.prepend($HOME + "/.cargo/bin")
+
+  # Android development setup.
+  $ANDROID_HOME = $HOME + "/Android/Sdk"
+  $ANDROID_SDK_ROOT = $ANDROID_HOME
+  $ANDROID_NDK_HOME = $ANDROID_HOME + "/ndk/21.4.7075529"
+  $PATH.prepend($ANDROID_SDK_ROOT + "/platform-tools")
+  $PATH.prepend($ANDROID_SDK_ROOT + "/tools")
+
+  # Kitty setup
+  $PATH.append("/usr/local/google/home/dconeybe/.local/kitty.app/bin")
+  $TERMINFO_DIRS = "/usr/local/google/home/dconeybe/.local/kitty.app/lib/kitty/terminfo"
+
+  # See go/dbip (Developer Builds in Prod)
+  $REPLACE_BLAZE_WITH_DBIP = 1
 
   # Ensure that Google utilities, like gcert, are in the PATH.
   $PATH.append("/usr/local/bin")
