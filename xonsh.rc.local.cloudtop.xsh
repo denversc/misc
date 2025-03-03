@@ -12,7 +12,7 @@ if $XONSH_LOGIN:
   $XONSH_TRACEBACK_LOGFILE = $HOME + "/.local/state/xonsh/traceback.log.txt"
 
   # https://wiki.archlinux.org/title/XDG_Base_Directory
-  $PATH.append($HOME + ".local/bin")
+  $PATH.append($HOME + "/.local/bin")
   $XDG_CONFIG_HOME = $HOME + "/.config"
   $XDG_CACHE_HOME = $HOME + "/.cache"
   $XDG_DATA_HOME = $HOME + "/.local/share"
