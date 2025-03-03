@@ -10,6 +10,9 @@ sys.path.append($HOME + "/misc/xonshlib/src")
 # https://xon.sh/envvars.html#xonsh-traceback-logfile
 $XONSH_TRACEBACK_LOGFILE = $HOME + "/.local/state/xonsh/traceback.log.txt"
 
+# https://xon.sh/envvars.html#title
+$TITLE = "{current_job:{} | } {cwd}"
+
 if $XONSH_LOGIN:
 
   # https://wiki.archlinux.org/title/XDG_Base_Directory

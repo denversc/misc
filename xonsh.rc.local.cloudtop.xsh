@@ -6,6 +6,9 @@ import sys
 
 sys.path.append($HOME + "/misc/xonshlib/src")
 
+# https://xon.sh/envvars.html#title
+$TITLE = "[lb] {current_job:{} | } {cwd}"
+
 if $XONSH_LOGIN:
   # Store tracebacks into this file for debugging purposes.
   # https://xon.sh/envvars.html#xonsh-traceback-logfile
