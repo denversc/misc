@@ -2,9 +2,12 @@
 
 from dconeybe.xonsh import prompt as dconeybe_prompt
 
-prompt = dconeybe_prompt.Prompt($HOSTNAME)
-$PROMPT_FIELDS["time_format"] = prompt.time_format()
-$PROMPT = prompt.prompt()
-$RIGHT_PROMPT = prompt.right_prompt()
+if $XONSH_INTERACTIVE:
+  prompt = dconeybe_prompt.Prompt($HOSTNAME)
+  $PROMPT_FIELDS["time_format"] = prompt.time_format()
+  $PROMPT = prompt.prompt()
+  $RIGHT_PROMPT = prompt.right_prompt()
+  del prompt
 
-del prompt, dconeybe_prompt
+# Clean up global namespace
+del dconeybe_prompt

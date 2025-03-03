@@ -1,21 +1,23 @@
 # See https://xon.sh/tutorial.html#aliases
 
-from dconeybe.xonsh.aliases import rnd as dconeybe_rnd
-aliases["rnd"] = dconeybe_rnd.rnd
-del dconeybe_rnd
+if $XONSH_INTERACTIVE:
 
-from dconeybe.xonsh.aliases import abspath as dconeybe_abspath
-aliases["abspath"] = dconeybe_abspath.abspath
-del dconeybe_abspath
+  from dconeybe.xonsh.aliases import rnd as dconeybe_rnd
+  aliases["rnd"] = dconeybe_rnd.rnd
+  del dconeybe_rnd
 
-aliases["ls"] = ["lsd", "--hyperlink=always"]
+  from dconeybe.xonsh.aliases import abspath as dconeybe_abspath
+  aliases["abspath"] = dconeybe_abspath.abspath
+  del dconeybe_abspath
 
-aliases["good"] = "echo 'SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'"
+  aliases["ls"] = ["lsd", "--hyperlink=always"]
 
-# Show a desktop notification (a.k.a. "popup").
-# https://sw.kovidgoyal.net/kitty/kittens/notify/
-aliases["pop"] = ["kitten", "notify"]
+  aliases["good"] = "echo 'SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'"
 
-# Enable hyperlinks in ripgrep.
-# https://sw.kovidgoyal.net/kitty/kittens/hyperlinked_grep
-aliases["rg"] = ["rg", "--hyperlink-format=kitty"]
+  # Show a desktop notification (a.k.a. "popup").
+  # https://sw.kovidgoyal.net/kitty/kittens/notify/
+  aliases["pop"] = ["kitten", "notify"]
+
+  # Enable hyperlinks in ripgrep.
+  # https://sw.kovidgoyal.net/kitty/kittens/hyperlinked_grep
+  aliases["rg"] = ["rg", "--hyperlink-format=kitty"]
