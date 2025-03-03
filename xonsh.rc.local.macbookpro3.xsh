@@ -32,6 +32,12 @@ if $XONSH_LOGIN:
   $ASDF_DATA_DIR = $XDG_STATE_HOME + "/asdf"
   $PATH.prepend($ASDF_DATA_DIR + "/shims")
 
+  nvim_path = $(brew --prefix neovim) + "/bin/nvim"
+  $EDITOR = nvim_path
+  $PAGER = nvim_path + " -R -S " + $HOME + "/misc/nvim_git_pager.lua"
+  $MANPAGER = nvim_path + " +Man!"
+  del nvim_path
+
   # Ensure that Google utilities, like gcert, are in the PATH.
   $PATH.append("/usr/local/bin")
   $PATH.prepend("/usr/local/git/current/bin")
