@@ -21,3 +21,12 @@ if $XONSH_INTERACTIVE:
   # Enable hyperlinks in ripgrep.
   # https://sw.kovidgoyal.net/kitty/kittens/hyperlinked_grep
   aliases["rg"] = ["rg", "--hyperlink-format=kitty"]
+
+  aliases["slb"] = [
+    "ssh",
+    "lb",
+    "-t",
+    "/usr/local/google/home/dconeybe/local/python/bin/xonsh",
+    "--login",
+    "--interactive",
+  ]
