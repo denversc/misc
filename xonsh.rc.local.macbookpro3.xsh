@@ -1,5 +1,5 @@
 # To use this file, run:
-# ln -sf $PWD/xonsh.rc.local.macbookpro3.xsh $HOME/.config/xonsh/rc.local.xsh
+# ln -sf ../xonsh.rc.local.macbookpro3.xsh xonshrc.d/00_local.xsh
 
 import os
 import sys
