@@ -1,0 +1,29 @@
+# Copy this file to the file ~/.ssh/config.
+
+Host lb
+  User dconeybe
+  Hostname dconeybe2.c.googlers.com
+  ControlMaster auto
+  ControlPath ~/.ssh/masters/lb-%h-%p-%r
+  ControlPersist yes
+
+Host lbemu
+  User dconeybe
+  Hostname dconeybe2.c.googlers.com
+  ControlMaster no
+  # Foward port 5555, the port used by adb to connect to the emulator.
+  # The 0 means to allocate a random port. This port will be printed to the screen
+  # and the remote host can connect to it by running "adb connect NNNNN", where "NNNNN"
+  # is the remote port printed to the screen.
+  RemoteForward 0 localhost:5555
+  # Forward the Firebase Data Connect emulator from the remote host to the local host.
+  LocalForward 9399 localhost:9399
+  # Forward the Firebase Auth emulator from the remote host to the local host.
+  LocalForward 9099 localhost:9099
+  ExitOnForwardFailure yes
+
+Host github-denversc
+  User git
+  Hostname github.com
+  IdentityFile /home/dconeybe/.ssh/id_ed25519_denversc
+  IdentitiesOnly yes
