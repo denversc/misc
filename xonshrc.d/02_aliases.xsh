@@ -26,7 +26,7 @@ if $XONSH_INTERACTIVE:
     "ssh",
     "lb",
     "-t",
-    "/usr/local/google/home/dconeybe/local/python/bin/xonsh",
+    "/usr/local/google/home/dconeybe/.local/bin/xonsh",
     "--login",
     "--interactive",
   ]
