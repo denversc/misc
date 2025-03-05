@@ -25,5 +25,5 @@ Host lbemu
 Host github-denversc
   User git
   Hostname github.com
-  IdentityFile /home/dconeybe/.ssh/id_ed25519_denversc
+  IdentityFile ~/.ssh/id_ed25519_denversc
   IdentitiesOnly yes
