@@ -27,6 +27,8 @@ if $XONSH_INTERACTIVE:
     "lb",
     "-t",
     "/usr/local/google/home/dconeybe/.local/bin/xonsh",
+    "-D",
+    "KITTY_PUBLIC_KEY='" + $KITTY_PUBLIC_KEY + "'",
     "--login",
     "--interactive",
   ]
