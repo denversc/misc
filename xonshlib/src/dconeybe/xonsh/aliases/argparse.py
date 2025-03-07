@@ -4,14 +4,14 @@ import argparse
 import typing
 from typing import NoReturn, Sequence, TextIO
 
-from dconeybe.xonsh.typing import ExitCode
+from dconeybe.xonsh.typing import ExitCode, SubprocessSpec
 
 
 class AliasArgumentParser[T](argparse.ArgumentParser):
 
-  def __init__(self, prog: str, usage: str) -> None:
+  def __init__(self, spec: SubprocessSpec, usage: str) -> None:
     super().__init__(
-        prog=prog,
+        prog=spec.args[0],
         usage=usage,
         exit_on_error=False,
     )

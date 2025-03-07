@@ -15,7 +15,7 @@ def abspath(
     stderr: TextIO,
     spec: SubprocessSpec,
 ) -> ExitCode:
-  arg_parser = _AbspathArgumentParser(spec.args[0])
+  arg_parser = _AbspathArgumentParser(spec)
   arg_parse_result = arg_parser.parse_alias_args(args, stdout, stderr)
   if isinstance(arg_parse_result, int):
     return ExitCode(arg_parse_result)
@@ -35,9 +35,9 @@ class _AbspathParsedArgs(Protocol):
 
 class _AbspathArgumentParser(AliasArgumentParser[_AbspathParsedArgs]):
 
-  def __init__(self, prog: str) -> None:
+  def __init__(self, spec: SubprocessSpec) -> None:
     super().__init__(
-        prog=prog,
+        spec=spec,
         usage="%(prog)s [options] <path> [path2 [path3 [ ... ]]]",
     )
     self.add_argument(

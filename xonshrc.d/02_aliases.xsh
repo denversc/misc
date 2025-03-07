@@ -28,6 +28,32 @@ def ssh_to_lb_alias(args: Sequence[str]) -> list[str]:
   return final_args
 
 
+def create_and_cd_into_temp_dir(args, stdout, stderr, spec) -> list[str]:
+  from dconeybe.xonsh.aliases.argparse import AliasArgumentParser
+  arg_parser = AliasArgumentParser(spec=spec, usage="%(prog)s [name]")
+  arg_parser.add_argument(
+    "name",
+    nargs="?",
+    help="The name of the temporary directory to use; " +
+      "if empty (the default) then just use a random string."
+  )
+
+  parsed_args = arg_parser.parse_alias_args(args, stdout, stderr)
+  if isinstance(parsed_args, int):
+    return parsed_args
+  del arg_parser
+
+  match parsed_args.name:
+    case None | "":
+      name = "XXXXXXXXXX"
+    case str(name):
+      name = name + "_XXXXXXXXXX"
+    case name:
+      raise Exception(f"internal error fk5gw3ynhy: unsupported name: {name}")
+
+  cd $(mktemp -d -p ~/tmp @(name))
+
+
 def register_my_aliases() -> None:
   from dconeybe.xonsh.aliases import rnd as dconeybe_rnd
   aliases["rnd"] = dconeybe_rnd.rnd
@@ -52,6 +78,9 @@ def register_my_aliases() -> None:
   # Convenience wrapper to ssh to my cloudtop instance.
   aliases["slb"] = ssh_to_lb_alias
 
+  # Create a temporary directory and cd into it.
+  aliases["mkd"] = create_and_cd_into_temp_dir
+
 
 # Only register aliases in interactive mode.
 if $XONSH_INTERACTIVE:
@@ -59,5 +88,6 @@ if $XONSH_INTERACTIVE:
 
 
 # Clean up global namespace
+del create_and_cd_into_temp_dir
 del register_my_aliases
 del ssh_to_lb_alias
