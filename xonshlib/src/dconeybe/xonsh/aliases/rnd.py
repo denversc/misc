@@ -17,7 +17,7 @@ def rnd(
     stderr: TextIO,
     spec: SubprocessSpec,
 ) -> ExitCode:
-  arg_parser = _RndArgumentParser(spec.args[0])
+  arg_parser = _RndArgumentParser(spec)
   arg_parse_result = arg_parser.parse_alias_args(args, stdout, stderr)
   if isinstance(arg_parse_result, int):
     return ExitCode(arg_parse_result)
@@ -61,9 +61,9 @@ class _RndParsedArgs(Protocol):
 
 class _RndArgumentParser(AliasArgumentParser[_RndParsedArgs]):
 
-  def __init__(self, prog: str) -> None:
+  def __init__(self, spec: SubprocessSpec) -> None:
     super().__init__(
-        prog=prog,
+        spec=spec,
         usage="%(prog)s [options]",
     )
     self.add_argument(
