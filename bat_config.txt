@@ -1,0 +1,6 @@
+# Config file for the bat replacement for cat (https://github.com/sharkdp/bat)
+#
+# To use this config file, run the following command:
+# mkdir -p "$XDG_CONFIG_HOME/bat" && ln -sf "$PWD/bat_config.txt" "$XDG_CONFIG_HOME/bat/config"
+
+--pager=less
