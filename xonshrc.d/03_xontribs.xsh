@@ -32,3 +32,6 @@ if $XONSH_INTERACTIVE:
 
   # Requires pip install xontrib-zoxide
   xontrib load zoxide
+  # Since "f" is easier to type than "z", make "f" an alias for "z".
+  aliases["f"] = aliases["z"]
+  aliases["fi"] = aliases["zi"]
