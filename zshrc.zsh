@@ -1,3 +1,6 @@
+# To use this file, run this command:
+# echo "source \"$PWD/zshrc.zshrc\"" > ~/.zshrc
+
 autoload -Uz promptinit
 promptinit
 prompt adam1
