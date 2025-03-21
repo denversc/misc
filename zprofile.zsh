@@ -15,7 +15,6 @@ if [[ -v HOMEBREW_PREFIX ]] ; then
   readonly nvim_path="$(brew --prefix neovim)/bin/nvim"
   if [[ -e $nvim_path ]] ; then
     export EDITOR="$nvim_path"
-    export PAGER="$nvim_path -R -S $HOME/misc/nvim_git_pager.lua"
     export MANPAGER="$nvim_path +Man!"
   fi
 fi
