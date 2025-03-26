@@ -12,6 +12,7 @@
   dt = difftool
   dtc = difftool --cached
   dc = diff --cached
+  fp = fetch --prune
   st = status
   lf = diff-tree --no-commit-id --name-only -r
 [push]
