@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from __future__ import annotations
 
 import argparse
@@ -129,8 +131,8 @@ def parse_args(prog: str, args: Sequence[str]) -> ParsedArgs:
         ")"
   )
   arg_parser.add_argument(
-      "-d", "--dest-file",
-      dest="dest_file",
+      "-o   ", "--output-file",
+      dest="output_file",
       default=None,
       help="A file to which output is written, in addition to being written to stdout",
   )
@@ -146,7 +148,7 @@ def parse_args(prog: str, args: Sequence[str]) -> ParsedArgs:
     subprocess_args=tuple(subprocess_args),
     line_number_prefix_enabled=namespace.prefix_line_number,
     timestamp_prefix_enabled=namespace.prefix_timestamp,
-    alt_output_file=None if namespace.dest_file is None else pathlib.Path(namespace.dest_file),
+    alt_output_file=None if namespace.output_file is None else pathlib.Path(namespace.output_file),
   )
 
 class TimestampPrefixer:
