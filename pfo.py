@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+import signal
 import subprocess
 import sys
 import time
@@ -16,6 +17,13 @@ def main(args: Sequence[str]) -> None:
       stdout=subprocess.PIPE,
       stderr=subprocess.STDOUT,      
   )
+
+  def signal_handler(sig, stack):
+    process.send_signal(sig)
+
+  signal.signal(signal.SIGABRT, signal_handler)
+  signal.signal(signal.SIGINT, signal_handler)
+  signal.signal(signal.SIGTERM, signal_handler)
 
   prefixer = TimestampPrefixer(
       start_time = TimestampPrefixer.monotonic_time(),
@@ -54,6 +62,7 @@ class TimestampPrefixer:
     end_index = chunk.find(b"\n")
     if end_index < 0:
       self.dest.write(chunk)
+      self.dest.flush()
       return
 
     self.dest.write(chunk[:end_index + 1])
@@ -70,6 +79,8 @@ class TimestampPrefixer:
       start_index = end_index + 1
     else:
       self._next_chunk_starts_new_line = True
+
+    self.dest.flush()
 
   def _print_current_time(self) -> None:
     current_time = self.monotonic_time()
