@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+# To "install" this script, run the following command:
+# mkdir -p ~/.local/bin && ln -sf ~/misc/pf.py ~/.local/bin/pf
+
 from __future__ import annotations
 
 import argparse
