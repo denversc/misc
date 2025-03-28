@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import argparse
 from collections.abc import Sequence
 import dataclasses
+import datetime
+import os
 import pathlib
 import signal
 import subprocess
@@ -11,12 +15,61 @@ import typing
 def main(args: Sequence[str]) -> None:
   parsed_args = parse_args(prog=args[0], args=args[1:])
 
+  subprocess_args = parsed_args.subprocess_args
+  subprocess_args_str = subprocess.list2cmdline(subprocess_args)
+
+  if parsed_args.alt_output_file is not None:
+    alt_dest = parsed_args.alt_output_file.open("wb")
+  else:
+    alt_dest = None
+
+  del parsed_args
+
+  try:
+    prefixer = TimestampPrefixer(
+        start_time = TimestampPrefixer.monotonic_time(),
+        dest = sys.stdout.buffer,
+        alt_dest = alt_dest,
+    )
+    prefixer.write_status_line(f"Starting command: {subprocess_args_str}")
+    prefixer.write_status_line(f"Starting command in directory: {pathlib.Path.cwd()}")
+    prefixer.write_status_line(f"Starting command at: {datetime.datetime.now()}")
+
+    exit_code = None
+    try:
+      exit_code = run(
+        subprocess_args=subprocess_args,
+        prefixer=prefixer,
+      )
+    finally:
+      prefixer.write_status_line(f"Command completed: {subprocess_args_str}")
+      if exit_code is not None:
+        prefixer.write_status_line(f"Command completed with exit code: {exit_code}")
+      prefixer.write_status_line(f"Command completed at: {datetime.datetime.now()}")
+
+    if alt_dest is not None:
+      alt_dest.close()
+  except:
+    if alt_dest is not None:
+      try:
+        alt_dest.close()
+      except Exception:
+        pass
+    raise
+
+  sys.exit(exit_code)
+
+def run(
+    subprocess_args: Sequence[str],
+    prefixer: TimestampPrefixer,
+) -> int:
+
   process = subprocess.Popen(
-      parsed_args.subprocess_args,
+      subprocess_args,
       bufsize=0, # unbuffered
       pipesize=256,
       stdout=subprocess.PIPE,
-      stderr=subprocess.STDOUT,      
+      stderr=subprocess.STDOUT,
   )
 
   def signal_handler(sig, stack):
@@ -26,28 +79,9 @@ def main(args: Sequence[str]) -> None:
   signal.signal(signal.SIGINT, signal_handler)
   signal.signal(signal.SIGTERM, signal_handler)
 
-  if parsed_args.alt_output_file is not None:
-    alt_dest = parsed_args.alt_output_file.open("wb")
-  else:
-    alt_dest = None
+  prefixer.process_file(process.stdout)
 
-  try:
-    prefixer = TimestampPrefixer(
-        start_time = TimestampPrefixer.monotonic_time(),
-        dest = sys.stdout.buffer,
-        alt_dest = alt_dest,
-    )
-
-    while True:
-      chunk = process.stdout.read(8192)
-      if not chunk:
-        break
-      prefixer.process_chunk(chunk)
-  finally:
-    if alt_dest is not None:
-      alt_dest.close()
-
-  sys.exit(process.wait())
+  return process.wait()
 
 @dataclasses.dataclass(frozen=True)
 class ParsedArgs:
@@ -63,7 +97,7 @@ def parse_args(prog: str, args: Sequence[str]) -> ParsedArgs:
       prog=prog,
       usage="%(prog)s [options] <subcommand> [subcommand_args]",
   )
-  
+
   prefix_timestamp_arg = arg_parser.add_argument(
       "-t", "--prefix-timestamp",
       action="store_true",
@@ -124,44 +158,71 @@ class TimestampPrefixer:
     self._next_chunk_starts_new_line = True
     self._last_formatted_time: str | None = None
     self._last_formatted_time_values: tuple[int, int, int] | None = None
+    self._line_number = 1
 
   @staticmethod
   def monotonic_time() -> float:
     return time.monotonic()
+
+  def process_file(self, f: typing.BinaryIO) -> None:
+    while True:
+      chunk = f.read(8192)
+      if not chunk:
+        break
+      self.process_chunk(chunk)
 
   def process_chunk(self, chunk: bytes) -> None:
     if len(chunk) == 0:
       raise ValueError("len(chunk)==0, but expected len(chunk) to be strictly greater than zero")
 
     if self._next_chunk_starts_new_line:
-      self._print_current_time()
+      self.write_prefix()
       self._next_chunk_starts_new_line = False
 
     end_index = chunk.find(b"\n")
     if end_index < 0:
-      self._write(chunk)
+      self.write(chunk)
       self.dest.flush()
       return
 
-    self._write(chunk[:end_index + 1])
+    self.write(chunk[:end_index + 1])
     self._next_chunk_starts_new_line = False
 
     start_index = end_index + 1
     while start_index < len(chunk):
       end_index = chunk.find(b"\n", start_index)
-      self._print_current_time()
+      self.write_prefix()
       if end_index < 0:
-        self._write(chunk[start_index:])
+        self.write(chunk[start_index:])
         break
-      self._write(chunk[start_index:end_index + 1])
+      self.write(chunk[start_index:end_index + 1])
       start_index = end_index + 1
     else:
       self._next_chunk_starts_new_line = True
 
     self.dest.flush()
 
-  def _print_current_time(self) -> None:
-    current_time = self.monotonic_time()
+  def write_status_line(self, line: str) -> None:
+    if not self._next_chunk_starts_new_line:
+      self.write(os.linesep)
+    self.write_prefix(line_number=0, current_time=self.start_time)
+    self.write(line)
+    self.write(os.linesep)
+    self.dest.flush()
+    self._next_chunk_starts_new_line = True
+
+  def write_prefix(
+      self,
+      line_number: int | None = None,
+      current_time: float | None = None,
+  ) -> None:
+    if current_time is None:
+      current_time = self.monotonic_time()
+
+    if line_number is None:
+      line_number = self._line_number
+      self._line_number += 1
+
     elapsed_time = current_time - self.start_time
     minutes = int(elapsed_time // 60)
     seconds = int(elapsed_time) - (minutes * 60)
@@ -175,9 +236,12 @@ class TimestampPrefixer:
       self._last_formatted_time_values = cache_key
       self._last_formatted_time = timestamp
 
-    self._write(timestamp.encode("utf8", errors="strict"))
+    self.write(f"{line_number:06d} ")
+    self.write(timestamp)
 
-  def _write(self, chunk: bytes) -> None:
+  def write(self, chunk: bytes | str) -> None:
+    if isinstance(chunk, str):
+      chunk = chunk.encode("utf8", errors="strict")
     self.dest.write(chunk)
     alt_dest = self.alt_dest
     if alt_dest is not None:
