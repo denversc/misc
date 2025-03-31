@@ -63,6 +63,8 @@ def register_my_aliases() -> None:
   aliases["abspath"] = dconeybe_abspath.abspath
   del dconeybe_abspath
 
+  aliases["rgp"] = "batgrep"
+
   aliases["ls"] = ["lsd", "--hyperlink=always"]
 
   aliases["gii"] = ["git", "--no-pager"]
