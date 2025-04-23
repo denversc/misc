@@ -26,7 +26,8 @@ If using the asdf package manager, run
 
 Then, the "watchmedo" command can run pandoc upon changes to this file:
 
-  watchmedo shell-command -w -p LinuxSetup.md -c 'pandoc -s --toc -o LinuxSetup.html -f commonmark_x -t html LinuxSetup.md'
+  watchmedo shell-command -w -p LinuxSetup.md -c \
+    'pandoc -s --toc -o LinuxSetup.html -f commonmark_x -t html LinuxSetup.md'
 -->
 
 ## Kitty Terminfo {#kitty-terminfo}

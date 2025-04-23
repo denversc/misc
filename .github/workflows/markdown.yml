@@ -11,6 +11,7 @@ on:
     paths:
       - '**/*.md'
       - '.github/workflows/markdown.yml'
+      - '.markdownlint.yml'
 
 env:
   ZQ88C5ADW6_NODE_VERSION: ${{ inputs.node-version || '22' }}
