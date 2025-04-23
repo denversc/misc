@@ -1,0 +1,27 @@
+name: actionlint
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Install actionlint by running:
+  #   brew install actionlint
+  # Run actionlint by running:
+  #   actionlint
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+          sparse-checkout: '.github/'
+      - uses: docker://rhysd/actionlint:1.7.7
+        with:
+          args: -color

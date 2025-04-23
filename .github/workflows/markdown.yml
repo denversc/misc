@@ -1,0 +1,32 @@
+name: markdown
+
+on:
+  workflow_dispatch:
+    inputs:
+      node-version:
+      markdownlint-cli2-version:
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '.github/workflows/markdown.yml'
+
+env:
+  ZQ88C5ADW6_NODE_VERSION: ${{ inputs.node-version || '22' }}
+  ZQ88C5ADW6_MARKDOWNLINT_CLI2_VERSION: ${{ inputs.markdownlint-cli2-version || '0.17.2' }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.ZQ88C5ADW6_NODE_VERSION }}
+      - name: install markdownlint-cli2
+        run: npm install --global "markdownlint-cli2@$ZQ88C5ADW6_MARKDOWNLINT_CLI2_VERSION"
+      - name: run markdownlint-cli2
+        run: markdownlint-cli2 '**/*.md'
