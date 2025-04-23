@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - .github/workflows/
+      - '.github/workflows/**/*.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -18,10 +18,13 @@ jobs:
   actionlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: git checkout
+        uses: actions/checkout@v4
         with:
           show-progress: false
           sparse-checkout: '.github/'
-      - uses: docker://rhysd/actionlint:1.7.7
+
+      - name: run actionlint
+        uses: docker://rhysd/actionlint:1.7.7
         with:
           args: -color

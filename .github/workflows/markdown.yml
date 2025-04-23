@@ -4,7 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       node-version:
+        default: '22'
       markdownlint-cli2-version:
+        default: '0.17.2'
   pull_request:
     paths:
       - '**/*.md'
@@ -22,11 +24,18 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: git checkout
+        uses: actions/checkout@v4
         with:
-          node-version: ${{ env.ZQ88C5ADW6_NODE_VERSION }}
+          show-progress: false
+
+      - name: install node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
       - name: install markdownlint-cli2
-        run: npm install --global "markdownlint-cli2@$ZQ88C5ADW6_MARKDOWNLINT_CLI2_VERSION"
+        run: npm install --fund=false --audit=false --global 'markdownlint-cli2@${{ inputs.markdownlint-cli2-version }}'
+
       - name: run markdownlint-cli2
         run: markdownlint-cli2 '**/*.md'
