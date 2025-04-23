@@ -64,7 +64,7 @@ jobs:
         run: |
           set -xveuo pipefail
           readonly pandoc_url='https://github.com/jgm/pandoc/releases/download/${{ env.ZQ88C5ADW6_NODE_VERSION }}/pandoc-${{ env.ZQ88C5ADW6_NODE_VERSION }}-linux-amd64.tar.gz'
-          reaodnly pandoc_tarball='${{ runner.temp }}/pandoc.tar.gz'
+          readonly pandoc_tarball='${{ runner.temp }}/pandoc.tar.gz'
           wget "$pandoc_url" -O "$pandoc_tarball"
           tar --strip-components=1 -xf "$pandoc_tarball" -C '${{ runner.temp }}'
           echo 'pandoc_exe=${{ runner.temp }}/bin/pandoc' >>"$GITHUB_ENV"
