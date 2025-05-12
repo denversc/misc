@@ -160,8 +160,8 @@ the GitHub Releases page.
 ```bash
 mkdir -p ~/local/kitty
 cd ~/local/kitty
-wget https://github.com/kovidgoyal/kitty/releases/download/v0.41.0/kitty-0.41.0-x86_64.txz
-tar xf kitty-0.41.0-x86_64.txz
+wget https://github.com/kovidgoyal/kitty/releases/download/v0.42.0/kitty-0.42.0-x86_64.txz
+tar xf kitty-0.42.0-x86_64.txz
 ```
 
 Then add symlinks to ensure that Kitty is in the `PATH`:
