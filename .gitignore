@@ -2,4 +2,3 @@
 .gitconfig
 *.swp
 __pycache__/
-/LinuxSetup.html
