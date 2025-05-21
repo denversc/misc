@@ -4,7 +4,7 @@ import random
 import textwrap
 import typing
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Literal, Protocol, TextIO
 
 from dconeybe.xonsh.aliases.argparse import AliasArgumentParser
@@ -25,36 +25,69 @@ def rnd(
   del arg_parser
   del arg_parse_result
 
+  generate_random_value: Callable[[], object]
   match parsed_args.generate_type:
     case "string":
-      random_characters = random.choices(_ALPHABET, k=parsed_args.length)
-      random_characters = list(random_characters)
-      if parsed_args.first_char_alpha:
-        random_characters[0] = random.choice(_ALPHABET_LETTERS)
-      result = "".join(random_characters)
+      random_string_generator = RandomStringGenerator(
+          length=parsed_args.length,
+          first_char_alpha=parsed_args.first_char_alpha,
+      )
+      generate_random_value = random_string_generator.generate_random_string
     case "int32":
-      result = random.randint(-(2**31), (2**31) - 1)
+      generate_random_value = generate_random_int32
     case "uint32":
-      result = random.randint(0, 2**32)
+      generate_random_value = generate_random_uint32
     case "int64":
-      result = random.randint(-(2**63), (2**63) - 1)
+      generate_random_value = generate_random_int64
     case "uint64":
-      result = random.randint(0, 2**64)
+      generate_random_value = generate_random_uint64
     case _ as generate_type:
       typing.assert_never(parsed_args.generate_type)
       raise Exception(f"unsupported generate_type: {generate_type}" + " (error code apd622j9pz)")
 
-  print(result, file=stdout)
+  for _ in range(parsed_args.count):
+    print(generate_random_value(), file=stdout)
+
   return ExitCode(0)
 
 
-_ALPHABET_LETTERS = "abcdefghjkmnpqrstvwxyz"
-_ALPHABET_NUMBERS = "23456789"
-_ALPHABET = _ALPHABET_LETTERS + _ALPHABET_NUMBERS
+class RandomStringGenerator:
+
+  _ALPHABET_LETTERS = "abcdefghjkmnpqrstvwxyz"
+  _ALPHABET_NUMBERS = "23456789"
+  _ALPHABET = _ALPHABET_LETTERS + _ALPHABET_NUMBERS
+
+  def __init__(self, length: int, first_char_alpha: bool) -> None:
+    self.length = length
+    self.first_char_alpha = first_char_alpha
+
+  def generate_random_string(self) -> str:
+    random_characters = random.choices(self._ALPHABET, k=self.length)
+    random_characters = list(random_characters)
+    if self.first_char_alpha:
+      random_characters[0] = random.choice(self._ALPHABET_LETTERS)
+    return "".join(random_characters)
+
+
+def generate_random_int32() -> int:
+  return random.randint(-(2**31), (2**31) - 1)
+
+
+def generate_random_uint32() -> int:
+  return random.randint(0, 2**32)
+
+
+def generate_random_int64() -> int:
+  return random.randint(-(2**63), (2**63) - 1)
+
+
+def generate_random_uint64() -> int:
+  return random.randint(0, 2**64)
 
 
 class _RndParsedArgs(Protocol):
   length: int
+  count: int
   first_char_alpha: bool
   generate_type: Literal["string", "int32", "int64", "uint32", "uint64"]
 
@@ -68,6 +101,13 @@ class _RndArgumentParser(AliasArgumentParser[_RndParsedArgs]):
     )
     self.add_argument(
         "-n",
+        "--count",
+        type="nonnegative_int",
+        default=1,
+        help="The number of random values to generate (default: %(default)s)",
+    )
+    self.add_argument(
+        "-l",
         "--length",
         type="positive_int",
         default=10,

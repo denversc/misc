@@ -169,7 +169,7 @@ class TestRndLengthArgument:
 
   @hypothesis.given(length=st.integers(min_value=1, max_value=100))
   @hypothesis_disable_function_scoped_fixture_health_check
-  @pytest.mark.parametrize("length_arg", ["-n", "--length"])
+  @pytest.mark.parametrize("length_arg", ["-l", "--length"])
   def test_should_write_string_of_given_length(
       self,
       rnd_args_factory: RndArgsFactory,
@@ -263,6 +263,59 @@ class TestRndFirstCharAlphaArgument:
         (1 if generated_string[0].isalpha() else 0) for generated_string in generated_strings
     )
     assert count_with_first_char_alpha < 90, f"generated_strings={generated_strings!r}"
+
+
+class TestRndCountArgument:
+
+  @hypothesis.given(count=st.integers(min_value=0, max_value=100))
+  @hypothesis_disable_function_scoped_fixture_health_check
+  @pytest.mark.parametrize("count_arg", ["-n", "--count"])
+  def test_should_write_requested_number_of_strings(
+      self,
+      rnd_args_factory: RndArgsFactory,
+      count_arg: str,
+      count: int,
+  ):
+    rnd_args = rnd_args_factory()
+    exit_code = rnd.rnd([count_arg, str(count)], *rnd_args)
+
+    generated_string = rnd_args.stdout.getvalue().strip()
+    generated_lines = generated_string.splitlines()
+    assert len(generated_lines) == count
+    assert exit_code == 0
+
+  @hypothesis.given(count=st.integers(min_value=-100000, max_value=-1))
+  @hypothesis.example(count=-1)
+  @hypothesis_disable_function_scoped_fixture_health_check
+  def test_should_fail_with_non_negative_count(
+      self,
+      rnd_args_factory: RndArgsFactory,
+      count: int,
+  ):
+    rnd_args = rnd_args_factory()
+    exit_code = rnd.rnd([f"--count={count}"], *rnd_args)
+
+    stderr_text = rnd_args.stderr.getvalue()
+    assert contains_with_non_abutting_text(stderr_text, "must be greater than or equal to zero")
+    assert contains_with_non_abutting_text(stderr_text, str(count))
+    assert exit_code == 2
+
+  @hypothesis.given(count=st.text())
+  @hypothesis.example(count="")
+  @hypothesis_disable_function_scoped_fixture_health_check
+  def test_should_fail_with_non_integer_count(
+      self,
+      rnd_args_factory: RndArgsFactory,
+      count: str,
+  ):
+    hypothesis.assume(not can_be_parsed_as_int(count))
+    rnd_args = rnd_args_factory()
+    exit_code = rnd.rnd([f"--count={count}"], *rnd_args)
+
+    stderr_text = rnd_args.stderr.getvalue()
+    assert contains_with_non_abutting_text(stderr_text, "not a number")
+    assert contains_with_non_abutting_text(stderr_text, count)
+    assert exit_code == 2
 
 
 class TestRndReportsInvalidArgs:

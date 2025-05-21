@@ -16,6 +16,7 @@ class AliasArgumentParser[T](argparse.ArgumentParser):
         exit_on_error=False,
     )
     self.register("type", "positive_int", self._positive_int_type)
+    self.register("type", "nonnegative_int", self._nonnegative_int_type)
 
   def parse_alias_args(self, args: Sequence[str], stdout: TextIO, stderr: TextIO) -> ExitCode | T:
     try:
@@ -50,5 +51,17 @@ class AliasArgumentParser[T](argparse.ArgumentParser):
 
     if int_value <= 0:
       raise argparse.ArgumentTypeError(f"must be greater than zero: {s}")
+
+    return int_value
+
+  @staticmethod
+  def _nonnegative_int_type(s: str) -> int:
+    try:
+      int_value = int(s)
+    except ValueError:
+      raise argparse.ArgumentTypeError(f"not a number: {s}")
+
+    if int_value < 0:
+      raise argparse.ArgumentTypeError(f"must be greater than or equal to zero: {s}")
 
     return int_value
