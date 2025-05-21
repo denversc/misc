@@ -6,6 +6,7 @@ import dataclasses
 import io
 import re
 from typing import NamedTuple, Self, Sequence
+from unittest import mock
 
 import hypothesis
 import hypothesis.strategies as st
@@ -318,6 +319,102 @@ class TestRndCountArgument:
     assert exit_code == 2
 
 
+class TestRndCopyToClipboardArgument:
+
+  COPY_ARGS = ("-c", "--copy-to-clipboard")
+  NOCOPY_ARGS = ("-C", "--no-copy-to-clipboard")
+
+  def test_should_copy_to_clipboard_by_default(
+      self,
+      rnd_args_factory: RndArgsFactory,
+      mock_copykitten: mock.Mock,
+  ):
+    self.assert_copies_to_clipboard(
+        args=[],
+        expect_copy=True,
+        rnd_args_factory=rnd_args_factory,
+        mock_copykitten=mock_copykitten,
+    )
+
+  @pytest.mark.parametrize("copy_arg", COPY_ARGS)
+  def test_should_copy_to_clipboard_if_specified(
+      self,
+      rnd_args_factory: RndArgsFactory,
+      mock_copykitten: mock.Mock,
+      copy_arg: str,
+  ):
+    self.assert_copies_to_clipboard(
+        args=[copy_arg],
+        expect_copy=True,
+        rnd_args_factory=rnd_args_factory,
+        mock_copykitten=mock_copykitten,
+    )
+
+  @pytest.mark.parametrize("nocopy_arg", NOCOPY_ARGS)
+  def test_should_not_copy_to_clipboard_if_specified(
+      self,
+      rnd_args_factory: RndArgsFactory,
+      mock_copykitten: mock.Mock,
+      nocopy_arg: str,
+  ):
+    self.assert_copies_to_clipboard(
+        args=[nocopy_arg],
+        expect_copy=False,
+        rnd_args_factory=rnd_args_factory,
+        mock_copykitten=mock_copykitten,
+    )
+
+  @pytest.mark.parametrize("copy_arg", COPY_ARGS)
+  @pytest.mark.parametrize("nocopy_arg", NOCOPY_ARGS)
+  def test_should_copy_if_last_arg_specifies_to_copy(
+      self,
+      rnd_args_factory: RndArgsFactory,
+      mock_copykitten: mock.Mock,
+      copy_arg: str,
+      nocopy_arg: str,
+  ):
+    self.assert_copies_to_clipboard(
+        args=[nocopy_arg, copy_arg],
+        expect_copy=True,
+        rnd_args_factory=rnd_args_factory,
+        mock_copykitten=mock_copykitten,
+    )
+
+  @pytest.mark.parametrize("copy_arg", COPY_ARGS)
+  @pytest.mark.parametrize("nocopy_arg", NOCOPY_ARGS)
+  def test_should_not_copy_if_last_arg_specifies_to_not_copy(
+      self,
+      rnd_args_factory: RndArgsFactory,
+      mock_copykitten: mock.Mock,
+      copy_arg: str,
+      nocopy_arg: str,
+  ):
+    self.assert_copies_to_clipboard(
+        args=[copy_arg, nocopy_arg],
+        expect_copy=False,
+        rnd_args_factory=rnd_args_factory,
+        mock_copykitten=mock_copykitten,
+    )
+
+  def assert_copies_to_clipboard(
+      self,
+      args: Sequence[str],
+      expect_copy: bool,
+      rnd_args_factory: RndArgsFactory,
+      mock_copykitten: mock.Mock,
+  ) -> None:
+    rnd_args = rnd_args_factory()
+    exit_code = rnd.rnd(args, *rnd_args)
+
+    assert exit_code == 0
+    rnd_output = rnd_args.stdout.getvalue()
+    assert len(rnd_output) > 0
+    if expect_copy:
+      mock_copykitten.copy.assert_called_once_with(rnd_output)
+    else:
+      mock_copykitten.copy.assert_not_called()
+
+
 class TestRndReportsInvalidArgs:
 
   def test_invalid_arg(self, rnd_args: RndArgs):
@@ -368,3 +465,14 @@ def can_be_parsed_as_int(s: str) -> bool:
 ALPHABET_LETTERS = "abcdefghjkmnpqrstvwxyz"
 ALPHABET_NUMBERS = "23456789"
 ALPHABET = ALPHABET_LETTERS + ALPHABET_NUMBERS
+
+
+class MockCopykitten(mock.Mock):
+  copy: mock.Mock
+
+
+@pytest.fixture(autouse=True)
+def mock_copykitten(monkeypatch: pytest.MonkeyPatch) -> MockCopykitten:
+  mock_object = mock.create_autospec(rnd.copykitten, spec_set=True)
+  monkeypatch.setattr(rnd, "copykitten", mock_object)
+  return mock_object

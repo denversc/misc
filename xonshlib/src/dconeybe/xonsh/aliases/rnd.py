@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import copykitten
+import io
 import random
 import textwrap
 import typing
@@ -45,8 +47,14 @@ def rnd(
       typing.assert_never(parsed_args.generate_type)
       raise Exception(f"unsupported generate_type: {generate_type}" + " (error code apd622j9pz)")
 
+  output_buffer = io.StringIO()
   for _ in range(parsed_args.count):
-    print(generate_random_value(), file=stdout)
+    print(generate_random_value(), file=output_buffer)
+
+  output = output_buffer.getvalue()
+  stdout.write(output)
+  if parsed_args.copy_to_clipboard:
+    copykitten.copy(output)
 
   return ExitCode(0)
 
@@ -89,6 +97,7 @@ class _RndParsedArgs(Protocol):
   length: int
   count: int
   first_char_alpha: bool
+  copy_to_clipboard: bool
   generate_type: Literal["string", "int32", "int64", "uint32", "uint64"]
 
 
@@ -176,4 +185,21 @@ class _RndArgumentParser(AliasArgumentParser[_RndParsedArgs]):
         action="store_const",
         const="int32",
         help="Generate a 32-bit signed integer",
+    )
+    copy_to_clipboard_arg = self.add_argument(
+        "--copy-to-clipboard",
+        "-c",
+        dest="copy_to_clipboard",
+        action="store_true",
+        default=True,
+        help="Copy the generated text to the clipboard (this is the default behavior)",
+    )
+    copy_to_clipboard_option_strings = sorted(copy_to_clipboard_arg.option_strings, key=len)
+    self.add_argument(
+        "--no-copy-to-clipboard",
+        "-C",
+        dest="copy_to_clipboard",
+        action="store_false",
+        help="Do NOT copy the generated text to the clipboard; "
+        f"negates the effects of {"/".join(copy_to_clipboard_option_strings)}",
     )
