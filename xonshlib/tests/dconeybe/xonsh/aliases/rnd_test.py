@@ -410,7 +410,7 @@ class TestRndCopyToClipboardArgument:
     rnd_output = rnd_args.stdout.getvalue()
     assert len(rnd_output) > 0
     if expect_copy:
-      mock_copykitten.copy.assert_called_once_with(rnd_output)
+      mock_copykitten.copy.assert_called_once_with(rnd_output.strip())
     else:
       mock_copykitten.copy.assert_not_called()
 

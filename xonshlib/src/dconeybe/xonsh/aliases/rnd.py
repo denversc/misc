@@ -54,7 +54,7 @@ def rnd(
   output = output_buffer.getvalue()
   stdout.write(output)
   if parsed_args.copy_to_clipboard:
-    copykitten.copy(output)
+    copykitten.copy(output.strip())
 
   return ExitCode(0)
 
