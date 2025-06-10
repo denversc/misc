@@ -7,10 +7,14 @@ def ssh_to_lb_alias(args: Sequence[str]) -> list[str]:
   """
   Convenience alias to ssh to my cloudtop instance.
   """
-  final_args = [
+  ssh_args = [
     "ssh",
     "lb",
     "-t",
+  ]
+  ssh_args.extend(args)
+
+  xonsh_args = [
     "/usr/local/google/home/dconeybe/.local/bin/xonsh",
     "--login",
     "--interactive",
@@ -18,14 +22,12 @@ def ssh_to_lb_alias(args: Sequence[str]) -> list[str]:
 
   kitty_public_key = ${...}.get("KITTY_PUBLIC_KEY")
   if kitty_public_key:
-    final_args.extend([
+    xonsh_args.extend([
       "-D",
       "KITTY_PUBLIC_KEY='" + ${...}.get("KITTY_PUBLIC_KEY", "") + "'",
     ])
 
-  final_args.extend(args)
-
-  return final_args
+  return ssh_args + xonsh_args
 
 
 def create_and_cd_into_temp_dir(args, stdout, stderr, spec) -> list[str]:
