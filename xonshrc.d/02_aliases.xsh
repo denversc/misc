@@ -30,6 +30,38 @@ def ssh_to_lb_alias(args: Sequence[str]) -> list[str]:
   return ssh_args + xonsh_args
 
 
+@aliases.return_command
+def ssh_to_lb_port_forward(args: Sequence[str]) -> list[str]:
+  """
+  Convenience alias to ssh to my cloudtop instance for the sole purpose of
+  forwarding remote TCP ports to their corresponding local ports.
+  """
+  if len(args) == 0:
+    raise Exception("at least one port number must be specified")
+
+  ssh_args = [
+    "ssh",
+    "-o",
+    "ControlMaster=no",
+    "-f",
+    "-N",
+    "-T",
+  ]
+
+  for port in args:
+    try:
+      port_int = int(port)
+    except ValueError as e:
+      raise Exception(f"invalid integer: {port} ({e})")
+    else:
+      ssh_args.append("-L")
+      ssh_args.append(f"{port_int}:127.0.0.1:{port_int}")
+
+  ssh_args.append("lb")
+
+  return ssh_args
+
+
 def create_and_cd_into_temp_dir(args, stdout, stderr, spec) -> list[str]:
   from dconeybe.xonsh.aliases.argparse import AliasArgumentParser
   arg_parser = AliasArgumentParser(spec=spec, usage="%(prog)s [name]")
@@ -81,8 +113,9 @@ def register_my_aliases() -> None:
   # https://sw.kovidgoyal.net/kitty/kittens/hyperlinked_grep
   aliases["rg"] = ["rg", "--hyperlink-format=kitty"]
 
-  # Convenience wrapper to ssh to my cloudtop instance.
+  # Convenience wrappers to ssh to my cloudtop instance.
   aliases["slb"] = ssh_to_lb_alias
+  aliases["slbrpf"] = ssh_to_lb_port_forward
 
   # Create a temporary directory and cd into it.
   aliases["mkd"] = create_and_cd_into_temp_dir
@@ -97,3 +130,4 @@ if $XONSH_INTERACTIVE:
 del create_and_cd_into_temp_dir
 del register_my_aliases
 del ssh_to_lb_alias
+del ssh_to_lb_port_forward
