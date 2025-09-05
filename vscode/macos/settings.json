@@ -1,0 +1,12 @@
+{
+    "workbench.preferredHighContrastLightColorTheme": "Default Light Modern",
+    "editor.fontFamily": "'JetBrainsMonoNL Nerd Font', Menlo, Monaco, 'Courier New', monospace",
+    "editor.tabSize": 2,
+    "editor.rulers": [
+
+         100
+    ],
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "geminicodeassist.project": "aipp-internal-testing",
+    "diffEditor.codeLens": true
+}
