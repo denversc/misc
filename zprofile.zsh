@@ -19,10 +19,6 @@ if [[ -v HOMEBREW_PREFIX ]] ; then
   fi
 fi
 
-# asdf version manager (https://asdf-vm.com/guide/getting-started.html).
-export ASDF_DATA_DIR="${XDG_STATE_HOME:?XDG_STATE_HOME is not set}/asdf"
-export PATH="$ASDF_DATA_DIR/shims:$PATH"
-
 # Rust setup.
 if [[ -e "$HOME/.cargo/env" ]] ; then
   source "$HOME/.cargo/env"
