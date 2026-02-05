@@ -64,43 +64,6 @@ if vim.g.neovide then
   vim.g.neovide_scroll_animation_length = 0
 end
 
-require("config.lazy")
-
-require('lualine').setup {
-  theme = 'powerline',
-}
-
-local lspconfig = require('lspconfig')
-lspconfig.clangd.setup {
-  capabilities = require('cmp_nvim_lsp').default_capabilities(),
-}
-
-local cmp = require('cmp')
-local luasnip = require('luasnip')
-
-cmp.setup({
-  snippet = {
-    expand = function(args)
-      luasnip.lsp_expand(args.body)
-    end,
-  },
-  mapping = cmp.mapping.preset.insert({
-    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-    ['<C-f>'] = cmp.mapping.scroll_docs(4),
-    ['<C-Space>'] = cmp.mapping.complete(),
-    ['<C-e>'] = cmp.mapping.abort(),
-    ['<CR>'] = cmp.mapping.confirm({ select = true }),
-  }),
-  sources = cmp.config.sources({
-    { name = 'nvim_lsp' },
-    { name = 'luasnip' },
-    { name = 'buffer' },
-    { name = 'path' },
-  }),
-})
-
-luasnip.config.setup({})
-
 -- Load the local "post" configuration file, if it exists
 local local_post_init_path = vim.fs.joinpath(vim.fn.stdpath("config"), "init.local.post.lua")
 if vim.fn.filereadable(local_post_init_path) == 1 then
