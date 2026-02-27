@@ -9,29 +9,46 @@ description: Writes a description for a GitHub PR and sets it.
 
 Use this skill when asked to write and set the description for a GitHub pull request ("PR").
 
-## How to set the description for a PR
+## Prerequisites
 
-Use GitHub's "gh" command to set the PR description.
-To avoid problems with special characters, write the PR description to a temporary file,
-then specify that file to the "gh" command.
+*   The GitHub CLI (`gh`) must be installed and authenticated.
 
-For example, to set the description for PR 1234 using the test from file description.md, run this command:
+## Instructions
 
-```
-gh pr edit 1234 --body-file description.md
-```
+1. Learn about the PR for which you will write a description.
+    * Use `gh pr diff <PR_NUMBER>` to understand the code changes.
+    * Consider any other relevant aspects of the PR for writing the description, such as its title and commit messages.
+    * If the PR already has a description then ignore it, as it may be incorrect or outdated.
+2. Write a description for the PR, using the template and examples below, to a temporary file (e.g., `PrDescription.md`).
+3. Set the description for the PR.
+    * Use Github's "gh" command: `gh pr edit <PR Number> --body-file <PR description file>`
+4. Delete the temporary file containing the PR description.
 
-## Example templates for PR descriptions
+## Error Handling
 
-Use the following examples of good PR descriptions to write the PR description:
-* assets/PR7714.json
-* assets/PR7716.json
-* assets/PR7720.json
-* assets/PR7759.json
+If any command fails or you are unable to write to the temporary file then abort and report the error to the user.
 
-The examples come from PRs 7714, 7716, 7720, and 7759 in https://github.com/firebase/firebase-android-sdk, respectively.
-The contents of PRNNNN.json was retrieved by running this command:
+## PR Description Structure
 
-```
-gh pr --repo firebase/firebase-android-sdk view NNNN --json title,body
-```
+PR descriptions are written using Github-flavored markdown. The content for each section should be derived from the PR's title, commit messages, and diff.
+
+### Summary
+
+The PR description must begin with a 1-2 sentence summary of the change. Synthesize the PR title and the overarching theme of the commit messages to create this summary.
+
+### Highlights
+
+After the summary, add a "Highlights" section with a bulleted list. Each bullet point should summarize a notable change. Identify the most significant changes from the diff, such as new features, major refactors, or user-facing fixes. Group related changes into a single bullet point.
+
+### Changelog
+
+Finally, add a "Changelog" section that lists the individual files affected by the PR. This section must be enclosed in a `<details>` block. For each file in the diff, create a bullet point summarizing what was added, changed, or removed. Use the simple file name; however, if multiple files share the same name, use the full path to disambiguate.
+
+## Example PR descriptions
+
+Use the following examples of good PR descriptions as a reference for style and structure. The content of the description you write must be derived entirely from the pull request you are working on.
+* [PR7714.md](assets/PR7714.md)
+* [PR7720.md](assets/PR7720.md)
+* [PR7759.md](assets/PR7759.md)
+
+The examples come from PRs 7714, 7720, and 7759 in https://github.com/firebase/firebase-android-sdk, respectively.
