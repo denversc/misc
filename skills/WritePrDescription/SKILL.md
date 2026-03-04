@@ -42,7 +42,12 @@ After the summary, add a "Highlights" section with a bulleted list. Each bullet 
 
 ### Changelog
 
-Finally, add a "Changelog" section that lists the individual files affected by the PR. This section must be enclosed in a `<details>` block. For each file in the diff, create a bullet point summarizing what was added, changed, or removed. Use the simple file name; however, if multiple files share the same name, use the full path to disambiguate.
+Finally, add a "Changelog" section that lists the individual files affected by the PR.
+This section must be enclosed in a `<details>` block.
+For each file in the diff, create a bullet point summarizing what was added, changed, or removed.
+**DO NOT USE THE FULL PATH OF THE FILE** in the bullet point because it is noisy and more difficult for humans to absorb.
+Instead, just use the **FILE NAME** without the path.
+The only exception would be if two files in the "Changelog" section have the same name, then use the shortest path possible to disambiguate.
 
 ## Example PR descriptions
 
