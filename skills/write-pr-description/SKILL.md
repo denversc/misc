@@ -1,32 +1,37 @@
 ---
-name: dconeybe-write-pr-description
-description: Writes a description for a GitHub PR and sets it.
+name: write-pr-description
+description: Writes a description for a GitHub Pull Request ("PR").
 ---
 
 # Write a PR description
 
 ## When to use this skill
 
-Use this skill when asked to write and set the description for a GitHub pull request ("PR").
+Use this skill when asked to write a description for a GitHub pull request ("PR").
 
 ## Prerequisites
 
-*   The GitHub CLI (`gh`) must be installed and authenticated.
+*   (optional) The GitHub CLI (`gh`) installed and authenticated.
+*   (optional) The GitHub MCP server configured and authenticated in the agent.
+*   Prefer using the GitHub MCP server over the `gh` command-line tool, if available.
 
 ## Instructions
 
-1. Learn about the PR for which you will write a description.
-    * Use `gh pr diff <PR_NUMBER>` to understand the code changes.
-    * Consider any other relevant aspects of the PR for writing the description, such as its title and commit messages.
+1. Determine the PR number for which you will write a description.
+    * If a PR number **IS NOT** specified, use the PR number of the current branch, which can be determined using the instructions in [GetCurrentGitBranchPrNumber.md](references/GetCurrentGitBranchPrNumber.md).
+    * If a PR number *IS* specified then just use it, assuming that it is a PR number in the remote GitHub repository.
+  
+2. Learn about the PR for which you will write a description.
+    * Consider the diff of the PR against the branch into which it will be merged.
+    * Consider other relevant aspects of the PR for writing the description, such as its title and commit messages.
     * If the PR already has a description then ignore it, as it may be incorrect or outdated.
-2. Write a description for the PR, using the template and examples below, to a temporary file (e.g., `PrDescription.md`).
-3. Set the description for the PR.
-    * Use Github's "gh" command: `gh pr edit <PR Number> --body-file <PR description file>`
-4. Delete the temporary file containing the PR description.
+
+3. Write a description for the PR, using the information acquired about the PR and using template and examples below.
+    * If no write destination is specified, then write the description into a file in the current directory named `PrDescription.md`. Print the contents of this file in the chat and report the file to which it was saved.
 
 ## Error Handling
 
-If any command fails or you are unable to write to the temporary file then abort and report the error to the user.
+If any command fails or you are unable to write to a file when needed, then abort and report the error to the user.
 
 ## PR Description Structure
 
