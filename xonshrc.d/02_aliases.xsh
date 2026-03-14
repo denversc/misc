@@ -99,8 +99,6 @@ def register_my_aliases() -> None:
 
   aliases["gii"] = ["git", "--no-pager"]
 
-  aliases["good"] = "echo 'SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'"
-
   # Show a desktop notification (a.k.a. "popup").
   # https://sw.kovidgoyal.net/kitty/kittens/notify/
   aliases["pop"] = ["kitten", "notify"]
