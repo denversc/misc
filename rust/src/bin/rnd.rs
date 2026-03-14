@@ -1,7 +1,9 @@
 use clap::{Arg, ArgAction, Command};
 use rand::{Rng, thread_rng};
-use rand::distributions::Alphanumeric;
 use arboard::Clipboard;
+
+const ALPHA: &[u8] = b"abcdefghjkmnpqrstvwxyz";
+const ALNUM: &[u8] = b"abcdefghjkmnpqrstvwxyz23456789";
 
 fn main() {
     let matches = Command::new("rnd")
@@ -132,19 +134,14 @@ fn main() {
             let mut s = String::with_capacity(length);
             
             let first_char = if first_char_alpha {
-                loop {
-                    let c: char = rng.sample(Alphanumeric).into();
-                    if c.is_ascii_alphabetic() {
-                        break c;
-                    }
-                }
+                ALPHA[rng.gen_range(0..ALPHA.len())] as char
             } else {
-                rng.sample(Alphanumeric).into()
+                ALNUM[rng.gen_range(0..ALNUM.len())] as char
             };
             s.push(first_char);
 
             for _ in 1..length {
-                s.push(rng.sample(Alphanumeric).into());
+                s.push(ALNUM[rng.gen_range(0..ALNUM.len())] as char);
             }
             results.push(s);
         }
@@ -157,7 +154,7 @@ fn main() {
 
     if copy && count > 0 {
         if let Ok(mut clipboard) = Clipboard::new() {
-            let _ = clipboard.set_text(output);
+            let _ = clipboard.set_text(output).unwrap_or(());
         }
     }
 }
