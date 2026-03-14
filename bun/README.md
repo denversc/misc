@@ -1,15 +1,7 @@
-# bun
+# Useful Utilities
 
-To install dependencies:
+This project contains a bunch of handy little command-line utility applications.
 
-```bash
-bun install
-```
+## Prerequisites
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.10. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+1. `bun` - The JavaScript toolkit and Node.js competitor.
