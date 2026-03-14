@@ -89,10 +89,6 @@ def create_and_cd_into_temp_dir(args, stdout, stderr, spec) -> list[str]:
 
 
 def register_my_aliases() -> None:
-  from dconeybe.xonsh.aliases import rnd as dconeybe_rnd
-  aliases["rnd"] = dconeybe_rnd.rnd
-  del dconeybe_rnd
-
   aliases["rgp"] = "batgrep"
 
   aliases["ls"] = ["lsd", "--hyperlink=always"]
