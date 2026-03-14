@@ -3,6 +3,9 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "build:abspath": "bun build abspath.ts --compile --outfile abspath"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
