@@ -1,7 +1,7 @@
+use path_clean::clean;
 use std::env;
 use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
-use path_clean::clean;
 
 fn resolve(path_str: &str) -> PathBuf {
     let path = Path::new(path_str);

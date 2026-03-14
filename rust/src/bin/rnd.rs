@@ -1,6 +1,6 @@
-use clap::{Arg, ArgAction, Command};
-use rand::{Rng, thread_rng};
 use arboard::Clipboard;
+use clap::{Arg, ArgAction, Command};
+use rand::{thread_rng, Rng};
 
 const ALPHA: &[u8] = b"abcdefghjkmnpqrstvwxyz";
 const ALNUM: &[u8] = b"abcdefghjkmnpqrstvwxyz23456789";
@@ -132,7 +132,7 @@ fn main() {
             }
 
             let mut s = String::with_capacity(length);
-            
+
             let first_char = if first_char_alpha {
                 ALPHA[rng.gen_range(0..ALPHA.len())] as char
             } else {
