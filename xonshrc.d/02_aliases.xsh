@@ -93,10 +93,6 @@ def register_my_aliases() -> None:
   aliases["rnd"] = dconeybe_rnd.rnd
   del dconeybe_rnd
 
-  from dconeybe.xonsh.aliases import abspath as dconeybe_abspath
-  aliases["abspath"] = dconeybe_abspath.abspath
-  del dconeybe_abspath
-
   aliases["rgp"] = "batgrep"
 
   aliases["ls"] = ["lsd", "--hyperlink=always"]
