@@ -1,5 +1,7 @@
 set-env TZ "America/New_York"
 
+set edit:command-abbr['ls'] = 'lsd'
+
 # https://starship.rs/guide/
 eval (starship init elvish)
 
