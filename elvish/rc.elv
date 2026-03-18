@@ -10,4 +10,4 @@ set-env CARAPACE_BRIDGES 'zsh,inshellisense'
 eval (carapace _carapace|slurp)
 
 # https://github.com/ajeetdsouza/zoxide
-eval (zoxide init elvish | slurp)
+eval (zoxide init --cmd f elvish | slurp)
