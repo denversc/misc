@@ -1,12 +1,7 @@
+use std::env;
 use std::io::{self, Read};
 
-fn main() {
-    let mut input = String::new();
-    if let Err(e) = io::stdin().read_to_string(&mut input) {
-        eprintln!("Failed to read standard input: {}", e);
-        std::process::exit(1);
-    }
-
+fn process_input(input: &str) {
     let input = input.trim();
     if input.is_empty() {
         return;
@@ -44,4 +39,21 @@ fn main() {
     }
 
     println!("{}", trimmed);
+}
+
+fn main() {
+    let args: Vec<String> = env::args().skip(1).collect();
+
+    if !args.is_empty() {
+        for arg in args {
+            process_input(&arg);
+        }
+    } else {
+        let mut input = String::new();
+        if let Err(e) = io::stdin().read_to_string(&mut input) {
+            eprintln!("Failed to read standard input: {}", e);
+            std::process::exit(1);
+        }
+        process_input(&input);
+    }
 }
