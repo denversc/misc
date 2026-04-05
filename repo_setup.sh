@@ -68,8 +68,8 @@ function setup_repo {
 
     git --git-dir "${repo_dir}" worktree add -b "${git_branch}" "${worktree_dir}" "remotes/origin/${git_branch}"
 
-    git config user.name denver
-    git config user.email github.prefix924@passmail.com
+    git --git-dir "${repo_dir}" config user.name denver
+    git --git-dir "${repo_dir}" config user.email github.prefix924@passmail.com
   )
 }
 
