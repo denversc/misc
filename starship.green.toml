@@ -3,7 +3,7 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
 format = """
-[  ](bg:#a3d2a5 fg:#090c0c)\
+[  ](bg:#a3d2a5 fg:#090c0c)\
 [](bg:#76f08a fg:#a3d2a5)\
 $directory\
 [ ](fg:#76f08a)\
