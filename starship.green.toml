@@ -3,35 +3,14 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
 format = """
-$os\
+[  ](bg:#a3d2a5 fg:#090c0c)\
 [](bg:#76f08a fg:#a3d2a5)\
 $directory\
-[](fg:#76f08a bg:#396041)\
-$git_branch\
-[](fg:#396041 bg:#213624)\
-$time\
-[ ](fg:#213624)\
+[ ](fg:#76f08a)\
 \n$character"""
-
-[os]
-disabled = false
-style = "bg:#a3d2a5 fg:#090c0c"
-format = '[$symbol]($style)'
 
 [directory]
 style = "fg:#090c0c bg:#76f08a"
 format = "[ $path ]($style)"
-truncation_symbol = "…/"
 truncation_length = 0
 truncate_to_repo = false
-
-[git_branch]
-symbol = ""
-style = "bg:#396041"
-format = '[[ $symbol $branch ](fg:#76f08a bg:#396041)]($style)'
-
-[time]
-disabled = false
-time_format = " %T 󰸗 %a %b %d, %Y %T (%Z)"
-style = "bg:#213624"
-format = '[[ $time ](fg:#aed2a3 bg:#213624)]($style)'
