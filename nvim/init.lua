@@ -64,6 +64,11 @@ if vim.g.neovide then
   vim.g.neovide_scroll_animation_length = 0
 end
 
+-- Enable lazy.nvim package manager https://lazy.folke.io/
+require("config.lazy")
+
+vim.cmd[[colorscheme tokyonight-night]]
+
 -- Load the local "post" configuration file, if it exists
 local local_post_init_path = vim.fs.joinpath(vim.fn.stdpath("config"), "init.local.post.lua")
 if vim.fn.filereadable(local_post_init_path) == 1 then
