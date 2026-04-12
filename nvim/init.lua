@@ -1,14 +1,34 @@
+-- Make sure to setup `mapleader` and `maplocalleader` before doing anything else,
+-- especially before loading lazy.nvim so that mappings are correct.
+vim.g.mapleader = " "
+vim.g.maplocalleader = "\\"
+
 -- Load the local "pre" configuration file, if it exists
 local local_pre_init_path = vim.fs.joinpath(vim.fn.stdpath("config"), "init.local.pre.lua")
 if vim.fn.filereadable(local_pre_init_path) == 1 then
   dofile(local_pre_init_path)
 end
 
+-- enable 24-bit colour (recommended by https://github.com/nvim-tree/nvim-tree.lua)
+vim.opt.termguicolors = true
+
+-- Configure how new splits should be opened, as the default is counterintuitive.
+vim.opt.splitright = true
+vim.opt.splitbelow = true
+
 -- Disable cursor keys, forcing usage of the more ergonomic h, j, k, and l keys.
 vim.keymap.set('n', '<up>', '<nop>', {noremap=true, desc='Use k instead of the up button'})
 vim.keymap.set('n', '<down>', '<nop>', {noremap=true, desc='Use j instead of the down button'})
 vim.keymap.set('n', '<left>', '<nop>', {noremap=true, desc='Use l instead of the left button'})
 vim.keymap.set('n', '<right>', '<nop>', {noremap=true, desc='Use h instead of the right button'})
+
+-- Keybinds to make split navigation easier.
+--  Use <leader>+<hjkl> to switch between windows
+--  See `:help wincmd` for a list of all window commands
+vim.keymap.set('n', '<leader>h', '<cmd>wincmd h<cr>', {noremap=true, desc = 'Move focus to the left window'})
+vim.keymap.set('n', '<leader>j', '<cmd>wincmd j<cr>', {noremap=true, desc = 'Move focus to the window below'})
+vim.keymap.set('n', '<leader>k', '<cmd>wincmd k<cr>', {noremap=true, desc = 'Move focus to the window above'})
+vim.keymap.set('n', '<leader>l', '<cmd>wincmd l<cr>', {noremap=true, desc = 'Move focus to the right window'})
 
 -- Enable typing "jk" to exit insert mode.
 vim.keymap.set('i', 'jk', '<esc>', {noremap=true})
@@ -69,9 +89,6 @@ end
 -- disable netrw in favor of nvim-tree (https://github.com/nvim-tree/nvim-tree.lua)
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
-
--- enable 24-bit colour (recommended by https://github.com/nvim-tree/nvim-tree.lua)
-vim.opt.termguicolors = true
 
 require("config.lazy")
 
