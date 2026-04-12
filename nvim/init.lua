@@ -65,6 +65,14 @@ if vim.g.neovide then
 end
 
 -- Enable lazy.nvim package manager https://lazy.folke.io/
+
+-- disable netrw in favor of nvim-tree (https://github.com/nvim-tree/nvim-tree.lua)
+vim.g.loaded_netrw = 1
+vim.g.loaded_netrwPlugin = 1
+
+-- enable 24-bit colour (recommended by https://github.com/nvim-tree/nvim-tree.lua)
+vim.opt.termguicolors = true
+
 require("config.lazy")
 
 vim.cmd[[colorscheme tokyonight-night]]
