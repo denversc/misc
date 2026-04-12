@@ -5,12 +5,7 @@ return {
   -- optional: provides snippets for the snippet source
   dependencies = { 'rafamadriz/friendly-snippets' },
 
-  -- use a release tag to download pre-built binaries
   version = '1.*',
-  -- AND/OR build from source
-  -- build = 'cargo build --release',
-  -- If you use nix, you can build from source with:
-  -- build = 'nix run .#build-plugin',
 
   ---@module 'blink.cmp'
   ---@type blink.cmp.Config
@@ -41,8 +36,18 @@ return {
       nerd_font_variant = 'mono'
     },
 
-    -- (Default) Only show the documentation popup when manually triggered
-    completion = { documentation = { auto_show = false } },
+    completion = { 
+      documentation = {
+        auto_show = false,
+      },
+      ghost_text = {
+        enabled = true,
+        show_with_menu = true,
+      },
+      menu = { 
+        auto_show = false,
+      },
+    },
 
     -- Default list of enabled providers defined so that you can extend it
     -- elsewhere in your config, without redefining it, due to `opts_extend`
