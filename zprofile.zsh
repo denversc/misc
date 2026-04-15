@@ -25,7 +25,11 @@ if [[ -e "$HOME/.cargo/env" ]] ; then
 fi
 
 # https://developer.android.com/tools/variables
-export ANDROID_HOME="$HOME/local/android_sdk"
+if [[ -d "$HOME/local/android-sdk" ]] ; then
+  export ANDROID_HOME="$HOME/local/android-sdk"
+else
+  export ANDROID_HOME="$HOME/local/android_sdk"
+fi
 export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/25.1.8937393"
 export PATH="$ANDROID_HOME/tools:$PATH"
 export PATH="$ANDROID_HOME/tools/bin:$PATH"
