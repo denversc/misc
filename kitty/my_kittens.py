@@ -26,23 +26,16 @@ class MyKittens:
     cwd = resolve_cwd_from_window(window)
     return cls(boss=boss, window=window, cwd=cwd)
 
+  def launch(self, args: Sequence[str]) -> Window | None:
+    launch_opts, launch_args = kitty.launch.parse_launch_args(args)
+    return kitty.launch.launch(self.boss, launch_opts, launch_args)
+
   def launch_dev_window(self) -> None:
     cwd_clean = self.cwd.strip().rstrip(os.sep).strip()
     title = os.path.basename(cwd_clean) or cwd_clean
     args = tuple(self.dev_window_launch_args(title=title))
     new_window = self.launch(args)
     self.launch_gemini_tab(take_focus=False, next_to=new_window)
-
-  def launch_gemini_tab(self, take_focus: bool, next_to: Window | None) -> None:
-    args = tuple(self.gemini_tab_launch_args(
-       take_focus=take_focus,
-       next_to=next_to,
-    ))
-    self.launch(args)
-
-  def launch(self, args: Sequence[str]) -> Window | None:
-    launch_opts, launch_args = kitty.launch.parse_launch_args(args)
-    return kitty.launch.launch(self.boss, launch_opts, launch_args)
 
   def dev_window_launch_args(self, title: str) -> Iterable[str]:
     yield "--type=os-window"
@@ -51,7 +44,22 @@ class MyKittens:
     yield f"--os-window-title={title}"
     yield f"--cwd={self.cwd}"
 
-  def gemini_tab_launch_args(self, take_focus: bool, next_to: Window | None) -> Iterable[str]:
+  def launch_gemini_tab(
+    self,
+    take_focus: bool,
+    next_to: Window | None,
+  ) -> None:
+    args = tuple(self.gemini_tab_launch_args(
+       take_focus=take_focus,
+       next_to=next_to if next_to is not None else self.window,
+    ))
+    self.launch(args)
+
+  def gemini_tab_launch_args(
+    self,
+    take_focus: bool,
+    next_to: Window | None,
+  ) -> Iterable[str]:
     yield "--type=tab"
     yield f"--cwd={self.cwd}"
 
@@ -60,12 +68,12 @@ class MyKittens:
 
     if next_to is not None:
       yield f"--next-to=id:{next_to.id}"
-     
+
     yield "/usr/bin/env"
     yield "zsh"
     yield "-l"
     yield "-c"
-    yield "gemini"
+    yield rf'printf "\e]2;󰦖 Gemini starting...\a󰦖 Gemini starting..." ; gemini'
 
 
 def resolve_cwd_from_window(window: Window | None) -> str:
