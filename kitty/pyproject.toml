@@ -1,0 +1,10 @@
+[project]
+name = "My Custom Kittens"
+authors = [
+  {name = "denver", email = "github.prefix924@passmail.com"},
+]
+
+[tool.pyright]
+extraPaths = [
+  "./kitty_git",
+]
