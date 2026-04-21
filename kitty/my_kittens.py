@@ -4,48 +4,27 @@ import os
 import subprocess
 import typing
 
-import kittens.tui.handler
 import kitty.launch
 
 if typing.TYPE_CHECKING:
   from collections.abc import Iterable, Sequence
+  from typing import Self
   from kitty.boss import Boss
   from kitty.window import Window
 
 
-def main(_args: Sequence[str]) -> None:
-  pass
-
-
-@kittens.tui.handler.result_handler(no_ui=True)
-def handle_result(args: Sequence[str], _answer: None, target_window_id: int, boss: Boss) -> None:
-  window = boss.window_id_map.get(target_window_id)
-  cwd = resolve_cwd_from_window(window)
-  kittens = MyKittens(boss=boss, cwd=cwd)
-
-  match args:
-    case [_, "dev_window"]:
-      kittens.launch_dev_window()
-    case [_, "gemini_tab"]:
-      kittens.launch_gemini_tab(take_focus=True, next_to=window)
-    case [script_name, *script_args]:
-      raise ValueError(f"{script_name}: invalid args: {subprocess.list2cmdline(script_args)}")
-
-
-def resolve_cwd_from_window(window: Window | None) -> str:
-  if window is not None:
-    cwd = window.cwd_of_child
-    if cwd is not None:
-      return cwd
-
-  return os.getcwd()
-
-
 class MyKittens:
 
-  def __init__(self, boss: Boss, cwd: str) -> None:
+  def __init__(self, boss: Boss, window: Window | None, cwd: str) -> None:
     self.boss = boss
+    self.window = window
     self.cwd = cwd
+
+  @classmethod
+  def from_target_window_id(cls, boss: Boss, target_window_id: int) -> Self:
+    window = boss.window_id_map.get(target_window_id)
+    cwd = resolve_cwd_from_window(window)
+    return cls(boss=boss, window=window, cwd=cwd)
 
   def launch_dev_window(self) -> None:
     cwd_clean = self.cwd.strip().rstrip(os.sep).strip()
@@ -87,3 +66,26 @@ class MyKittens:
     yield "-l"
     yield "-c"
     yield "gemini"
+
+
+def resolve_cwd_from_window(window: Window | None) -> str:
+  if window is not None:
+    cwd = window.cwd_of_child
+    if cwd is not None:
+      return cwd
+
+  return os.getcwd()
+
+
+class NoArgsSupportedError(Exception):
+  pass
+
+
+def raise_exception_if_nonempty_args(args: Iterable[str]) -> None:
+  args = tuple(args)
+  if len(args) > 1:
+    raise NoArgsSupportedError(
+      f"{args[0]} does not support args, but got {len(args)} args: " +
+      subprocess.list2cmdline(args[1:])
+    )
+
