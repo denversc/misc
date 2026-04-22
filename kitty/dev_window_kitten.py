@@ -18,4 +18,6 @@ def main(_args: Sequence[str]) -> None:
 def handle_result(args: Sequence[str], _answer: None, target_window_id: int, boss: Boss) -> None:
   my_kittens.raise_exception_if_nonempty_args(args)
   kittens = my_kittens.MyKittens.from_target_window_id(boss, target_window_id)
-  kittens.launch_dev_window()
+  title = kittens.title_from_cwd()
+  dev_window = kittens.launch_dev_window(title=title)
+  kittens.launch_gemini_tab(take_focus=False, target_window=dev_window, title=title)
