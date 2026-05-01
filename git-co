@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+# Symlink this file into the PATH somewhere so that when I instinctively run
+# "git co" it prints this aggressive error message to force me to use "git restore"
+# or "git switch".
+# e.g. ln -sf ~/misc/git-co ~/.local/bin/git-co
+
+# Fetch Git's defined colors
+# Syntax: git config --get-color <section.slot> <default_color>
+RED=$(git config --get-color "" "red bold")
+CYAN=$(git config --get-color "" "cyan")
+RESET=$(git config --get-color "" "reset")
+
+# Display an error message
+echo -e "${RED}ERROR: 'git checkout' is a legacy command.${RESET}"
+echo "Use more specific commands for clarity:"
+echo ""
+echo -e "  ${CYAN}git switch${RESET}    -> To move between branches"
+echo -e "  ${CYAN}git restore${RESET}   -> To discard changes or restore files"
+echo ""
+echo "The following aliases are also available:"
+echo ""
+echo -e "  ${CYAN}git rs${RESET}  -> git restore"
+echo -e "  ${CYAN}git rss${RESET} -> git restore --staged"
+echo -e "  ${CYAN}git sw${RESET} ->  git switch"
+echo ""
+
+# Show what they actually typed for context
+echo "You attempted: git checkout $*"
+echo ""
+
+# Block the execution
+exit 1

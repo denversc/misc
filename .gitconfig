@@ -8,13 +8,15 @@
   pager = delta
 [alias]
   su = status -uall
-  co = checkout
   dt = difftool
   dtc = difftool --cached
   dc = diff --cached
   fp = fetch --prune
+  rs = restore
+  rss = restore --staged
   st = status
   ss = status --short
+  sw = switch
   lf = diff-tree --no-commit-id --name-only -r
 [push]
   default = upstream
