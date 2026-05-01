@@ -29,3 +29,5 @@
   hyperlinks = true
 [merge]
   conflictstyle = zdiff3
+[advice]
+	statusHints = false
