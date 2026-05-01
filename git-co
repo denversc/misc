@@ -20,9 +20,9 @@ echo -e "  ${CYAN}git restore${RESET}   -> To discard changes or restore files"
 echo ""
 echo "The following aliases are also available:"
 echo ""
-echo -e "  ${CYAN}git rs${RESET}  -> git restore"
-echo -e "  ${CYAN}git rss${RESET} -> git restore --staged"
-echo -e "  ${CYAN}git sw${RESET} ->  git switch"
+echo -e "  ${CYAN}git rs${RESET}    -> git restore"
+echo -e "  ${CYAN}git rss${RESET}   -> git restore --staged"
+echo -e "  ${CYAN}git sw${RESET}    -> git switch"
 echo ""
 
 # Show what they actually typed for context
