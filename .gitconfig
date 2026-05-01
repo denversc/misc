@@ -14,6 +14,7 @@
   dc = diff --cached
   fp = fetch --prune
   st = status
+  ss = status --short
   lf = diff-tree --no-commit-id --name-only -r
 [push]
   default = upstream
