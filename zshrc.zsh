@@ -90,9 +90,13 @@ _gradient_separator() {
     elapsed_str="${mins}m ${secs}s"
   fi
   
+  # Efficiently fetch current date and time using Zsh's built-in prompt expansion
+  local current_date=$(print -P "%D{%a %b %d, %Y}")
+  local current_time=$(print -P "%D{%H:%M}")
+  
   # Get the last command and trim it
   local last_cmd=$(fc -ln -1 | xargs)
-  local base_info=" $status_icon $last_status  ${elapsed_str}  "
+  local base_info=" 󰸘 ${current_date}  ${current_time} 󰜎 ${elapsed_str} $status_icon $last_status  "
   
   # Allow the text section to consume up to half the terminal width
   integer max_cmd_len=$(( COLUMNS / 2 - ${#base_info} - 1 ))
