@@ -55,13 +55,103 @@ _gradient_preexec() {
   _gradient_cmd_start=$SECONDS
 }
 
+# Helper to intelligently shrink the command string based on shell tokens.
+_gradient_shrink_cmd() {
+  local cmd="$1"
+  local limit=$2
+  (( limit <= 0 )) && return 1
+
+  # Split into shell words (correctly handles quotes/spaces)
+  local -a words
+  words=("${(@z)cmd}")
+
+  # Helper to join words and collapse multiple "…" into one
+  _join_and_collapse() {
+    # 1. Remove empty elements from the array
+    local -a filtered
+    filtered=("${(@)words:#}")
+
+    # 2. Collapse adjacent ellipses tokens
+    local -a final
+    local last_w=""
+    local w
+    for w in "${filtered[@]}"; do
+      if [[ "$w" == "…" && "$last_w" == "…" ]]; then
+        continue
+      fi
+      final+=("$w")
+      last_w="$w"
+    done
+
+    # 3. Join with a single space
+    echo "${(j: :)final}"
+  }
+
+  local current=$(_join_and_collapse)
+  [[ ${#current} -le $limit ]] && echo "$current" && return 0
+
+  # Step 1: Remove flags and their values from right to left
+  integer i
+  for (( i=${#words}; i > 1; i-- )); do
+    # If this word starts with - and the next one doesn't, it's a flag+value pair
+    if [[ "${words[i-1]}" == -* && i -lt ${#words} && "${words[i]}" != -* ]]; then
+      words[i-1]="…"
+      words[i]=""
+      current=$(_join_and_collapse)
+      [[ ${#current} -le $limit ]] && echo "$current" && return 0
+    fi
+  done
+
+  # Step 2: Remove remaining flags from right to left
+  for (( i=${#words}; i >= 1; i-- )); do
+    if [[ "${words[i]}" == -* ]]; then
+      words[i]="…"
+      current=$(_join_and_collapse)
+      [[ ${#current} -le $limit ]] && echo "$current" && return 0
+    fi
+  done
+
+  # Step 3: Remove intermediate positional arguments, preserving the final argument
+  # We do this by continually removing the *penultimate* (second-to-last) real word.
+  while (( ${#words} > 2 )); do
+    # Find the last actual word (ignore ellipses at the end)
+    integer last_idx=${#words}
+    while [[ "$last_idx" -gt 0 && "${words[last_idx]}" == "…" ]]; do
+       (( last_idx-- ))
+    done
+
+    # We need at least two real words to have an "intermediate" one to remove
+    (( last_idx < 3 )) && break
+
+    # Find the penultimate word
+    integer pen_idx=$(( last_idx - 1 ))
+    while [[ "$pen_idx" -gt 1 && "${words[pen_idx]}" == "…" ]]; do
+       (( pen_idx-- ))
+    done
+
+    # If the penultimate word is just the command itself, we can't remove it
+    (( pen_idx <= 1 )) && break
+
+    words[pen_idx]="…"
+    current=$(_join_and_collapse)
+    [[ ${#current} -le $limit ]] && echo "$current" && return 0
+  done
+
+  # Step 4: Blind truncation of whatever is left
+  if [[ ${#current} -gt $limit ]]; then
+    echo "${current[1,$((limit-1))]}…"
+  else
+    echo "$current"
+  fi
+}
+
 # Draws a horizontal line across the full width of the terminal with a
 # TrueColor gradient transition. The colors change based on the success
 # or failure of the previous command. If the command failed, it embeds
 # the exit code, runtime, and the command name near the right edge.
 _gradient_separator() {
   local last_status=$?
-  
+
   # Suppress the border if no command was actually run (empty ENTER)
   [[ -z "$_gradient_cmd_start" ]] && return
 
@@ -89,45 +179,52 @@ _gradient_separator() {
     integer secs=$(( elapsed % 60 ))
     elapsed_str="${mins}m ${secs}s"
   fi
-  
-  # Efficiently fetch current date and time using Zsh's built-in prompt expansion
-  local current_date=$(print -P "%D{%a %b %d, %Y}")
-  local current_time=$(print -P "%D{%H:%M}")
-  
-  # Get the last command and trim it
+
+  local date_long=$(print -P "%D{%a %b %d, %Y}")
+  local date_short=$(print -P "%D{%Y-%m-%d}")
+  local time_str=$(print -P "%D{%H:%M}")
   local last_cmd=$(fc -ln -1 | xargs)
 
-  local date_part=" 󰸘 ${current_date}"
-  local time_part="  ${current_time}"
-  local stats_part=" 󰜎 ${elapsed_str} $status_icon $last_status"
-  local cmd_part="  ${last_cmd}"
-  local trailing=" "
+  local max_len=$(( COLUMNS - 10 ))
+  local status_info=""
+  local date_part time_part stats_part cmd_part
 
-  local max_badge_len=$(( COLUMNS - 10 ))
-  local cur_len=$(( ${#date_part} + ${#time_part} + ${#stats_part} + ${#cmd_part} + ${#trailing} ))
+  # Prepare the parts that don't change
+  time_part="  ${time_str}"
+  stats_part=" 󰜎 ${elapsed_str} $status_icon $last_status"
 
-  if (( cur_len > max_badge_len )); then
-    date_part=""
-    cur_len=$(( ${#time_part} + ${#stats_part} + ${#cmd_part} + ${#trailing} ))
-  fi
+  # Logic Loop: Try different combinations to fit the limit
+  # 1. Try Full Date + Intelligent Cmd
+  date_part=" 󰸘 ${date_long}"
+  integer avail=$(( max_len - ${#date_part} - ${#time_part} - ${#stats_part} - 4 )) # 4 for "  "
 
-  if (( cur_len > max_badge_len )); then
-    time_part=""
-    cur_len=$(( ${#stats_part} + ${#cmd_part} + ${#trailing} ))
-  fi
+  local shrunken_cmd=$(_gradient_shrink_cmd "$last_cmd" $avail)
+  if [[ ${#shrunken_cmd} -ge 3 ]]; then
+    cmd_part="  ${shrunken_cmd}"
+    status_info="${date_part}${time_part}${stats_part}${cmd_part} "
+  else
+    # 2. Try Short Date + Intelligent Cmd
+    date_part=" 󰸘 ${date_short}"
+    avail=$(( max_len - ${#date_part} - ${#time_part} - ${#stats_part} - 4 ))
+    shrunken_cmd=$(_gradient_shrink_cmd "$last_cmd" $avail)
 
-  if (( cur_len > max_badge_len )); then
-    integer avail_cmd_part_len=$(( max_badge_len - ${#stats_part} - ${#trailing} ))
-    integer avail_text_len=$(( avail_cmd_part_len - 3 )) # "  " is 3 chars
-
-    if (( avail_text_len < 3 )); then
-      cmd_part=""
+    if [[ ${#shrunken_cmd} -ge 3 ]]; then
+      cmd_part="  ${shrunken_cmd}"
+      status_info="${date_part}${time_part}${stats_part}${cmd_part} "
     else
-      cmd_part="  ${last_cmd[1,$avail_text_len]}"
+      # 3. Drop command, keep Short Date
+      status_info="${date_part}${time_part}${stats_part} "
+      # 4. Emergency: If even that doesn't fit, drop date
+      if [[ ${#status_info} -gt $max_len ]]; then
+        status_info="${time_part}${stats_part} "
+      fi
+      # 5. Emergency: If even that doesn't fit, drop time
+      if [[ ${#status_info} -gt $max_len ]]; then
+        status_info="${stats_part} "
+      fi
     fi
   fi
 
-  local status_info="${date_part}${time_part}${stats_part}${cmd_part}${trailing}"
   integer info_len=${#status_info}
   integer info_start=$(( COLUMNS - info_len - 5 ))
   integer info_end=$(( info_start + info_len ))
@@ -144,7 +241,7 @@ _gradient_separator() {
     integer r=$(( r1 + (r2 - r1) * i / (COLUMNS - 1) ))
     integer g=$(( g1 + (g2 - g1) * i / (COLUMNS - 1) ))
     integer b=$(( b1 + (b2 - b1) * i / (COLUMNS - 1) ))
-    
+
     local char="─"
     integer char_r=$r char_g=$g char_b=$b
 
@@ -161,10 +258,10 @@ _gradient_separator() {
          char="├"
        fi
     fi
-    
+
     line+="\e[38;2;${char_r};${char_g};${char_b}m${char}"
   done
-  
+
   # Print the line and reset color
   echo -e "${line}\e[0m"
 }
@@ -190,7 +287,7 @@ fi
 
 # Spelling correction for command names.
 # If you mistype a command (e.g., sl instead of ls),
-# zsh will ask: zsh: correct 'sl' to 'ls' [nyae]?.           █
+# zsh will ask: zsh: correct 'sl' to 'ls' [nyae]?.
 unsetopt CORRECT
 
 # Advanced pattern matching (globbing).
