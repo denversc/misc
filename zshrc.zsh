@@ -48,6 +48,105 @@ mkd() {
 }
 
 ###############################################################################
+# Visual Enhancements (Gradients)
+###############################################################################
+
+_gradient_preexec() {
+  _gradient_cmd_start=$SECONDS
+}
+
+# Draws a horizontal line across the full width of the terminal with a
+# TrueColor gradient transition. The colors change based on the success
+# or failure of the previous command. If the command failed, it embeds
+# the exit code, runtime, and the command name near the right edge.
+_gradient_separator() {
+  local last_status=$?
+  
+  # Suppress the border if no command was actually run (empty ENTER)
+  [[ -z "$_gradient_cmd_start" ]] && return
+
+  local elapsed=$(( SECONDS - _gradient_cmd_start ))
+  unset _gradient_cmd_start
+
+  # Skip if terminal is too narrow
+  (( COLUMNS < 20 )) && return
+
+  local start_hex="#6a95e9" # Blue (Success)
+  local end_hex="#9ece6a"   # Green (Success)
+  local status_icon=""      # Hollow Check Circle (\uf05d) for success
+
+  if (( last_status != 0 )); then
+    start_hex="#5e0000"     # Deep Maroon (Failure)
+    end_hex="#ff8a8a"       # Bright Salmon (Failure)
+    status_icon=""         # Error icon
+  fi
+
+  local elapsed_str
+  if (( elapsed < 600 )); then
+    elapsed_str="${elapsed}s"
+  else
+    integer mins=$(( elapsed / 60 ))
+    integer secs=$(( elapsed % 60 ))
+    elapsed_str="${mins}m ${secs}s"
+  fi
+  
+  # Get the last command and trim it
+  local last_cmd=$(fc -ln -1 | xargs)
+  local base_info=" $status_icon $last_status  ${elapsed_str}  "
+  
+  # Allow the text section to consume up to half the terminal width
+  integer max_cmd_len=$(( COLUMNS / 2 - ${#base_info} - 1 ))
+  (( max_cmd_len < 5 )) && max_cmd_len=5 # Safety fallback for narrow terminals
+  
+  # Status Icon, Time, Command
+  local status_info="${base_info}${last_cmd[1,$max_cmd_len]} "
+  integer info_len=${#status_info}
+  integer info_start=$(( COLUMNS - info_len - 5 ))
+  integer info_end=$(( info_start + info_len ))
+
+  # Extract RGB components
+  local s=${start_hex#\#} e=${end_hex#\#}
+  integer r1=$((16#${s:0:2})) g1=$((16#${s:2:2})) b1=$((16#${s:4:2}))
+  integer r2=$((16#${e:0:2})) g2=$((16#${e:2:2})) b2=$((16#${e:4:2}))
+
+  local line=""
+  integer i
+  # Calculate RGB for each column and build the line
+  for (( i=0; i < COLUMNS; i++ )); do
+    integer r=$(( r1 + (r2 - r1) * i / (COLUMNS - 1) ))
+    integer g=$(( g1 + (g2 - g1) * i / (COLUMNS - 1) ))
+    integer b=$(( b1 + (b2 - b1) * i / (COLUMNS - 1) ))
+    
+    local char="─"
+    integer char_r=$r char_g=$g char_b=$b
+
+    if (( i >= info_start && i < info_end )); then
+       char="${status_info[i - info_start + 1]}"
+       # Dim the text color by 1/3 so it is less loud/distracting
+       char_r=$(( r * 2 / 3 ))
+       char_g=$(( g * 2 / 3 ))
+       char_b=$(( b * 2 / 3 ))
+    else
+       if (( i == info_start - 1 )); then
+         char="┤"
+       elif (( i == info_end )); then
+         char="├"
+       fi
+    fi
+    
+    line+="\e[38;2;${char_r};${char_g};${char_b}m${char}"
+  done
+  
+  # Print the line and reset color
+  echo -e "${line}\e[0m"
+}
+
+# Use add-zsh-hook to run the separator before every prompt
+autoload -Uz add-zsh-hook
+add-zsh-hook preexec _gradient_preexec
+add-zsh-hook precmd _gradient_separator
+
+###############################################################################
 # Prompt
 ###############################################################################
 
@@ -70,7 +169,10 @@ unsetopt CORRECT
 # It allows the use of special characters like # (match 0 or more of the preceding),
 # ~ (exclude), and ^
 setopt EXTENDED_GLOB
-#
+
+# Enable parameter expansion, command substitution, and arithmetic expansion in the prompt.
+setopt PROMPT_SUBST
+
 # Silence the "are you sure you want to delete all the files" prompt
 setopt RM_STAR_SILENT
 
