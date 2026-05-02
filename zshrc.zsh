@@ -8,8 +8,8 @@
 #
 # Setup Instructions:
 # 1. Add "export EDITOR=nvim" in ~/.zshrc
-# 2. Install fzf, as documented below.
-# 3. brew install zsh-history-substring-search
+# 2. brew install fzf zsh-history-substring-search
+# 3. Configure fzf, as documented below.
 
 ###############################################################################
 # Prompt
