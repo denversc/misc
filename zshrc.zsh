@@ -96,14 +96,38 @@ _gradient_separator() {
   
   # Get the last command and trim it
   local last_cmd=$(fc -ln -1 | xargs)
-  local base_info=" 󰸘 ${current_date}  ${current_time} 󰜎 ${elapsed_str} $status_icon $last_status  "
-  
-  # Allow the text section to consume up to half the terminal width
-  integer max_cmd_len=$(( COLUMNS / 2 - ${#base_info} - 1 ))
-  (( max_cmd_len < 5 )) && max_cmd_len=5 # Safety fallback for narrow terminals
-  
-  # Status Icon, Time, Command
-  local status_info="${base_info}${last_cmd[1,$max_cmd_len]} "
+
+  local date_part=" 󰸘 ${current_date}"
+  local time_part="  ${current_time}"
+  local stats_part=" 󰜎 ${elapsed_str} $status_icon $last_status"
+  local cmd_part="  ${last_cmd}"
+  local trailing=" "
+
+  local max_badge_len=$(( COLUMNS - 10 ))
+  local cur_len=$(( ${#date_part} + ${#time_part} + ${#stats_part} + ${#cmd_part} + ${#trailing} ))
+
+  if (( cur_len > max_badge_len )); then
+    date_part=""
+    cur_len=$(( ${#time_part} + ${#stats_part} + ${#cmd_part} + ${#trailing} ))
+  fi
+
+  if (( cur_len > max_badge_len )); then
+    time_part=""
+    cur_len=$(( ${#stats_part} + ${#cmd_part} + ${#trailing} ))
+  fi
+
+  if (( cur_len > max_badge_len )); then
+    integer avail_cmd_part_len=$(( max_badge_len - ${#stats_part} - ${#trailing} ))
+    integer avail_text_len=$(( avail_cmd_part_len - 3 )) # "  " is 3 chars
+
+    if (( avail_text_len < 3 )); then
+      cmd_part=""
+    else
+      cmd_part="  ${last_cmd[1,$avail_text_len]}"
+    fi
+  fi
+
+  local status_info="${date_part}${time_part}${stats_part}${cmd_part}${trailing}"
   integer info_len=${#status_info}
   integer info_start=$(( COLUMNS - info_len - 5 ))
   integer info_end=$(( info_start + info_len ))
