@@ -199,7 +199,7 @@ _gradient_separator() {
   integer avail=$(( max_len - ${#date_part} - ${#time_part} - ${#stats_part} - 4 )) # 4 for "  "
 
   local shrunken_cmd=$(_gradient_shrink_cmd "$last_cmd" $avail)
-  if [[ ${#shrunken_cmd} -ge 3 ]]; then
+  if [[ -n "$shrunken_cmd" && ( "$shrunken_cmd" == "$last_cmd" || ${#shrunken_cmd} -ge 3 ) ]]; then
     cmd_part="  ${shrunken_cmd}"
     status_info="${date_part}${time_part}${stats_part}${cmd_part} "
   else
@@ -208,11 +208,10 @@ _gradient_separator() {
     avail=$(( max_len - ${#date_part} - ${#time_part} - ${#stats_part} - 4 ))
     shrunken_cmd=$(_gradient_shrink_cmd "$last_cmd" $avail)
 
-    if [[ ${#shrunken_cmd} -ge 3 ]]; then
+    if [[ -n "$shrunken_cmd" && ( "$shrunken_cmd" == "$last_cmd" || ${#shrunken_cmd} -ge 3 ) ]]; then
       cmd_part="  ${shrunken_cmd}"
       status_info="${date_part}${time_part}${stats_part}${cmd_part} "
-    else
-      # 3. Drop command, keep Short Date
+    else      # 3. Drop command, keep Short Date
       status_info="${date_part}${time_part}${stats_part} "
       # 4. Emergency: If even that doesn't fit, drop date
       if [[ ${#status_info} -gt $max_len ]]; then
