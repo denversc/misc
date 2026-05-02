@@ -1,5 +1,6 @@
-# To use this file, run this command:
-# echo "source \"$PWD/zshenv.zsh\"" > ~/.zshenv
+# To use this file, add this line to the top of ~/.zshenv:
+#
+# source "$HOME/misc/zshenv.zsh"
 
 # XDG Base Directories
 # https://specifications.freedesktop.org/basedir-spec/latest/
