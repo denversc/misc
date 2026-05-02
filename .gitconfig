@@ -15,7 +15,7 @@
   rs = restore
   rss = restore --staged
   st = status
-  ss = status --short
+  s = status --short
   sw = switch
   lf = diff-tree --no-commit-id --name-only -r
 [push]
