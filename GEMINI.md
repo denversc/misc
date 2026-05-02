@@ -12,5 +12,8 @@ When creating git commit messages in this repository, the following format MUST 
 ```text
 zshrc.zsh: implement responsive fallback logic for the gradient status badge to support narrow terminals.
 
-The badge now calculates a maximum length to guarantee exactly 5 characters of padding on both the left and right sides. If the horizontal space is insufficient, the script will gracefully drop the date, then drop the time, then truncate the command string, and finally drop the command string entirely to ensure the line does not wrap unexpectedly.
+The badge now calculates a maximum length to guarantee exactly 5 characters of padding on both the
+left and right sides. If the horizontal space is insufficient, the script will gracefully drop the
+date, then drop the time, then truncate the command string, and finally drop the command string
+entirely to ensure the line does not wrap unexpectedly.
 ```
