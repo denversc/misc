@@ -1,0 +1,30 @@
+description = "Commit changes to Git following the project's strict methodology."
+
+prompt = """
+Execute a git commit according to the project's strict methodology.
+
+### Target Changes
+The user arguments are: "{{args}}"
+If the user arguments include "all", "-a", or "--all", your target is ALL local tracked changes (staged and unstaged).
+Otherwise (default), your target is ONLY the currently staged changes.
+
+### Step 1: Gather Information
+First, use the `run_shell_command` tool to gather context:
+- `git status`
+- `git diff --staged` (if default) OR `git diff HEAD` (if "all")
+- `git log -n 3`
+You can combine these into a single shell command to save turns.
+
+### Step 2: Formulate the Commit Message
+Generate a commit message strictly following the rules defined in `GEMINI.md`:
+1. **Title Line:** `<filename>: <single sentence describing changes>` (no line length restriction).
+2. **Body:** Blank line, followed by a paragraph of details.
+3. **Wrapping:** The body paragraph MUST wrap at exactly 100 characters.
+
+### Step 3: Execute the Commit
+Use the `run_shell_command` tool to execute the commit.
+- If committing all changes, run: `git commit -a -m "<message>"`
+- If committing only staged changes, run: `git commit -m "<message>"`
+
+The `run_shell_command` tool will automatically ask the user for confirmation prior to execution, so you can execute the command immediately without waiting for me to approve the draft in the chat.
+"""
