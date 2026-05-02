@@ -38,6 +38,13 @@ setopt EXTENDED_GLOB
 # Silence the "are you sure you want to delete all the files" prompt
 setopt RM_STAR_SILENT
 
+###############################################################################
+# Command completion
+###############################################################################
+
+# Enable zsh builtin context-aware completions.
+autoload -Uz compinit && compinit
+
 # Normally, when you hit Tab on an ambiguous word, Zsh either completes the
 # unambiguous part or just shows you a list of matches. With MENU_COMPLETE
 # enabled, hitting Tab will immediately insert the first match into your command
