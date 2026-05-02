@@ -166,8 +166,8 @@ _gradient_separator() {
   local status_icon=""      # Hollow Check Circle (\uf05d) for success
 
   if (( last_status != 0 )); then
-    start_hex="#5e0000"     # Deep Maroon (Failure)
-    end_hex="#ff8a8a"       # Bright Salmon (Failure)
+    start_hex="#b82e2e"     # Medium-Dark Crimson (Failure)
+    end_hex="#ffb86c"       # Fiery Yellow-Orange (Failure)
     status_icon=""         # Error icon
   fi
 
