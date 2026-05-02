@@ -8,7 +8,7 @@
 #
 # Setup Instructions:
 # 1. Add "export EDITOR=nvim" in ~/.zshrc
-# 2. brew install fzf zsh-history-substring-search
+# 2. brew install fzf zsh-history-substring-search zsh-syntax-highlighting zsh-autosuggestions
 # 3. Configure fzf, as documented below.
 
 ###############################################################################
@@ -130,8 +130,12 @@ setopt HIST_VERIFY
 # splitting on spaces.
 setopt HIST_LEX_WORDS
 
-# fzf history search.
-# Requires: "$(brew --prefix)/opt/fzf/install" --xdg --key-bindings --completion --no-update-rc --no-bash --no-fish
+###############################################################################
+# fzf history search
+###############################################################################
+
+# Prerequisite 1: brew install fzf
+# Prerequisite 2: "$(brew --prefix)/opt/fzf/install" --xdg --key-bindings --completion --no-update-rc --no-bash --no-fish
 #
 # Key Bindings:
 #   * CTRL-R (History): Search through your command history.
@@ -170,8 +174,17 @@ if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh" ]] ; then
   source "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh"
 fi
 
-# Bind up and down arrows to search the history for what has been typed so far.
-# Requires: brew install zsh-history-substring-search
+###############################################################################
+# zsh-history-substring-search
+###############################################################################
+
+# Press UP or DOWN to cycle through history items that _start with_ what has
+# been typed so far.
+#
+# https://github.com/zsh-users/zsh-history-substring-search
+#
+# Prerequisite: brew install zsh-history-substring-search
+
 if [[ -f "$(brew --prefix)/share/zsh-history-substring-search/zsh-history-substring-search.zsh" ]] ; then
   source "$(brew --prefix)/share/zsh-history-substring-search/zsh-history-substring-search.zsh"
   bindkey -M viins '^[[A' history-substring-search-up
@@ -179,3 +192,46 @@ if [[ -f "$(brew --prefix)/share/zsh-history-substring-search/zsh-history-substr
   bindkey -M viins "${terminfo[kcuu1]}" history-substring-search-up
   bindkey -M viins "${terminfo[kcud1]}" history-substring-search-down
 fi
+
+###############################################################################
+# zsh-syntax-highlighting
+###############################################################################
+
+# Real-time syntax highlighting for the commands you type in your terminal.
+#
+# Valid Commands: Recognized commands (like `ls`, `git`, `docker`) turn a
+# specific color (usually green). If you type a command that doesn't exist or
+# misspell one, it remains a different color (often red).
+#
+# Arguments & Flags: Command arguments, options (like `-l` or `--all`), and
+# strings are highlighted in different colors, making complex commands much
+# easier to read and parse visually.
+#
+# Path Highlighting: It will also underline and color file paths. If the path
+# exists, it's underlined; if it doesn't, it's not.
+#
+# https://github.com/zsh-users/zsh-syntax-highlighting
+#
+# Prerequisite: brew install zsh-syntax-highlighting
+
+source "$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+
+###############################################################################
+# zsh-autosuggestions
+###############################################################################
+
+# Suggests commands as you type based on your command history, providing a
+# ghost-like completion that you can accept with a single keystroke.
+#
+# As you begin typing a command, it finds the most recent command in your
+# history that starts with what you've typed and displays the rest of the
+# command in a faint, muted color (usually grey). If the suggestion is what you
+# want, you press the right arrow key (→) or the "End" key to accept it and
+# instantly fill in the rest of the command. If it's _not_ what you want, you
+# just keep typing, and the suggestion will disappear or update.
+#
+# https://github.com/zsh-users/zsh-autosuggestions
+#
+# Prerequisite: brew install zsh-autosuggestions
+
+source "$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
