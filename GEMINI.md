@@ -1,19 +1,28 @@
-# Git Commit Message Specification
+# Miscellaneous scripts and configuration files
 
-When creating git commit messages in this repository, the following format MUST be strictly adhered to:
+This git repository contains personal configuration files and scripts.
 
-1. **Title Line:** The first line of the commit message must begin with the name of the file that has changes, followed by a colon (`:`), followed by a single sentence that describes the changes. There is no line length restriction on this first line.
-   * Example: `zshrc.zsh: implement dynamic resizing for the gradient status badge.`
+## Repository contents
 
-2. **Detailed Description (Optional):** If there are more relevant details that cannot be captured in the single sentence title, add a blank line followed by a paragraph describing the changes.
-3. **Wrapping:** The detailed description paragraph MUST wrap at exactly 100 characters.
+This section provides a high-level overview of the files and directories in this repository.
 
-## Example
-```text
-zshrc.zsh: implement responsive fallback logic for the gradient status badge to support narrow terminals.
+### Zsh init scripts
 
-The badge now calculates a maximum length to guarantee exactly 5 characters of padding on both the
-left and right sides. If the horizontal space is insufficient, the script will gracefully drop the
-date, then drop the time, then truncate the command string, and finally drop the command string
-entirely to ensure the line does not wrap unexpectedly.
-```
+The following files are used as the init scripts for the zsh shell:
+
+* `zprofile.zsh`
+  * sourced from ~/.zprofile
+  * initializes environment variables that may be overridden by subshells
+* `zshenv.zsh`
+  * sourced from ~/.zshenv
+  * sets XDG environment variables (e.g. XDG_DATA_HOME, XDG_CONFIG_HOME)
+  * prepends ~/.local/bin to the path
+* `zshrc.zsh`
+  * sourced from ~/.zshrc
+  * adds utility functions like "say", "good", "bad", and "mkd"
+  * sets up a fancy prompt, key bindings, competions, and the like
+
+## Git information
+
+Refer to `docs/git.md` to understand how to interact with this repository with the
+`git` command-line tool. For example, how to format git commit messages.
