@@ -307,6 +307,11 @@ setopt RM_STAR_SILENT
 # Enable zsh builtin context-aware completions.
 autoload -Uz compinit && compinit
 
+# Enable case-insensitive completion.
+# The '' first means try exact matches first, then fall back to case-insensitive.
+# It also adds some standard "fuzzy matching".
+zstyle ':completion:*' matcher-list '' 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+
 # Normally, when you hit Tab on an ambiguous word, Zsh either completes the
 # unambiguous part or just shows you a list of matches. With MENU_COMPLETE
 # enabled, hitting Tab will immediately insert the first match into your command
