@@ -15,12 +15,12 @@
 # Functions
 ###############################################################################
 
-say() { builtin print -r -- "$@" }
-sayp() { builtin print -rP -- "$@" }
-sayn() { builtin print -rn -- "$@" }
-saypn() { builtin print -rPn -- "$@" }
+say() { builtin print -r -- $@ }
+sayp() { builtin print -rP -- $@ }
+sayn() { builtin print -rn -- $@ }
+saypn() { builtin print -rPn -- $@ }
 
-say_args() { say "${(q)@}" }
+say_args() { say ${(q)@} }
 
 good() { sayp "%F{green}SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!%f" }
 
@@ -31,7 +31,7 @@ bad() {
     say
   else
     saypn ": %f"
-    say "$@"
+    say $@
   fi
 }
 
@@ -41,10 +41,10 @@ mkd() {
     return 2
   fi
 
-  typeset name="${1:-tmp}"
+  typeset name=${1:-tmp}
   mkdir -p ~/tmp
   cd ~/tmp
-  cd "$(mktemp -d "${name}XXXXXXXXXX")"
+  cd $(mktemp -d ${name}XXXXXXXXXX)
 }
 
 ###############################################################################

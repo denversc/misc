@@ -6,9 +6,15 @@
 #
 # See https://developer.android.com/tools/variables
 
-if [[ -n "$ANDROID_HOME" ]] ; then
-  export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/25.1.8937393"
-  export PATH="$ANDROID_HOME/tools:$PATH"
-  export PATH="$ANDROID_HOME/tools/bin:$PATH"
-  export PATH="$ANDROID_HOME/platform-tools:$PATH"
+if [[ -n $ANDROID_HOME ]] ; then
+  export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393
+  if (( ! ${path[(I)$ANDROID_HOME/tools]} )); then
+    path=($ANDROID_HOME/tools $path)
+  fi
+  if (( ! ${path[(I)$ANDROID_HOME/tools/bin]} )); then
+    path=($ANDROID_HOME/tools/bin $path)
+  fi
+  if (( ! ${path[(I)$ANDROID_HOME/platform-tools]} )); then
+    path=($ANDROID_HOME/platform-tools $path)
+  fi
 fi
