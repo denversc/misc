@@ -92,7 +92,7 @@ vim.g.loaded_netrwPlugin = 1
 
 require("config.lazy")
 
-vim.cmd[[colorscheme tokyonight-night]]
+vim.cmd[[colorscheme github_dark_default]]
 
 -- Load the local "post" configuration file, if it exists
 local local_post_init_path = vim.fs.joinpath(vim.fn.stdpath("config"), "init.local.post.lua")
