@@ -7,6 +7,7 @@
   editor = nvim
   pager = delta
 [alias]
+  cp = cherry-pick
   su = status -uall
   dt = difftool
   dtc = difftool --cached
