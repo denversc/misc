@@ -163,12 +163,12 @@ _gradient_separator() {
 
   local start_hex="#6a95e9" # Blue (Success)
   local end_hex="#9ece6a"   # Green (Success)
-  local status_icon=""      # Hollow Check Circle (\uf05d) for success
+  local status_indicator=""
 
   if (( last_status != 0 )); then
     start_hex="#b82e2e"     # Medium-Dark Crimson (Failure)
     end_hex="#ffb86c"       # Fiery Yellow-Orange (Failure)
-    status_icon=""         # Error icon
+    status_indicator="  $last_status"
   fi
 
   local elapsed_str
@@ -191,7 +191,7 @@ _gradient_separator() {
 
   # Prepare the parts that don't change
   time_part="  ${time_str}"
-  stats_part=" 󰜎 ${elapsed_str} $status_icon $last_status"
+  stats_part=" 󰜎 ${elapsed_str}${status_indicator}"
 
   # Logic Loop: Try different combinations to fit the limit
   # 1. Try Full Date + Intelligent Cmd
