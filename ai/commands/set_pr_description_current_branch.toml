@@ -1,0 +1,25 @@
+description = "Sets the description of the GitHub PR for the current branch (or a specified PR)"
+
+prompt = """
+Calculate and set the description for a GitHub pull request ("PR").
+
+Target PR: {{args}} (If empty, detect the PR associated with the current branch).
+
+Steps:
+
+1. **Detection & Verification**:
+   - If no PR is specified, detect the PR associated with the current branch (e.g., using `gh pr view --json number,baseRefName`).
+   - Confirm the PR is open and identify its base branch.
+
+2. **Generate Description**:
+   - Activate the `write-pr-description` skill.
+   - Ask the skill to generate a PR description.
+   - The skill will (likely) save the description to a local file.
+
+3. **Update PR**:
+   - Use `mcp_github_update_pull_request` or the "gh" command to apply the new description.
+
+4. **Cleanup & Confirmation**:
+   - Delete any temporary diff files or research notes.
+   - Provide a confirmation message with the PR URL and updated description.
+"""
