@@ -8,7 +8,7 @@ return {
     dashboard = { enabled = false },
     explorer = { 
       enabled = true,
-      replace_netrw = true,
+      replace_netrw = false,
     },
     indent = { enabled = false },
     input = { enabled = false },
