@@ -455,7 +455,7 @@ fi
 if [[ -f "$(brew --prefix)/share/zsh-history-substring-search/zsh-history-substring-search.zsh" ]] ; then
   source "$(brew --prefix)/share/zsh-history-substring-search/zsh-history-substring-search.zsh"
   bindkey -M viins '^[[A' history-substring-search-up
-  bindkey -M viins '^[[B' history-substring-search-up
+  bindkey -M viins '^[[B' history-substring-search-down
   bindkey -M viins "${terminfo[kcuu1]}" history-substring-search-up
   bindkey -M viins "${terminfo[kcud1]}" history-substring-search-down
 fi
