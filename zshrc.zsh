@@ -20,11 +20,7 @@ sayp() { builtin print -rP -- $@ }
 sayn() { builtin print -rn -- $@ }
 saypn() { builtin print -rPn -- $@ }
 
-say_args() { say ${(q)@} }
-
-good() { sayp "%F{green}SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!%f" }
-
-bad() {
+say_error() {
   saypn "%F{red}ERROR%f"
   if (( # == 0 )); then
     saypn "%f"
@@ -35,16 +31,167 @@ bad() {
   fi
 }
 
+say_args() { say ${(q)@} }
+
+good() { sayp "%F{green}SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!%f" }
+
+bad() {
+  local return_code="$?"
+
+  emulate -L zsh
+  setopt extended_glob warn_create_global no_unset pipe_fail
+
+  if (( # > 0 )); then
+    say_error "$0: expected 0 arguments, but got $#: $*" >&2
+    return 2
+  fi
+  sayp "%F{red}ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!%f"
+  return "$return_code"
+}
+
+# Function: mkd (make temp directory)
+#
+# Arguments: one positional argument may be specified and, if specified, will
+#   be incorporated into the name of the created directory.
+#
+# Creates a subdirectory of ~/tmp with a unique name and "cd's" into it.
 mkd() {
+  emulate -L zsh
+  setopt extended_glob warn_create_global no_unset pipe_fail
+
   if (( # > 1 )); then
-    bad "$0: too many arguments; unexpected argument: $2" >&2
+    say_error "$0: expected 0 arguments, but got $#: $*" >&2
     return 2
   fi
 
   typeset name=${1:-tmp}
-  mkdir -p ~/tmp
-  cd ~/tmp
-  cd $(mktemp -d ${name}XXXXXXXXXX)
+  mkdir -p ~/tmp || return
+  cd ~/tmp || return
+  local mktemp_result
+  mktemp_result=$(mktemp -d ${name}XXXXXXXXXX) || return
+  cd "$mktemp_result"
+}
+
+# Function: strip_whitespace
+#
+# Arguments: If zero arguments are specified, then stdin is used as the input.
+#   If one argument is specified then its value is used as the input.
+#   More than one argument being specified is an error.
+#
+# Reads stdin or the given string, strips any leading and trailing whitespace,
+# then writes the result to stdout, without a trailing newline.
+strip_whitespace() {
+  emulate -L zsh
+  setopt extended_glob warn_create_global no_unset pipe_fail
+
+  if (( # == 0 )); then
+    local input="$(<&0)"
+  elif (( # == 1 )); then
+    local input="$1"
+  else
+    say_error "$0: expected 0 or 1 arguments, but got $#: $*" >&2
+    return 2
+  fi
+
+  input=${input##[[:space:]]#}
+  input=${input%%[[:space:]]#}
+  sayn "$input"
+}
+
+# Function: gcu ("git create upstream")
+# Arguments: none (any argument results in an error)
+#
+# This function is a convenience wrapper around calling
+#
+#   git push -u origin $branch:$username[/$project]/$branch
+#
+# The function first determines the local branch name by running 
+# `git branch --show-current`. The output from this command, with leading and
+# trailing whitespace stripped, will be used for `$branch` in the `git push`
+# command.
+#
+# The function then determines the username by running `git config user.email`.
+# The output from this command will be taken up to, but excluding, the first
+# `@` character, then all leading and trailing whitespace stripped. The result
+# will be used as for `$username` in the `git push` command.
+#
+# Finally, the function determines the project by running
+# `git rev-parse --show-toplevel`, hereafter referred to as the "project
+# directory". If the current directory **IS** the project directory then the
+# `/$project` component of the `git push` command will be omitted entirely.
+# Otherwise the name of the immediate child directory of the project directory
+# that is or is a parent of the current directory is considered, hereafter
+# referred to as "project child directory". If the project child directory
+# contains one or more `-` (dash) characters, then the substring starting after
+# the last character is taken, its leading and trailing whitespace is stripped,
+# and the resulting value will be used for `$project` in the `git push` command.
+#
+# For example, suppose the current git branch is named "foo", the user.email
+# is developer01@company.com, the current directory is
+# /work/product1/foo-server/component1 and the root git directory is
+# /work/product1. Then the resulting git command would be:
+#
+#   git push -u origin foo:developer01/server/foo
+gcu() {
+  emulate -L zsh
+  setopt extended_glob warn_create_global no_unset pipe_fail
+
+  if (( # > 0 )); then
+    say_error "$0: expected 0 arguments, but got $#: $*" >&2
+    return 2
+  fi
+
+  local branch
+  branch=$(git branch --show-current 2>/dev/null | strip_whitespace)
+  if [[ -z "$branch" ]]; then
+    say_error "$0: not on a branch or not in a git repository" >&2
+    return 1
+  fi
+
+  local email
+  email=$(git config user.email 2>/dev/null | strip_whitespace)
+  if [[ -z "$email" ]]; then
+    say_error "$0: git config user.email is not set" >&2
+    return 1
+  fi
+
+  local username
+  username=$(strip_whitespace "${email%%@*}")
+  if [[ -z "$username" ]]; then
+    say_error "$0: could not determine username from email: $email" >&2
+    return 1
+  fi
+
+  local project_root
+  project_root=$(git rev-parse --show-toplevel 2>/dev/null)
+  if [[ -z "$project_root" ]]; then
+    say_error "$0: not in a git repository" >&2
+    return 1
+  fi
+  project_root="${project_root:A}"
+
+  local current_dir="${PWD:A}"
+  local project_part=""
+
+  if [[ "$current_dir" != "$project_root" ]]; then
+    local rel_path=${current_dir#$project_root/}
+    local child_dir=${rel_path%%/*}
+    local project_name
+
+    if [[ "$child_dir" == *"-"* ]]; then
+      project_name=${child_dir##*-}
+    else
+      project_name=$child_dir
+    fi
+    project_name=$(strip_whitespace "$project_name")
+    project_part="/$project_name"
+  fi
+
+  local remote_ref="$username${project_part}/$branch"
+
+  typeset -r git_args=(git push -u origin "$branch:$remote_ref")
+  say_args "${git_args[@]}"
+  "${git_args[@]}"
 }
 
 ###############################################################################
