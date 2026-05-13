@@ -49,6 +49,38 @@ bad() {
   return "$return_code"
 }
 
+# Function: kup (kitten file upload)
+#
+# Arguments: All arguments are passed verbatim to the "kitten" command.
+#
+# Uses the "kitten transfer" kitten to send files from the computer that is
+# running Kitty (the local host) to the computer that is running this function
+# (the remote host).
+kup() {
+  emulate -L zsh
+  setopt extended_glob warn_create_global no_unset pipe_fail
+
+  typeset -r kitten_args=(kitten transfer --direction=upload "$@")
+  say_args "${kitten_args[@]}"
+  "${kitten_args[@]}"
+}
+
+# Function: kdl (kitten file download)
+#
+# Arguments: All arguments are passed verbatim to the "kitten" command.
+#
+# Uses the "kitten transfer" kitten to send files from the computer that is
+# running this function (the remote host) to the computer that is running Kitty
+# (the local host).
+kdl() {
+  emulate -L zsh
+  setopt extended_glob warn_create_global no_unset pipe_fail
+
+  typeset -r kitten_args=(kitten transfer --direction=download "$@")
+  say_args "${kitten_args[@]}"
+  "${kitten_args[@]}"
+}
+
 # Function: mkd (make temp directory)
 #
 # Arguments: one positional argument may be specified and, if specified, will
