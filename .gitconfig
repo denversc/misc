@@ -18,7 +18,8 @@
   st = status
   s = status --short
   sw = switch
-  lf = show --format= --name-only --relative
+  lf = show --format= --name-only
+  lfr = lf --relative
 [push]
   default = upstream
 [pull]
