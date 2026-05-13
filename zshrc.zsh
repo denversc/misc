@@ -31,6 +31,17 @@ say_error() {
   fi
 }
 
+say_warning() {
+  saypn "%F{yellow}WARNING%f"
+  if (( # == 0 )); then
+    saypn "%f"
+    say
+  else
+    saypn ": %f"
+    say $@
+  fi
+}
+
 say_args() { say ${(q)@} }
 
 good() { sayp "%F{green}SUCCESS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!%f" }
@@ -131,7 +142,8 @@ strip_whitespace() {
 }
 
 # Function: gcu ("git create upstream")
-# Arguments: none (any argument results in an error)
+# Arguments:
+#   -n: Dry run. Prints the command but does not execute it.
 #
 # This function is a convenience wrapper around calling
 #
@@ -168,8 +180,12 @@ gcu() {
   emulate -L zsh
   setopt extended_glob warn_create_global no_unset pipe_fail
 
+  local -A opts
+  zparseopts -D -A opts n
+  local -i dry_run_enabled=${+opts[-n]}
+
   if (( # > 0 )); then
-    say_error "$0: expected 0 arguments, but got $#: $*" >&2
+    say_error "$0: unexpected arguments: $*" >&2
     return 2
   fi
 
@@ -223,7 +239,12 @@ gcu() {
 
   typeset -r git_args=(git push -u origin "$branch:$remote_ref")
   say_args "${git_args[@]}"
-  "${git_args[@]}"
+
+  if (( dry_run_enabled )); then
+    say_warning "dry run enabled by -n flag; command not executed" >&2
+  else
+    "${git_args[@]}"
+  fi
 }
 
 ###############################################################################
