@@ -36,4 +36,4 @@
 [merge]
   conflictstyle = zdiff3
 [advice]
-	statusHints = false
+  statusHints = false
