@@ -23,10 +23,10 @@ saypn() { builtin print -rPn -- $@ }
 say_error() {
   saypn "%F{red}ERROR%f"
   if (( # == 0 )); then
-    saypn "%f"
+    saypn "%f: ${funcfiletrace[1]}"
     say
   else
-    saypn ": %f"
+    saypn ": %f${funcfiletrace[1]}: "
     say $@
   fi
 }
@@ -34,10 +34,10 @@ say_error() {
 say_warning() {
   saypn "%F{yellow}WARNING%f"
   if (( # == 0 )); then
-    saypn "%f"
+    saypn "%f: ${funcfiletrace[1]}"
     say
   else
-    saypn ": %f"
+    saypn ": %f${funcfiletrace[1]}: "
     say $@
   fi
 }
@@ -619,7 +619,7 @@ setopt HIST_LEX_WORDS
 #   * TAB: Mark multiple items (if multi-select mode -m is enabled).
 #   * ESC / CTRL-C: Exit the finder without making a selection.
 
-if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh" ]] ; then
+if (( $+commands[fzf] )) && [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh" ]] ; then
   export FZF_CTRL_R_OPTS="
     --height=100%
     --layout=reverse
@@ -639,6 +639,8 @@ if [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh" ]] ; then
     --color='header:italic:bold'
   "
   source "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh"
+else
+  say_warning "fzf was unable to be set up" >&2
 fi
 
 ###############################################################################
@@ -652,12 +654,14 @@ fi
 #
 # Prerequisite: brew install zsh-history-substring-search
 
-if [[ -f "$(brew --prefix)/share/zsh-history-substring-search/zsh-history-substring-search.zsh" ]] ; then
+if (( $+commands[brew] )) && [[ -f "$(brew --prefix)/share/zsh-history-substring-search/zsh-history-substring-search.zsh" ]] ; then
   source "$(brew --prefix)/share/zsh-history-substring-search/zsh-history-substring-search.zsh"
   bindkey -M viins '^[[A' history-substring-search-up
   bindkey -M viins '^[[B' history-substring-search-down
   bindkey -M viins "${terminfo[kcuu1]}" history-substring-search-up
   bindkey -M viins "${terminfo[kcud1]}" history-substring-search-down
+else
+  say_warning "zsh-history-substring-search was unable to be set up" >&2
 fi
 
 ###############################################################################
@@ -681,7 +685,11 @@ fi
 #
 # Prerequisite: brew install zsh-syntax-highlighting
 
-source "$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+if (( $+commands[brew] )) && [[ -f "$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] ; then
+  source "$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+else
+  say_warning "zsh-syntax-highlighting was unable to be set up" >&2
+fi
 
 ###############################################################################
 # zsh-autosuggestions
@@ -701,4 +709,8 @@ source "$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.z
 #
 # Prerequisite: brew install zsh-autosuggestions
 
-source "$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+if (( $+commands[brew] )) && [[ -f "$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] ; then
+  source "$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+else
+  say_warning "zsh-autosuggestions was unable to be set up" >&2
+fi
