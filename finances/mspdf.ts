@@ -129,8 +129,11 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
 }
 
 program
-  .name("pdf-to-text")
-  .description("CLI to extract text and info from PDF files")
+  .name("mspdf")
+  .description(
+    'Reads a "Release Confirmation" PDF from Morgan Stanley and extracts ' +
+      "information from it relevant for income tax reporting",
+  )
   .version("1.0.0");
 
 program
@@ -142,7 +145,7 @@ program
 program
   .command("parse")
   .description(
-    "extract the Award ID and Settlement Date from the PDF file and print them",
+    "extract tax reporting information from the PDF file and print it",
   )
   .argument("<file-path>", "path to the PDF file")
   .action(parsePdfAndExtractInfo);

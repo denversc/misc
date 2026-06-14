@@ -1,6 +1,6 @@
 {
   "name": "finances",
-  "module": "index.ts",
+  "module": "mspdf.ts",
   "type": "module",
   "private": true,
   "scripts": {
