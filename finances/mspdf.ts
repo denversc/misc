@@ -128,19 +128,21 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
   console.log(`Sale Price: ${parsed.salePrice}`);
 }
 
-async function generateFilename(filePath: string): Promise<void> {
-  if (!fs.existsSync(filePath)) {
-    console.error(`Error: File not found at path "${filePath}"`);
-    process.exit(1);
-  }
+async function generateFilenames(filePaths: string[]): Promise<void> {
+  for (const filePath of filePaths) {
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: File not found at path "${filePath}"`);
+      process.exit(1);
+    }
 
-  const parsed = await extractInfoFromPdf(filePath);
-  const filename =
-    `${parsed.settlementDate} Morgan Stanley Release Confirmation ` +
-    `${parsed.awardId} ${parsed.sharesSold} shares vested for ` +
-    `${parsed.vestedValue} sold for ${parsed.saleAmount} ` +
-    `(${parsed.salePrice} per share)`;
-  console.log(filename);
+    const parsed = await extractInfoFromPdf(filePath);
+    const filename =
+      `${parsed.settlementDate} Morgan Stanley Release Confirmation ` +
+      `${parsed.awardId} ${parsed.sharesSold} shares vested for ` +
+      `${parsed.vestedValue} sold for ${parsed.saleAmount} ` +
+      `(${parsed.salePrice} per share)`;
+    console.log(filename);
+  }
 }
 
 program
@@ -167,8 +169,8 @@ program
 
 program
   .command("filename")
-  .description("generate a standardized filename from the PDF data")
-  .argument("<file-path>", "path to the PDF file")
-  .action(generateFilename);
+  .description("generate standardized filenames from the PDF data")
+  .argument("<file-paths...>", "paths to the PDF files")
+  .action(generateFilenames);
 
 program.parse(process.argv);
