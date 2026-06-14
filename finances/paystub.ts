@@ -33,9 +33,60 @@ const MONTH_MAP: Record<string, string> = {
   dec: "12",
 };
 
-export type Classification = "regpay" | "gsu" | "shuttle";
+export type Classification = "regpay" | "gsu" | "shuttle" | "meal";
 
 async function classify(filePath: string): Promise<Classification> {
+  const dataBuffer = fs.readFileSync(filePath);
+  const parser = new PDFParse({ data: dataBuffer });
+  const result = await parser.getText();
+  await parser.destroy();
+
+  // Split on "Deductions" to only process the Earnings section
+  const parts = result.text.split(/\r?\nDeductions/);
+  const earningsSection = parts[0] || result.text;
+
+  const mealMatches = earningsSection.matchAll(
+    /Meal Bene[fi\s]+t\s+(?:([\d.]+)\s+\$([\d.]+)\s+)?\$([\d,.]+)\s+\$([\d,.]+)/gi,
+  );
+  for (const match of mealMatches) {
+    if (match[3]) {
+      const currentVal = parseFloat(match[3].replace(/,/g, ""));
+      if (currentVal > 0) {
+        return "meal";
+      }
+    }
+  }
+
+  const shuttleMatch = earningsSection.match(
+    /CA Shuttle Bus\s+(?:([\d.]+)\s+\$([\d.]+)\s+)?\$([\d,.]+)\s+\$([\d,.]+)/i,
+  );
+  if (shuttleMatch && shuttleMatch[3]) {
+    const currentVal = parseFloat(shuttleMatch[3].replace(/,/g, ""));
+    if (currentVal > 0) {
+      return "shuttle";
+    }
+  }
+
+  const gsuMatch = earningsSection.match(
+    /Google Stock Un\s+([\d,.]+)\s+\$([\d,.]+)\s+\$([\d,.]+)\s+\$([\d,.]+)/i,
+  );
+  if (gsuMatch && gsuMatch[3]) {
+    const currentVal = parseFloat(gsuMatch[3].replace(/,/g, ""));
+    if (currentVal > 0) {
+      return "gsu";
+    }
+  }
+
+  const regPayMatch = earningsSection.match(
+    /Regular Pay\s+([\d,.]+)\s+\$([\d,.]+)\s+\$([\d,.]+)\s+\$([\d,.]+)/i,
+  );
+  if (regPayMatch && regPayMatch[3]) {
+    const currentVal = parseFloat(regPayMatch[3].replace(/,/g, ""));
+    if (currentVal > 0) {
+      return "regpay";
+    }
+  }
+
   throw new Error("Unable to determine pay stub classification");
 }
 
