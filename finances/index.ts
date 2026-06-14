@@ -39,16 +39,21 @@ function formatDate(dateStr: string): string {
   return `${year}-${month}-${day}`;
 }
 
-async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
-  if (!fs.existsSync(filePath)) {
-    console.error(`Error: File not found at path "${filePath}"`);
-    process.exit(1);
-  }
+interface ParsedPdf {
+  awardId: string;
+  settlementDate: string;
+  vestedValue: string;
+  saleAmount: string;
+  sharesSold: string;
+  salePrice: string;
+}
 
+async function extractInfoFromPdf(filePath: string): Promise<ParsedPdf> {
   const dataBuffer = fs.readFileSync(filePath);
   const parser = new PDFParse({ data: dataBuffer });
   const result = await parser.getText();
-  
+  await parser.destroy();
+
   const awardIdMatch = result.text.match(/Award ID:\s*([^\r\n]+)/i);
   const settlementDateMatch = result.text.match(/Settlement Date:\s*([^\r\n]+)/i);
   const vestedValueMatch = result.text.match(/Total Gain \(FMV x Quantity Released\):\s*([^\r\n]+)/i);
@@ -61,35 +66,40 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
     const formattedSettlementDate = formatDate(rawSettlementDate);
     const formattedSalePrice = parseFloat(salePriceMatch[1]).toFixed(4);
     
-    console.log(`Award ID: ${awardIdMatch[1].trim()}`);
-    console.log(`Settlement Date: ${formattedSettlementDate}`);
-    console.log(`Vested Value: ${vestedValueMatch[1].trim()}`);
-    console.log(`Sale Amount: ${saleAmountMatch[1].trim()}`);
-    console.log(`Shares Sold: ${sharesSoldMatch[1].trim()}`);
-    console.log(`Sale Price: $${formattedSalePrice}`);
+    return {
+      awardId: awardIdMatch[1].trim(),
+      settlementDate: formattedSettlementDate,
+      vestedValue: vestedValueMatch[1].trim(),
+      saleAmount: saleAmountMatch[1].trim(),
+      sharesSold: sharesSoldMatch[1].trim(),
+      salePrice: `$${formattedSalePrice}`
+    };
   } else {
-    if (!awardIdMatch) {
-      console.error("Error: Could not find Award ID in the PDF.");
-    }
-    if (!settlementDateMatch) {
-      console.error("Error: Could not find Settlement Date in the PDF.");
-    }
-    if (!vestedValueMatch) {
-      console.error("Error: Could not find Vested Value in the PDF.");
-    }
-    if (!saleAmountMatch) {
-      console.error("Error: Could not find Sale Amount in the PDF.");
-    }
-    if (!sharesSoldMatch) {
-      console.error("Error: Could not find Shares Sold in the PDF.");
-    }
-    if (!salePriceMatch) {
-      console.error("Error: Could not find Sale Price in the PDF.");
-    }
+    const missingFields: string[] = [];
+    if (!awardIdMatch) missingFields.push("Award ID");
+    if (!settlementDateMatch) missingFields.push("Settlement Date");
+    if (!vestedValueMatch) missingFields.push("Vested Value");
+    if (!saleAmountMatch) missingFields.push("Sale Amount");
+    if (!sharesSoldMatch) missingFields.push("Shares Sold");
+    if (!salePriceMatch) missingFields.push("Sale Price");
+    throw new Error(`Failed to parse PDF. Missing fields: ${missingFields.join(", ")}`);
+  }
+}
+
+async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found at path "${filePath}"`);
     process.exit(1);
   }
+
+  const parsed = await extractInfoFromPdf(filePath);
   
-  await parser.destroy();
+  console.log(`Award ID: ${parsed.awardId}`);
+  console.log(`Settlement Date: ${parsed.settlementDate}`);
+  console.log(`Vested Value: ${parsed.vestedValue}`);
+  console.log(`Sale Amount: ${parsed.saleAmount}`);
+  console.log(`Shares Sold: ${parsed.sharesSold}`);
+  console.log(`Sale Price: ${parsed.salePrice}`);
 }
 
 program
