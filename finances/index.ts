@@ -1,6 +1,6 @@
-import * as fs from 'fs';
-import { Command } from 'commander';
-import { PDFParse } from 'pdf-parse';
+import * as fs from "fs";
+import { Command } from "commander";
+import { PDFParse } from "pdf-parse";
 
 const program = new Command();
 
@@ -18,24 +18,34 @@ async function parsePdfAndPrint(filePath: string): Promise<void> {
 }
 
 const MONTH_MAP: Record<string, string> = {
-  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+  jan: "01",
+  feb: "02",
+  mar: "03",
+  apr: "04",
+  may: "05",
+  jun: "06",
+  jul: "07",
+  aug: "08",
+  sep: "09",
+  oct: "10",
+  nov: "11",
+  dec: "12",
 };
 
 function formatDate(dateStr: string): string {
-  const parts = dateStr.split('-');
+  const parts = dateStr.split("-");
   if (parts.length !== 3) {
     throw new Error(`Invalid date format (expected DD-MMM-YYYY): "${dateStr}"`);
   }
-  const day = parts[0].padStart(2, '0');
+  const day = parts[0].padStart(2, "0");
   const monthStr = parts[1].toLowerCase();
   const year = parts[2];
-  
+
   const month = MONTH_MAP[monthStr];
   if (!month) {
     throw new Error(`Invalid month name in date: "${dateStr}"`);
   }
-  
+
   return `${year}-${month}-${day}`;
 }
 
@@ -55,24 +65,39 @@ async function extractInfoFromPdf(filePath: string): Promise<ParsedPdf> {
   await parser.destroy();
 
   const awardIdMatch = result.text.match(/Award ID:\s*([^\r\n]+)/i);
-  const settlementDateMatch = result.text.match(/Settlement Date:\s*([^\r\n]+)/i);
-  const vestedValueMatch = result.text.match(/Total Gain \(FMV x Quantity Released\):\s*([^\r\n]+)/i);
-  const saleAmountMatch = result.text.match(/Sale PricexQuantity Sold:\s*\(?([^\)\r\n]+)\)?/i);
-  const sharesSoldMatch = result.text.match(/Quantity Sold:\s*\(?([\d\.]+)\)?/i);
+  const settlementDateMatch = result.text.match(
+    /Settlement Date:\s*([^\r\n]+)/i,
+  );
+  const vestedValueMatch = result.text.match(
+    /Total Gain \(FMV x Quantity Released\):\s*([^\r\n]+)/i,
+  );
+  const saleAmountMatch = result.text.match(
+    /Sale PricexQuantity Sold:\s*\(?([^\)\r\n]+)\)?/i,
+  );
+  const sharesSoldMatch = result.text.match(
+    /Quantity Sold:\s*\(?([\d\.]+)\)?/i,
+  );
   const salePriceMatch = result.text.match(/shares at \$([\d\.]+) per share/i);
 
-  if (awardIdMatch && settlementDateMatch && vestedValueMatch && saleAmountMatch && sharesSoldMatch && salePriceMatch) {
+  if (
+    awardIdMatch &&
+    settlementDateMatch &&
+    vestedValueMatch &&
+    saleAmountMatch &&
+    sharesSoldMatch &&
+    salePriceMatch
+  ) {
     const rawSettlementDate = settlementDateMatch[1].trim();
     const formattedSettlementDate = formatDate(rawSettlementDate);
     const formattedSalePrice = parseFloat(salePriceMatch[1]).toFixed(4);
-    
+
     return {
       awardId: awardIdMatch[1].trim(),
       settlementDate: formattedSettlementDate,
       vestedValue: vestedValueMatch[1].trim(),
       saleAmount: saleAmountMatch[1].trim(),
       sharesSold: sharesSoldMatch[1].trim(),
-      salePrice: `$${formattedSalePrice}`
+      salePrice: `$${formattedSalePrice}`,
     };
   } else {
     const missingFields: string[] = [];
@@ -82,7 +107,9 @@ async function extractInfoFromPdf(filePath: string): Promise<ParsedPdf> {
     if (!saleAmountMatch) missingFields.push("Sale Amount");
     if (!sharesSoldMatch) missingFields.push("Shares Sold");
     if (!salePriceMatch) missingFields.push("Sale Price");
-    throw new Error(`Failed to parse PDF. Missing fields: ${missingFields.join(", ")}`);
+    throw new Error(
+      `Failed to parse PDF. Missing fields: ${missingFields.join(", ")}`,
+    );
   }
 }
 
@@ -93,7 +120,7 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
   }
 
   const parsed = await extractInfoFromPdf(filePath);
-  
+
   console.log(`Award ID: ${parsed.awardId}`);
   console.log(`Settlement Date: ${parsed.settlementDate}`);
   console.log(`Vested Value: ${parsed.vestedValue}`);
@@ -103,20 +130,22 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
 }
 
 program
-  .name('pdf-to-text')
-  .description('CLI to extract text and info from PDF files')
-  .version('1.0.0');
+  .name("pdf-to-text")
+  .description("CLI to extract text and info from PDF files")
+  .version("1.0.0");
 
 program
-  .command('print')
-  .description('load a PDF and print its text to stdout')
-  .argument('<file-path>', 'path to the PDF file')
+  .command("print")
+  .description("load a PDF and print its text to stdout")
+  .argument("<file-path>", "path to the PDF file")
   .action(parsePdfAndPrint);
 
 program
-  .command('parse')
-  .description('extract the Award ID and Settlement Date from the PDF file and print them')
-  .argument('<file-path>', 'path to the PDF file')
+  .command("parse")
+  .description(
+    "extract the Award ID and Settlement Date from the PDF file and print them",
+  )
+  .argument("<file-path>", "path to the PDF file")
   .action(parsePdfAndExtractInfo);
 
 program.parse(process.argv);
