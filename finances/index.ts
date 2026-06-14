@@ -72,12 +72,10 @@ async function extractInfoFromPdf(filePath: string): Promise<ParsedPdf> {
     /Total Gain \(FMV x Quantity Released\):\s*([^\r\n]+)/i,
   );
   const saleAmountMatch = result.text.match(
-    /Sale PricexQuantity Sold:\s*\(?([^\)\r\n]+)\)?/i,
+    /Sale PricexQuantity Sold:\s*\(?([^)\r\n]+)\)?/i,
   );
-  const sharesSoldMatch = result.text.match(
-    /Quantity Sold:\s*\(?([\d\.]+)\)?/i,
-  );
-  const salePriceMatch = result.text.match(/shares at \$([\d\.]+) per share/i);
+  const sharesSoldMatch = result.text.match(/Quantity Sold:\s*\(?([\d.]+)\)?/i);
+  const salePriceMatch = result.text.match(/shares at \$([\d.]+) per share/i);
 
   if (
     awardIdMatch &&
