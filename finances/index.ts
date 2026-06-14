@@ -51,19 +51,40 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
   
   const awardIdMatch = result.text.match(/Award ID:\s*([^\r\n]+)/i);
   const settlementDateMatch = result.text.match(/Settlement Date:\s*([^\r\n]+)/i);
+  const vestedValueMatch = result.text.match(/Total Gain \(FMV x Quantity Released\):\s*([^\r\n]+)/i);
+  const saleAmountMatch = result.text.match(/Sale PricexQuantity Sold:\s*\(?([^\)\r\n]+)\)?/i);
+  const sharesSoldMatch = result.text.match(/Quantity Sold:\s*\(?([\d\.]+)\)?/i);
+  const salePriceMatch = result.text.match(/shares at \$([\d\.]+) per share/i);
 
-  if (awardIdMatch && settlementDateMatch) {
+  if (awardIdMatch && settlementDateMatch && vestedValueMatch && saleAmountMatch && sharesSoldMatch && salePriceMatch) {
     const rawSettlementDate = settlementDateMatch[1].trim();
     const formattedSettlementDate = formatDate(rawSettlementDate);
+    const formattedSalePrice = parseFloat(salePriceMatch[1]).toFixed(4);
     
     console.log(`Award ID: ${awardIdMatch[1].trim()}`);
     console.log(`Settlement Date: ${formattedSettlementDate}`);
+    console.log(`Vested Value: ${vestedValueMatch[1].trim()}`);
+    console.log(`Sale Amount: ${saleAmountMatch[1].trim()}`);
+    console.log(`Shares Sold: ${sharesSoldMatch[1].trim()}`);
+    console.log(`Sale Price: $${formattedSalePrice}`);
   } else {
     if (!awardIdMatch) {
       console.error("Error: Could not find Award ID in the PDF.");
     }
     if (!settlementDateMatch) {
       console.error("Error: Could not find Settlement Date in the PDF.");
+    }
+    if (!vestedValueMatch) {
+      console.error("Error: Could not find Vested Value in the PDF.");
+    }
+    if (!saleAmountMatch) {
+      console.error("Error: Could not find Sale Amount in the PDF.");
+    }
+    if (!sharesSoldMatch) {
+      console.error("Error: Could not find Shares Sold in the PDF.");
+    }
+    if (!salePriceMatch) {
+      console.error("Error: Could not find Sale Price in the PDF.");
     }
     process.exit(1);
   }
