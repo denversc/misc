@@ -128,6 +128,21 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
   console.log(`Sale Price: ${parsed.salePrice}`);
 }
 
+async function generateFilename(filePath: string): Promise<void> {
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found at path "${filePath}"`);
+    process.exit(1);
+  }
+
+  const parsed = await extractInfoFromPdf(filePath);
+  const filename =
+    `${parsed.settlementDate} Morgan Stanley Release Confirmation ` +
+    `${parsed.awardId} ${parsed.sharesSold} shares vested for ` +
+    `${parsed.vestedValue} sold for ${parsed.saleAmount} ` +
+    `(${parsed.salePrice} per share)`;
+  console.log(filename);
+}
+
 program
   .name("mspdf")
   .description(
@@ -149,5 +164,11 @@ program
   )
   .argument("<file-path>", "path to the PDF file")
   .action(parsePdfAndExtractInfo);
+
+program
+  .command("filename")
+  .description("generate a standardized filename from the PDF data")
+  .argument("<file-path>", "path to the PDF file")
+  .action(generateFilename);
 
 program.parse(process.argv);
