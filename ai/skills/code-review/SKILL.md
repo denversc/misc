@@ -36,6 +36,8 @@ Prioritize substantive feedback on logic, architecture, and readability over sty
 6. **Number and Format all findings** following the exact structure and rules in the `<OUTPUT>` section.
    Finding numbers start at 1 and are incremented by 1 for each finding.
    The finding numbers allow the user to reference specific findings by number.
+7. **Static code analysis only** - DO NOT run any build commands such as "gradle" to build, run, or test the code.
+   Instead, just read the code and analyze it to the best of your ability without running any code.
 </INSTRUCTIONS>
 
 <CRITICAL_CONSTRAINTS>
