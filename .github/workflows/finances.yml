@@ -1,0 +1,83 @@
+name: Finances CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/finances.yml"
+      - "finances/**"
+  pull_request:
+    paths:
+      - ".github/workflows/finances.yml"
+      - "finances/**"
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: finances
+        shell: bash
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
+        with:
+          show-progress: false
+          sparse-checkout: "finances/"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # ratchet:oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Check format
+        run: bun run format:check
+
+  lint:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: finances
+        shell: bash
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
+        with:
+          show-progress: false
+          sparse-checkout: "finances/"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # ratchet:oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run linter
+        run: bun run lint
+
+  typecheck:
+    name: Check TypeScript types
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: finances
+        shell: bash
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
+        with:
+          show-progress: false
+          sparse-checkout: "finances/"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # ratchet:oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Check types
+        run: bun run typecheck
