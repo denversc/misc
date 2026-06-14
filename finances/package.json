@@ -11,6 +11,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "commander": "^15.0.0",
     "pdf-parse": "^2.4.5"
   }
 }
