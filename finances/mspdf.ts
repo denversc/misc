@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as path from "path";
 import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
 
@@ -128,6 +129,15 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
   console.log(`Sale Price: ${parsed.salePrice}`);
 }
 
+function getNewFilename(parsed: ParsedPdf): string {
+  return (
+    `${parsed.settlementDate} Morgan Stanley Release Confirmation ` +
+    `${parsed.awardId} ${parsed.sharesSold} shares vested for ` +
+    `${parsed.vestedValue} sold for ${parsed.saleAmount} ` +
+    `(${parsed.salePrice} per share)`
+  );
+}
+
 async function generateFilenames(filePaths: string[]): Promise<void> {
   for (const filePath of filePaths) {
     if (!fs.existsSync(filePath)) {
@@ -136,12 +146,28 @@ async function generateFilenames(filePaths: string[]): Promise<void> {
     }
 
     const parsed = await extractInfoFromPdf(filePath);
-    const filename =
-      `${parsed.settlementDate} Morgan Stanley Release Confirmation ` +
-      `${parsed.awardId} ${parsed.sharesSold} shares vested for ` +
-      `${parsed.vestedValue} sold for ${parsed.saleAmount} ` +
-      `(${parsed.salePrice} per share)`;
+    const filename = getNewFilename(parsed);
     console.log(filename);
+  }
+}
+
+async function renameFiles(filePaths: string[]): Promise<void> {
+  for (const filePath of filePaths) {
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: File not found at path "${filePath}"`);
+      process.exit(1);
+    }
+
+    const parsed = await extractInfoFromPdf(filePath);
+    const baseNewName = getNewFilename(parsed);
+
+    const dir = path.dirname(filePath);
+    const ext = path.extname(filePath);
+    const newFilename = `${baseNewName}${ext}`;
+    const newPath = path.join(dir, newFilename);
+
+    fs.renameSync(filePath, newPath);
+    console.log(`Renamed ${filePath} to ${newFilename}`);
   }
 }
 
@@ -172,5 +198,13 @@ program
   .description("generate standardized filenames from the PDF data")
   .argument("<file-paths...>", "paths to the PDF files")
   .action(generateFilenames);
+
+program
+  .command("rename")
+  .description(
+    "rename the PDF files to standardized filenames based on their content",
+  )
+  .argument("<file-paths...>", "paths to the PDF files")
+  .action(renameFiles);
 
 program.parse(process.argv);
