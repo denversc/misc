@@ -17,7 +17,29 @@ async function parsePdfAndPrint(filePath: string): Promise<void> {
   await parser.destroy();
 }
 
-async function parsePdfAndExtractAwardId(filePath: string): Promise<void> {
+const MONTH_MAP: Record<string, string> = {
+  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'
+};
+
+function formatDate(dateStr: string): string {
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) {
+    throw new Error(`Invalid date format (expected DD-MMM-YYYY): "${dateStr}"`);
+  }
+  const day = parts[0].padStart(2, '0');
+  const monthStr = parts[1].toLowerCase();
+  const year = parts[2];
+  
+  const month = MONTH_MAP[monthStr];
+  if (!month) {
+    throw new Error(`Invalid month name in date: "${dateStr}"`);
+  }
+  
+  return `${year}-${month}-${day}`;
+}
+
+async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
   if (!fs.existsSync(filePath)) {
     console.error(`Error: File not found at path "${filePath}"`);
     process.exit(1);
@@ -27,11 +49,22 @@ async function parsePdfAndExtractAwardId(filePath: string): Promise<void> {
   const parser = new PDFParse({ data: dataBuffer });
   const result = await parser.getText();
   
-  const match = result.text.match(/Award ID:\s*([^\r\n]+)/i);
-  if (match) {
-    console.log(match[1].trim());
+  const awardIdMatch = result.text.match(/Award ID:\s*([^\r\n]+)/i);
+  const settlementDateMatch = result.text.match(/Settlement Date:\s*([^\r\n]+)/i);
+
+  if (awardIdMatch && settlementDateMatch) {
+    const rawSettlementDate = settlementDateMatch[1].trim();
+    const formattedSettlementDate = formatDate(rawSettlementDate);
+    
+    console.log(`Award ID: ${awardIdMatch[1].trim()}`);
+    console.log(`Settlement Date: ${formattedSettlementDate}`);
   } else {
-    console.error("Error: Could not find Award ID in the PDF.");
+    if (!awardIdMatch) {
+      console.error("Error: Could not find Award ID in the PDF.");
+    }
+    if (!settlementDateMatch) {
+      console.error("Error: Could not find Settlement Date in the PDF.");
+    }
     process.exit(1);
   }
   
@@ -51,8 +84,8 @@ program
 
 program
   .command('parse')
-  .description('extract the Award ID from the PDF file and print it')
+  .description('extract the Award ID and Settlement Date from the PDF file and print them')
   .argument('<file-path>', 'path to the PDF file')
-  .action(parsePdfAndExtractAwardId);
+  .action(parsePdfAndExtractInfo);
 
 program.parse(process.argv);
