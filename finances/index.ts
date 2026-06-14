@@ -37,9 +37,10 @@ function formatDate(dateStr: string): string {
   if (parts.length !== 3) {
     throw new Error(`Invalid date format (expected DD-MMM-YYYY): "${dateStr}"`);
   }
-  const day = parts[0].padStart(2, "0");
-  const monthStr = parts[1].toLowerCase();
-  const year = parts[2];
+  const [dayStr, monthStrRaw, yearStr] = parts as [string, string, string];
+  const day = dayStr.padStart(2, "0");
+  const monthStr = monthStrRaw.toLowerCase();
+  const year = yearStr;
 
   const month = MONTH_MAP[monthStr];
   if (!month) {
@@ -85,16 +86,16 @@ async function extractInfoFromPdf(filePath: string): Promise<ParsedPdf> {
     sharesSoldMatch &&
     salePriceMatch
   ) {
-    const rawSettlementDate = settlementDateMatch[1].trim();
+    const rawSettlementDate = settlementDateMatch[1]!.trim();
     const formattedSettlementDate = formatDate(rawSettlementDate);
-    const formattedSalePrice = parseFloat(salePriceMatch[1]).toFixed(4);
+    const formattedSalePrice = parseFloat(salePriceMatch[1]!).toFixed(4);
 
     return {
-      awardId: awardIdMatch[1].trim(),
+      awardId: awardIdMatch[1]!.trim(),
       settlementDate: formattedSettlementDate,
-      vestedValue: vestedValueMatch[1].trim(),
-      saleAmount: saleAmountMatch[1].trim(),
-      sharesSold: sharesSoldMatch[1].trim(),
+      vestedValue: vestedValueMatch[1]!.trim(),
+      saleAmount: saleAmountMatch[1]!.trim(),
+      sharesSold: sharesSoldMatch[1]!.trim(),
       salePrice: `$${formattedSalePrice}`,
     };
   } else {
