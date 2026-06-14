@@ -1,0 +1,16 @@
+{
+  "name": "finances",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/pdf-parse": "^1.1.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "pdf-parse": "^2.4.5"
+  }
+}
