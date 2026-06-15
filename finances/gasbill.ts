@@ -129,8 +129,8 @@ async function renameFiles(filePaths: string[]): Promise<void> {
     const newFilename = `${baseNewName}${ext}`;
     const newPath = path.join(dir, newFilename);
 
+    console.log(`Renaming ${filePath} to ${newFilename}`);
     fs.renameSync(filePath, newPath);
-    console.log(`Renamed ${filePath} to ${newFilename}`);
   }
 }
 

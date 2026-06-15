@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as path from "path";
 import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
 
@@ -93,6 +94,44 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
   }
 }
 
+function getNewFilename(parsed: ParsedRrsp): string {
+  const yearMonth = parsed.lastDate.substring(0, 7); // "YYYY-MM"
+  return `${yearMonth} Manulife RRSP Google Transactions ($${parsed.value})`;
+}
+
+async function generateFilenames(filePaths: string[]): Promise<void> {
+  for (const filePath of filePaths) {
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: File not found at path "${filePath}"`);
+      process.exit(1);
+    }
+
+    const parsed = await extractInfoFromPdf(filePath);
+    const filename = getNewFilename(parsed);
+    console.log(filename);
+  }
+}
+
+async function renameFiles(filePaths: string[]): Promise<void> {
+  for (const filePath of filePaths) {
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: File not found at path "${filePath}"`);
+      process.exit(1);
+    }
+
+    const parsed = await extractInfoFromPdf(filePath);
+    const baseNewName = getNewFilename(parsed);
+
+    const dir = path.dirname(filePath);
+    const ext = path.extname(filePath);
+    const newFilename = `${baseNewName}${ext}`;
+    const newPath = path.join(dir, newFilename);
+
+    console.log(`Renaming ${filePath} to ${newFilename}`);
+    fs.renameSync(filePath, newPath);
+  }
+}
+
 program
   .name("rrsp")
   .description(
@@ -114,5 +153,19 @@ program
   )
   .argument("<file-path>", "path to the PDF file")
   .action(parsePdfAndExtractInfo);
+
+program
+  .command("filename")
+  .description("generate standardized filenames from the PDF data")
+  .argument("<file-paths...>", "paths to the PDF files")
+  .action(generateFilenames);
+
+program
+  .command("rename")
+  .description(
+    "rename the PDF files to standardized filenames based on their content",
+  )
+  .argument("<file-paths...>", "paths to the PDF files")
+  .action(renameFiles);
 
 program.parse(process.argv);
