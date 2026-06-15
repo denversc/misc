@@ -35,15 +35,10 @@ const MONTH_MAP: Record<string, string> = {
 
 export type Classification = "regpay" | "gsu" | "shuttle" | "meal";
 
-async function classify(filePath: string): Promise<Classification> {
-  const dataBuffer = fs.readFileSync(filePath);
-  const parser = new PDFParse({ data: dataBuffer });
-  const result = await parser.getText();
-  await parser.destroy();
-
+function classifyText(text: string): Classification {
   // Split on "Deductions" to only process the Earnings section
-  const parts = result.text.split(/\r?\nDeductions/);
-  const earningsSection = parts[0] || result.text;
+  const parts = text.split(/\r?\nDeductions/);
+  const earningsSection = parts[0] || text;
 
   const mealMatches = earningsSection.matchAll(
     /Meal Bene[fi\s]+t\s+(?:([\d.]+)\s+\$([\d.]+)\s+)?\$([\d,.]+)\s+\$([\d,.]+)/gi,
@@ -90,6 +85,15 @@ async function classify(filePath: string): Promise<Classification> {
   throw new Error("Unable to determine pay stub classification");
 }
 
+async function classify(filePath: string): Promise<Classification> {
+  const dataBuffer = fs.readFileSync(filePath);
+  const parser = new PDFParse({ data: dataBuffer });
+  const result = await parser.getText();
+  await parser.destroy();
+
+  return classifyText(result.text);
+}
+
 async function classifyCommand(filePath: string): Promise<void> {
   if (!fs.existsSync(filePath)) {
     console.error(`Error: File not found at path "${filePath}"`);
@@ -108,6 +112,7 @@ async function classifyCommand(filePath: string): Promise<void> {
 
 export interface ParsedPaystub {
   payDate: string;
+  classification: Classification;
 }
 
 async function extractInfoFromPdf(filePath: string): Promise<ParsedPaystub> {
@@ -124,8 +129,12 @@ async function extractInfoFromPdf(filePath: string): Promise<ParsedPaystub> {
   }
 
   const [, year, month, day] = payDateMatch as [string, string, string, string];
+  const payDate = `${year}-${month}-${day}`;
+  const classification = classifyText(result.text);
+
   return {
-    payDate: `${year}-${month}-${day}`,
+    payDate,
+    classification,
   };
 }
 
@@ -146,12 +155,36 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
 }
 
 function getNewFilename(parsed: ParsedPaystub): string {
-  return "";
+  const suffixMap: Record<Classification, string> = {
+    regpay: "Regular Pay",
+    gsu: "GSU",
+    shuttle: "Shuttle Bus",
+    meal: "Meal Benefit",
+  };
+  const suffix = suffixMap[parsed.classification];
+  return `${parsed.payDate} Google Pay Stub (${suffix}).pdf`;
 }
 
-async function generateFilenames(filePaths: string[]): Promise<void> {}
+async function generateFilenames(filePaths: string[]): Promise<void> {
+  for (const filePath of filePaths) {
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: File not found at path "${filePath}"`);
+      process.exit(1);
+    }
 
-async function renameFiles(filePaths: string[]): Promise<void> {}
+    try {
+      const parsed = await extractInfoFromPdf(filePath);
+      const filename = getNewFilename(parsed);
+      console.log(filename);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error: ${message}`);
+      process.exit(1);
+    }
+  }
+}
+
+async function renameFiles(_filePaths: string[]): Promise<void> {}
 
 program
   .name("mspdf")
