@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import * as fs from "fs";
+import * as path from "path";
 import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
 
@@ -171,7 +172,7 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
 
 function getNewFilename(parsed: ParsedPaystub): string {
   if (parsed.classification === "gsu") {
-    return `${parsed.payDate} Google Pay Stub (GSU Vest ${parsed.gsuAmount} CAD).pdf`;
+    return `${parsed.payDate} Google Pay Stub (GSU Vest ${parsed.gsuAmount} CAD)`;
   }
   const suffixMap: Record<Exclude<Classification, "gsu">, string> = {
     regpay: "Regular Pay",
@@ -179,7 +180,7 @@ function getNewFilename(parsed: ParsedPaystub): string {
     meal: "Meal Benefit",
   };
   const suffix = suffixMap[parsed.classification];
-  return `${parsed.payDate} Google Pay Stub (${suffix}).pdf`;
+  return `${parsed.payDate} Google Pay Stub (${suffix})`;
 }
 
 async function generateFilenames(filePaths: string[]): Promise<void> {
@@ -191,7 +192,8 @@ async function generateFilenames(filePaths: string[]): Promise<void> {
 
     try {
       const parsed = await extractInfoFromPdf(filePath);
-      const filename = getNewFilename(parsed);
+      const ext = path.extname(filePath);
+      const filename = `${getNewFilename(parsed)}${ext}`;
       console.log(filename);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -201,7 +203,31 @@ async function generateFilenames(filePaths: string[]): Promise<void> {
   }
 }
 
-async function renameFiles(_filePaths: string[]): Promise<void> {}
+async function renameFiles(filePaths: string[]): Promise<void> {
+  for (const filePath of filePaths) {
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: File not found at path "${filePath}"`);
+      process.exit(1);
+    }
+
+    try {
+      const parsed = await extractInfoFromPdf(filePath);
+      const baseNewName = getNewFilename(parsed);
+
+      const dir = path.dirname(filePath);
+      const ext = path.extname(filePath);
+      const newFilename = `${baseNewName}${ext}`;
+      const newPath = path.join(dir, newFilename);
+
+      console.log(`Renaming ${filePath} to ${newFilename}`);
+      fs.renameSync(filePath, newPath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error: ${message}`);
+      process.exit(1);
+    }
+  }
+}
 
 program
   .name("mspdf")
