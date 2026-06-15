@@ -113,6 +113,7 @@ async function classifyCommand(filePath: string): Promise<void> {
 export interface ParsedPaystub {
   payDate: string;
   classification: Classification;
+  gsuAmount?: string;
 }
 
 async function extractInfoFromPdf(filePath: string): Promise<ParsedPaystub> {
@@ -132,9 +133,23 @@ async function extractInfoFromPdf(filePath: string): Promise<ParsedPaystub> {
   const payDate = `${year}-${month}-${day}`;
   const classification = classifyText(result.text);
 
+  let gsuAmount: string | undefined;
+  if (classification === "gsu") {
+    // Split on "Deductions" to only process the Earnings section
+    const parts = result.text.split(/\r?\nDeductions/);
+    const earningsSection = parts[0] || result.text;
+    const gsuMatch = earningsSection.match(
+      /Google Stock Un\s+([\d,.]+)\s+\$([\d,.]+)\s+\$([\d,.]+)\s+\$([\d,.]+)/i,
+    );
+    if (gsuMatch && gsuMatch[3]) {
+      gsuAmount = `$${gsuMatch[3]}`;
+    }
+  }
+
   return {
     payDate,
     classification,
+    gsuAmount,
   };
 }
 
@@ -155,9 +170,11 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
 }
 
 function getNewFilename(parsed: ParsedPaystub): string {
-  const suffixMap: Record<Classification, string> = {
+  if (parsed.classification === "gsu") {
+    return `${parsed.payDate} Google Pay Stub (GSU Vest ${parsed.gsuAmount} CAD).pdf`;
+  }
+  const suffixMap: Record<Exclude<Classification, "gsu">, string> = {
     regpay: "Regular Pay",
-    gsu: "GSU",
     shuttle: "Shuttle Bus",
     meal: "Meal Benefit",
   };
