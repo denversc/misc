@@ -106,11 +106,46 @@ async function classifyCommand(filePath: string): Promise<void> {
   }
 }
 
-async function extractInfoFromPdf(filePath: string): Promise<void> {}
+export interface ParsedPaystub {
+  payDate: string;
+}
 
-async function parsePdfAndExtractInfo(filePath: string): Promise<void> {}
+async function extractInfoFromPdf(filePath: string): Promise<ParsedPaystub> {
+  const dataBuffer = fs.readFileSync(filePath);
+  const parser = new PDFParse({ data: dataBuffer });
+  const result = await parser.getText();
+  await parser.destroy();
 
-function getNewFilename(parsed: void): string {
+  const payDateMatch = result.text.match(
+    /Pay Date\s+(\d{4})\s+(\d{2})\s+(\d{2})/i,
+  );
+  if (!payDateMatch) {
+    throw new Error("Failed to parse PDF. Missing field: Pay Date");
+  }
+
+  const [, year, month, day] = payDateMatch as [string, string, string, string];
+  return {
+    payDate: `${year}-${month}-${day}`,
+  };
+}
+
+async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
+  if (!fs.existsSync(filePath)) {
+    console.error(`Error: File not found at path "${filePath}"`);
+    process.exit(1);
+  }
+
+  try {
+    const parsed = await extractInfoFromPdf(filePath);
+    console.log(`Pay Date: ${parsed.payDate}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Error: ${message}`);
+    process.exit(1);
+  }
+}
+
+function getNewFilename(parsed: ParsedPaystub): string {
   return "";
 }
 
