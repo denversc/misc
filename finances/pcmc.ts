@@ -33,80 +33,50 @@ const MONTH_MAP: Record<string, string> = {
   dec: "12",
 };
 
-function formatDate(dateStr: string): string {
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) {
-    throw new Error(`Invalid date format (expected DD-MMM-YYYY): "${dateStr}"`);
-  }
-  const [dayStr, monthStrRaw, yearStr] = parts as [string, string, string];
+function formatDate(
+  monthStrRaw: string,
+  dayStr: string,
+  yearStr: string,
+): string {
   const day = dayStr.padStart(2, "0");
-  const monthStr = monthStrRaw.toLowerCase();
-  const year = yearStr;
-
-  const month = MONTH_MAP[monthStr];
+  const monthKey = monthStrRaw.toLowerCase().substring(0, 3);
+  const month = MONTH_MAP[monthKey];
   if (!month) {
-    throw new Error(`Invalid month name in date: "${dateStr}"`);
+    throw new Error(`Invalid month name in date: "${monthStrRaw}"`);
   }
-
-  return `${year}-${month}-${day}`;
+  return `${yearStr}-${month}-${day}`;
 }
 
-interface ParsedPdf {
-  awardId: string;
-  settlementDate: string;
-  vestedValue: string;
-  saleAmount: string;
-  sharesSold: string;
-  salePrice: string;
+interface ParsedPcmc {
+  statementDate: string;
+  purchases: string;
 }
 
-async function extractInfoFromPdf(filePath: string): Promise<ParsedPdf> {
+async function extractInfoFromPdf(filePath: string): Promise<ParsedPcmc> {
   const dataBuffer = fs.readFileSync(filePath);
   const parser = new PDFParse({ data: dataBuffer });
   const result = await parser.getText();
   await parser.destroy();
 
-  const awardIdMatch = result.text.match(/Award ID:\s*([^\r\n]+)/i);
-  const settlementDateMatch = result.text.match(
-    /Settlement Date:\s*([^\r\n]+)/i,
+  const statementDateMatch = result.text.match(
+    /Statement date:\s*([A-Za-z]+)\.?\s*(\d{1,2}),\s*(\d{4})/i,
   );
-  const vestedValueMatch = result.text.match(
-    /Total Gain \(FMV x Quantity Released\):\s*([^\r\n]+)/i,
-  );
-  const saleAmountMatch = result.text.match(
-    /Sale PricexQuantity Sold:\s*\(?([^)\r\n]+)\)?/i,
-  );
-  const sharesSoldMatch = result.text.match(/Quantity Sold:\s*\(?([\d.]+)\)?/i);
-  const salePriceMatch = result.text.match(/shares at \$([\d.]+) per share/i);
+  const purchasesMatch = result.text.match(/^\+\s*Purchases\s+\$?([\d,.]+)/im);
 
-  if (
-    awardIdMatch &&
-    settlementDateMatch &&
-    vestedValueMatch &&
-    saleAmountMatch &&
-    sharesSoldMatch &&
-    salePriceMatch
-  ) {
-    const rawSettlementDate = settlementDateMatch[1]!.trim();
-    const formattedSettlementDate = formatDate(rawSettlementDate);
-    const formattedSalePrice = parseFloat(salePriceMatch[1]!).toFixed(4);
-
+  if (statementDateMatch && purchasesMatch) {
+    const formattedDate = formatDate(
+      statementDateMatch[1]!,
+      statementDateMatch[2]!,
+      statementDateMatch[3]!,
+    );
     return {
-      awardId: awardIdMatch[1]!.trim(),
-      settlementDate: formattedSettlementDate,
-      vestedValue: vestedValueMatch[1]!.trim(),
-      saleAmount: saleAmountMatch[1]!.trim(),
-      sharesSold: sharesSoldMatch[1]!.trim(),
-      salePrice: `$${formattedSalePrice}`,
+      statementDate: formattedDate,
+      purchases: `$${purchasesMatch[1]!.trim()}`,
     };
   } else {
     const missingFields: string[] = [];
-    if (!awardIdMatch) missingFields.push("Award ID");
-    if (!settlementDateMatch) missingFields.push("Settlement Date");
-    if (!vestedValueMatch) missingFields.push("Vested Value");
-    if (!saleAmountMatch) missingFields.push("Sale Amount");
-    if (!sharesSoldMatch) missingFields.push("Shares Sold");
-    if (!salePriceMatch) missingFields.push("Sale Price");
+    if (!statementDateMatch) missingFields.push("Statement Date");
+    if (!purchasesMatch) missingFields.push("Purchases");
     throw new Error(
       `Failed to parse PDF. Missing fields: ${missingFields.join(", ")}`,
     );
@@ -119,23 +89,19 @@ async function parsePdfAndExtractInfo(filePath: string): Promise<void> {
     process.exit(1);
   }
 
-  const parsed = await extractInfoFromPdf(filePath);
-
-  console.log(`Award ID: ${parsed.awardId}`);
-  console.log(`Settlement Date: ${parsed.settlementDate}`);
-  console.log(`Vested Value: ${parsed.vestedValue}`);
-  console.log(`Sale Amount: ${parsed.saleAmount}`);
-  console.log(`Shares Sold: ${parsed.sharesSold}`);
-  console.log(`Sale Price: ${parsed.salePrice}`);
+  try {
+    const parsed = await extractInfoFromPdf(filePath);
+    console.log(`Statement Date: ${parsed.statementDate}`);
+    console.log(`Purchases: ${parsed.purchases}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Error: ${message}`);
+    process.exit(1);
+  }
 }
 
-function getNewFilename(parsed: ParsedPdf): string {
-  return (
-    `${parsed.settlementDate} Morgan Stanley Release Confirmation ` +
-    `${parsed.awardId} ${parsed.sharesSold} shares vested for ` +
-    `${parsed.vestedValue} sold for ${parsed.saleAmount} ` +
-    `(${parsed.salePrice} per share)`
-  );
+function getNewFilename(parsed: ParsedPcmc): string {
+  return `${parsed.statementDate} PC MasterCard Statement ${parsed.purchases}`;
 }
 
 async function generateFilenames(filePaths: string[]): Promise<void> {
@@ -172,10 +138,10 @@ async function renameFiles(filePaths: string[]): Promise<void> {
 }
 
 program
-  .name("mspdf")
+  .name("pcmc")
   .description(
-    'Reads a "Release Confirmation" PDF from Morgan Stanley and extracts ' +
-      "information from it relevant for income tax reporting",
+    "Reads a PC MasterCard statement PDF and extracts " +
+      "information from it relevant for financial record keeping",
   )
   .version("1.0.0");
 
@@ -188,7 +154,7 @@ program
 program
   .command("parse")
   .description(
-    "extract tax reporting information from the PDF file and print it",
+    "extract PC MasterCard statement information from the PDF file and print it",
   )
   .argument("<file-path>", "path to the PDF file")
   .action(parsePdfAndExtractInfo);
