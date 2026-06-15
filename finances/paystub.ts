@@ -203,8 +203,54 @@ async function generateFilenames(filePaths: string[]): Promise<void> {
   }
 }
 
+interface ProposedRename {
+  filePath: string;
+  parsed: ParsedPaystub;
+  dir: string;
+  ext: string;
+  baseNewName: string;
+}
+
+function disambiguateFilenames(
+  proposed: ProposedRename[],
+): Map<string, string> {
+  const groups = new Map<string, ProposedRename[]>();
+
+  for (const item of proposed) {
+    const targetPath = path.join(item.dir, `${item.baseNewName}${item.ext}`);
+    const list = groups.get(targetPath) || [];
+    list.push(item);
+    groups.set(targetPath, list);
+  }
+
+  const result = new Map<string, string>();
+
+  for (const [targetPath, list] of groups.entries()) {
+    if (list.length === 1) {
+      result.set(list[0]!.filePath, targetPath);
+    } else {
+      list.forEach((item, index) => {
+        const counter = index + 1;
+        let baseNewName = item.baseNewName;
+        if (baseNewName.endsWith(")")) {
+          baseNewName = `${baseNewName.slice(0, -1)} ${counter})`;
+        } else {
+          baseNewName = `${baseNewName} ${counter}`;
+        }
+        const newPath = path.join(item.dir, `${baseNewName}${item.ext}`);
+        result.set(item.filePath, newPath);
+      });
+    }
+  }
+
+  return result;
+}
+
 async function renameFiles(filePaths: string[]): Promise<void> {
-  for (const filePath of filePaths) {
+  const uniqueFilePaths = Array.from(new Set(filePaths));
+  const proposedRenames: ProposedRename[] = [];
+
+  for (const filePath of uniqueFilePaths) {
     if (!fs.existsSync(filePath)) {
       console.error(`Error: File not found at path "${filePath}"`);
       process.exit(1);
@@ -213,14 +259,32 @@ async function renameFiles(filePaths: string[]): Promise<void> {
     try {
       const parsed = await extractInfoFromPdf(filePath);
       const baseNewName = getNewFilename(parsed);
-
       const dir = path.dirname(filePath);
       const ext = path.extname(filePath);
-      const newFilename = `${baseNewName}${ext}`;
-      const newPath = path.join(dir, newFilename);
 
-      console.log(`Renaming ${filePath} to ${newFilename}`);
-      fs.renameSync(filePath, newPath);
+      proposedRenames.push({
+        filePath,
+        parsed,
+        dir,
+        ext,
+        baseNewName,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Error: ${message}`);
+      process.exit(1);
+    }
+  }
+
+  const disambiguated = disambiguateFilenames(proposedRenames);
+
+  for (const item of proposedRenames) {
+    const newPath = disambiguated.get(item.filePath)!;
+    const newFilename = path.basename(newPath);
+
+    try {
+      console.log(`Renaming ${item.filePath} to ${newFilename}`);
+      fs.renameSync(item.filePath, newPath);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(`Error: ${message}`);
