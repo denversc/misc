@@ -2,6 +2,7 @@ import * as fs from "node:fs/promises";
 import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
 import { parse, format } from "@formkit/tempo";
+import * as path from "node:path";
 
 const program = new Command();
 
@@ -417,6 +418,53 @@ async function filenameCommand(
   }
 }
 
+interface RenameOptions {
+  v?: boolean;
+}
+
+async function renameCommand(
+  filePaths: string | string[],
+  options?: RenameOptions,
+): Promise<void> {
+  if (typeof filePaths === "string") {
+    return renameCommand([filePaths]);
+  }
+
+  const outputFileNameByFilePath = await calculateFileNames(filePaths);
+  if (isCalculateFileNamesError(outputFileNameByFilePath)) {
+    const { message, filePath } = outputFileNameByFilePath;
+    console.error(`ERROR: ${message}: ${filePath}`);
+    process.exit(1);
+  }
+
+  for (const srcFilePath of filePaths) {
+    const destFileName = outputFileNameByFilePath.get(srcFilePath);
+    if (!destFileName) {
+      throw new Error(
+        `internal error xwttprzh98: ` +
+          `outputFileNameByFilePath.get(${Bun.inspect(srcFilePath)}) ` +
+          `returned ${Bun.inspect(destFileName)}`,
+      );
+    }
+
+    const dir = path.dirname(srcFilePath);
+    let destFilePath: string;
+    if (dir === "" || dir === ".") {
+      destFilePath = destFileName;
+    } else {
+      destFilePath = path.join(dir, destFileName);
+    }
+
+    if (options?.v) {
+      console.log(`Renaming ${srcFilePath} to ${destFileName}`);
+    } else {
+      console.log(destFilePath);
+    }
+  }
+
+  console.log(`${filePaths.length} files renamed`);
+}
+
 program
   .name("stmt")
   .description(
@@ -456,5 +504,12 @@ program
   .argument("<files...>", "paths of the PDF files")
   .option("-v", "prefix each line with the file path")
   .action(filenameCommand);
+
+program
+  .command("rename")
+  .description("Renames PDF files to their normalized file names")
+  .argument("<files...>", "paths of the PDF files")
+  .option("-v", "prefix each output path with the source path")
+  .action(renameCommand);
 
 program.parse(process.argv);
