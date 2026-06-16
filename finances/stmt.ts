@@ -4,6 +4,10 @@ import { PDFParse } from "pdf-parse";
 
 const program = new Command();
 
+function unreachable(value: never, message: string): never {
+  throw new Error(`should never get here: ${message} (${Bun.inspect(value)})`);
+}
+
 function propertyFromUnknown(obj: unknown, propertyName: string): unknown {
   return typeof obj === "object" && obj !== null && propertyName in obj
     ? (obj as Record<string, unknown>)[propertyName]
@@ -40,7 +44,14 @@ function isReadPdfError(e: unknown): e is ReadPdfError {
   );
 }
 
-async function readPdf(filePath: string): Promise<string | ReadPdfError> {
+interface ReadPdfResult {
+  text: string;
+  lines: string[];
+}
+
+async function readPdf(
+  filePath: string,
+): Promise<ReadPdfResult | ReadPdfError> {
   let fileContents: Buffer<ArrayBuffer>;
   try {
     fileContents = await fs.readFile(filePath);
@@ -50,15 +61,88 @@ async function readPdf(filePath: string): Promise<string | ReadPdfError> {
 
   const parser = new PDFParse({ data: fileContents });
 
+  let text: string;
   try {
     const textContents = await parser.getText();
-    return textContents.text;
+    text = textContents.text;
   } catch (e: unknown) {
     const errorMessage = messageForError(e);
     const message = `parsing pdf file contents failed (${errorMessage})`;
     return { type: "ReadPdfError", message };
   } finally {
     await parser.destroy();
+  }
+
+  const lines = text.split("\n").map((line) => line.trim());
+  return { text, lines };
+}
+
+type PdfType = "PublicMobileStatement";
+
+interface ParsePdfError {
+  type: "ParsePdfError";
+  message: string;
+}
+
+function isParsePdfError(e: unknown): e is ParsePdfError {
+  return (
+    e !== null &&
+    typeof e === "object" &&
+    "type" in e &&
+    e.type === "ParsePdfError" &&
+    "message" in e &&
+    typeof e.message === "string"
+  );
+}
+
+interface ParsedPublicMobileStatement {
+  type: "PublicMobileStatement";
+  invoiceDate: string;
+  totalAmountPaid: string;
+}
+
+function parsePublicMobileStatement(
+  pdfLines: string[],
+): ParsedPublicMobileStatement | ParsePdfError {
+  const invoiceIndex = pdfLines.findIndex(
+    (line) => line.toLowerCase() === "invoice",
+  );
+  if (invoiceIndex < 0) {
+    return { type: "ParsePdfError", message: "INVOICE line not found" };
+  }
+  const invoiceDate = pdfLines[invoiceIndex + 1];
+  if (!invoiceDate) {
+    return {
+      type: "ParsePdfError",
+      message: "expected line after INVOICE line",
+    };
+  }
+
+  const totalAmountPaidLine = pdfLines.find((line) =>
+    line.toLowerCase().startsWith("total amount paid"),
+  );
+  if (!totalAmountPaidLine) {
+    return {
+      type: "ParsePdfError",
+      message: "Total Amount Paid line not found",
+    };
+  }
+
+  const totalAmountPaid = totalAmountPaidLine.substring(17).trim();
+
+  return { type: "PublicMobileStatement", invoiceDate, totalAmountPaid };
+}
+
+type ParsedPdf = ParsedPublicMobileStatement;
+
+function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
+  const type = identify(pdfLines);
+  if (!type) {
+    return { type: "ParsePdfError", message: "unrecognized pdf content" };
+  } else if (type === "PublicMobileStatement") {
+    return parsePublicMobileStatement(pdfLines);
+  } else {
+    unreachable(type, "unknown type");
   }
 }
 
@@ -77,16 +161,16 @@ async function printCommand(
     return;
   }
 
-  const text = await readPdf(filePath);
-  if (isReadPdfError(text)) {
-    console.error(`ERROR: ${text.message}: ${filePath}`);
+  const readPdfResult = await readPdf(filePath);
+  if (isReadPdfError(readPdfResult)) {
+    console.error(`ERROR: ${readPdfResult.message}: ${filePath}`);
     process.exit(1);
   }
 
   if (options?.v) {
     console.log(filePath);
   }
-  console.log(text);
+  console.log(readPdfResult.text);
 }
 
 interface ParseOptions {
@@ -110,17 +194,23 @@ async function parseCommand(
     process.exit(1);
   }
 
+  const parsedPdf = parsePdf(text.lines);
+  if (isParsePdfError(parsedPdf)) {
+    console.error(
+      `ERROR: unable to parse pdf contents: ` +
+        `${parsedPdf.message}: ${filePath}`,
+    );
+    process.exit(1);
+  }
+
   if (options?.v) {
     console.log(filePath);
   }
-  console.log(text);
+  console.log(parsedPdf);
 }
 
-type PdfType = "PublicMobileStatement";
-
-function identify(pdfText: string): PdfType | undefined {
-  const lines = pdfText.split("\n").map((line) => line.trim());
-  if (lines.includes("Public Mobile Account")) {
+function identify(pdfLines: string[]): PdfType | undefined {
+  if (pdfLines.includes("Public Mobile Account")) {
     return "PublicMobileStatement";
   }
   return undefined;
@@ -141,13 +231,13 @@ async function identifyCommand(
     return;
   }
 
-  const text = await readPdf(filePath);
-  if (isReadPdfError(text)) {
-    console.error(`ERROR: ${text.message}: ${filePath}`);
+  const readPdfResult = await readPdf(filePath);
+  if (isReadPdfError(readPdfResult)) {
+    console.error(`ERROR: ${readPdfResult.message}: ${filePath}`);
     process.exit(1);
   }
 
-  const type = identify(text);
+  const type = identify(readPdfResult.lines);
   if (options?.v) {
     console.log(`${filePath}: ${type}`);
   } else {
