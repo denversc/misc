@@ -48,6 +48,7 @@ function isReadPdfError(e: unknown): e is ReadPdfError {
 interface ReadPdfResult {
   text: string;
   lines: string[];
+  hash: string;
 }
 
 async function readPdf(
@@ -75,7 +76,8 @@ async function readPdf(
   }
 
   const lines = text.split("\n").map((line) => line.trim());
-  return { text, lines };
+  const hash = Bun.CryptoHasher.hash("sha512-256", fileContents, "hex");
+  return { text, lines, hash };
 }
 
 type PdfType = "PublicMobileStatement";
@@ -156,7 +158,7 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
   }
 }
 
-function calculateOutputFileName(parsedPdf: ParsedPdf): string {
+function calculateFileName(parsedPdf: ParsedPdf): string {
   if (parsedPdf.type === "PublicMobileStatement") {
     const { invoiceDate, totalAmountPaid } = parsedPdf;
     const formattedDate = format(invoiceDate, "YYYY-MM-DD");
@@ -164,6 +166,116 @@ function calculateOutputFileName(parsedPdf: ParsedPdf): string {
   } else {
     unreachable(parsedPdf.type, "unknown type");
   }
+}
+
+interface CalculateFileNamesError {
+  type: "CalculateFileNamesError";
+  message: string;
+  filePath: string;
+}
+
+function isCalculateFileNamesError(e: unknown): e is CalculateFileNamesError {
+  return (
+    e !== null &&
+    typeof e === "object" &&
+    "type" in e &&
+    e.type === "CalculateFileNamesError" &&
+    "message" in e &&
+    typeof e.message === "string" &&
+    "filePath" in e &&
+    typeof e.filePath === "string"
+  );
+}
+
+async function calculateFileNames(
+  filePaths: string[],
+): Promise<Map<string, string> | CalculateFileNamesError> {
+  const infoByFileName = new Map<
+    string,
+    Array<{ filePath: string; hash: string }>
+  >();
+  const fileNameByFilePath = new Map<string, string>();
+
+  for (const filePath of filePaths) {
+    if (fileNameByFilePath.has(filePath)) {
+      continue;
+    }
+
+    const readPdfResult = await readPdf(filePath);
+    if (isReadPdfError(readPdfResult)) {
+      return {
+        type: "CalculateFileNamesError",
+        message: readPdfResult.message,
+        filePath,
+      };
+    }
+
+    const parsedPdf = parsePdf(readPdfResult.lines);
+    if (isParsePdfError(parsedPdf)) {
+      return {
+        type: "CalculateFileNamesError",
+        message: `unable to parse pdf contents: ${parsedPdf.message}`,
+        filePath,
+      };
+    }
+
+    const fileName = calculateFileName(parsedPdf);
+    fileNameByFilePath.set(filePath, fileName);
+
+    const newFileNameInfo = { filePath, hash: readPdfResult.hash };
+    const info = infoByFileName.get(fileName);
+    if (info) {
+      info.push(newFileNameInfo);
+    } else {
+      infoByFileName.set(fileName, [newFileNameInfo]);
+    }
+  }
+
+  for (const [fileName, infoList] of infoByFileName.entries()) {
+    const hashes = new Set<string>();
+    for (const info of infoList) {
+      hashes.add(info.hash);
+    }
+
+    if (hashes.size < 2) {
+      continue;
+    }
+
+    const numberByHash = new Map<string, number>();
+    for (const hash of hashes) {
+      numberByHash.set(hash, numberByHash.size + 1);
+    }
+
+    const fileNameByHash = new Map<string, string>();
+    for (const [hash, fileNumber] of numberByHash) {
+      const lastPeriodIndex = fileName.lastIndexOf(".");
+      let numberedFileName: string;
+      if (lastPeriodIndex < 0) {
+        numberedFileName = `${fileName} ${fileNumber}`;
+      } else {
+        numberedFileName =
+          fileName.substring(0, lastPeriodIndex) +
+          ` ${fileNumber}` +
+          fileName.substring(lastPeriodIndex);
+      }
+      fileNameByHash.set(hash, numberedFileName);
+    }
+
+    for (const info of infoList) {
+      const newFileName = fileNameByHash.get(info.hash);
+      if (!newFileName) {
+        throw new Error(
+          `internal error kwteqzzx79: ` +
+            `fileNameByHash.get(info.hash) ` +
+            `returned ${Bun.inspect(newFileName)}`,
+        );
+      }
+
+      fileNameByFilePath.set(info.filePath, newFileName);
+    }
+  }
+
+  return fileNameByFilePath;
 }
 
 interface PrintOptions {
@@ -280,30 +392,11 @@ async function filenameCommand(
     return filenameCommand([filePaths]);
   }
 
-  const outputFileNameByFilePath = new Map<string, string>();
-
-  for (const filePath of filePaths) {
-    if (outputFileNameByFilePath.has(filePath)) {
-      continue;
-    }
-
-    const readPdfResult = await readPdf(filePath);
-    if (isReadPdfError(readPdfResult)) {
-      console.error(`ERROR: ${readPdfResult.message}: ${filePath}`);
-      process.exit(1);
-    }
-
-    const parsedPdf = parsePdf(readPdfResult.lines);
-    if (isParsePdfError(parsedPdf)) {
-      console.error(
-        `ERROR: unable to parse pdf contents: ` +
-          `${parsedPdf.message}: ${filePath}`,
-      );
-      process.exit(1);
-    }
-
-    const outputFileName = calculateOutputFileName(parsedPdf);
-    outputFileNameByFilePath.set(filePath, outputFileName);
+  const outputFileNameByFilePath = await calculateFileNames(filePaths);
+  if (isCalculateFileNamesError(outputFileNameByFilePath)) {
+    const { message, filePath } = outputFileNameByFilePath;
+    console.error(`ERROR: ${message}: ${filePath}`);
+    process.exit(1);
   }
 
   for (const filePath of filePaths) {
