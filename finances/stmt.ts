@@ -82,7 +82,7 @@ async function printCommand(filePath: string | string[]): Promise<void> {
 type PdfType = "PublicMobileStatement";
 
 function identify(pdfText: string): PdfType | undefined {
-  const lines = pdfText.split("\n").filter((line) => line.trim());
+  const lines = pdfText.split("\n").map((line) => line.trim());
   if (lines.includes("Public Mobile Account")) {
     return "PublicMobileStatement";
   }
