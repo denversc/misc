@@ -89,6 +89,33 @@ async function printCommand(
   console.log(text);
 }
 
+interface ParseOptions {
+  v?: boolean;
+}
+
+async function parseCommand(
+  filePath: string | string[],
+  options?: ParseOptions,
+): Promise<void> {
+  if (Array.isArray(filePath)) {
+    for (const currentFilePath of filePath) {
+      await parseCommand(currentFilePath, options);
+    }
+    return;
+  }
+
+  const text = await readPdf(filePath);
+  if (isReadPdfError(text)) {
+    console.error(`ERROR: ${text.message}: ${filePath}`);
+    process.exit(1);
+  }
+
+  if (options?.v) {
+    console.log(filePath);
+  }
+  console.log(text);
+}
+
 type PdfType = "PublicMobileStatement";
 
 function identify(pdfText: string): PdfType | undefined {
@@ -139,15 +166,26 @@ program
 program
   .command("print")
   .description("Reads PDF files and prints their text to stdout")
-  .argument("<file...>", "path of the PDF file")
+  .argument("<files...>", "paths of the PDF files")
   .option("-v", "print the file path on its own line before its contents")
   .action(printCommand);
 
 program
   .command("identify")
   .description("Reads PDF files and prints their types to stdout")
-  .argument("<files...>", "path of the PDF file")
+  .argument("<files...>", "paths of the PDF files")
   .option("-v", "prefix each line with the file path")
   .action(identifyCommand);
+
+program
+  .command("parse")
+  .description(
+    "Reads PDF files, parses their content, and prints them to stdout",
+  )
+  .argument("<files...>", "paths of the PDF files")
+  .option("-v", "print the file path on its own line before its contents")
+  .action(parseCommand);
+
+program.parse(process.argv);
 
 program.parse(process.argv);
