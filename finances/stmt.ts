@@ -1,6 +1,7 @@
 import * as fs from "node:fs/promises";
 import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
+import { parse, format } from "@formkit/tempo";
 
 const program = new Command();
 
@@ -97,7 +98,7 @@ function isParsePdfError(e: unknown): e is ParsePdfError {
 
 interface ParsedPublicMobileStatement {
   type: "PublicMobileStatement";
-  invoiceDate: string;
+  invoiceDate: Date;
   totalAmountPaid: string;
 }
 
@@ -110,11 +111,20 @@ function parsePublicMobileStatement(
   if (invoiceIndex < 0) {
     return { type: "ParsePdfError", message: "INVOICE line not found" };
   }
-  const invoiceDate = pdfLines[invoiceIndex + 1];
-  if (!invoiceDate) {
+  const invoiceDateStr = pdfLines[invoiceIndex + 1];
+  if (!invoiceDateStr) {
     return {
       type: "ParsePdfError",
       message: "expected line after INVOICE line",
+    };
+  }
+  let invoiceDate: Date;
+  try {
+    invoiceDate = parse(invoiceDateStr, "MMM D, YYYY", "en");
+  } catch (e: unknown) {
+    return {
+      type: "ParsePdfError",
+      message: `unable to parse invoice date "${invoiceDateStr}": ${messageForError(e)}`,
     };
   }
 
@@ -149,7 +159,8 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
 function calculateOutputFileName(parsedPdf: ParsedPdf): string {
   if (parsedPdf.type === "PublicMobileStatement") {
     const { invoiceDate, totalAmountPaid } = parsedPdf;
-    return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
+    const formattedDate = format(invoiceDate, "YYYY-MM-DD");
+    return `${formattedDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
   } else {
     unreachable(parsedPdf.type, "unknown type");
   }
@@ -215,7 +226,10 @@ async function parseCommand(
   if (options?.v) {
     console.log(filePath);
   }
-  console.log(parsedPdf);
+  console.log({
+    ...parsedPdf,
+    invoiceDate: format(parsedPdf.invoiceDate, "YYYY-MM-DD"),
+  });
 }
 
 function identify(pdfLines: string[]): PdfType | undefined {
