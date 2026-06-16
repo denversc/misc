@@ -4,12 +4,59 @@ import { PDFParse } from "pdf-parse";
 
 const program = new Command();
 
-async function readPdf(filePath: string): Promise<string> {
-  const fileContents = await fs.readFile(filePath);
+function propertyFromUnknown(obj: unknown, propertyName: string): unknown {
+  return typeof obj === "object" && obj !== null && propertyName in obj
+    ? (obj as Record<string, unknown>)[propertyName]
+    : undefined;
+}
+
+function messageForError(e: unknown): string {
+  const code = propertyFromUnknown(e, "code");
+  const message = propertyFromUnknown(e, "message");
+  if (code === "ENOENT") {
+    return "file not found";
+  } else if (code === "EACCES") {
+    return "insufficient permissions to read file";
+  } else if (typeof message === "string" && message.trim().length > 0) {
+    return message.trim();
+  } else {
+    return `unknown error (${Bun.inspect(e)})`;
+  }
+}
+
+interface ReadPdfError {
+  type: "ReadPdfError";
+  message: string;
+}
+
+function isReadPdfError(e: unknown): e is ReadPdfError {
+  return (
+    e !== null &&
+    typeof e === "object" &&
+    "type" in e &&
+    e.type === "ReadPdfError" &&
+    "message" in e &&
+    typeof e.message === "string"
+  );
+}
+
+async function readPdf(filePath: string): Promise<string | ReadPdfError> {
+  let fileContents: Buffer<ArrayBuffer>;
+  try {
+    fileContents = await fs.readFile(filePath);
+  } catch (e: unknown) {
+    return { type: "ReadPdfError", message: messageForError(e) };
+  }
+
   const parser = new PDFParse({ data: fileContents });
+
   try {
     const textContents = await parser.getText();
     return textContents.text;
+  } catch (e: unknown) {
+    const errorMessage = messageForError(e);
+    const message = `parsing pdf file contents failed (${errorMessage})`;
+    return { type: "ReadPdfError", message };
   } finally {
     await parser.destroy();
   }
@@ -23,12 +70,12 @@ async function printCommand(filePath: string | string[]): Promise<void> {
     return;
   }
 
-  if (!(await fs.exists(filePath))) {
-    console.error(`Error: File not found: ${filePath}`);
+  const text = await readPdf(filePath);
+  if (isReadPdfError(text)) {
+    console.error(`ERROR: ${text.message}: ${filePath}`);
     process.exit(1);
   }
 
-  const text = await readPdf(filePath);
   console.log(text);
 }
 
@@ -50,12 +97,12 @@ async function identifyCommand(filePath: string | string[]): Promise<void> {
     return;
   }
 
-  if (!(await fs.exists(filePath))) {
-    console.error(`Error: File not found: ${filePath}`);
+  const text = await readPdf(filePath);
+  if (isReadPdfError(text)) {
+    console.error(`ERROR: ${text.message}: ${filePath}`);
     process.exit(1);
   }
 
-  const text = await readPdf(filePath);
   const type = identify(text);
   console.log(type);
 }
