@@ -146,6 +146,15 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
   }
 }
 
+function calculateOutputFileName(parsedPdf: ParsedPdf): string {
+  if (parsedPdf.type === "PublicMobileStatement") {
+    const { invoiceDate, totalAmountPaid } = parsedPdf;
+    return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
+  } else {
+    unreachable(parsedPdf.type, "unknown type");
+  }
+}
+
 interface PrintOptions {
   v?: boolean;
 }
@@ -245,6 +254,62 @@ async function identifyCommand(
   }
 }
 
+interface FilenameOptions {
+  v?: boolean;
+}
+
+async function filenameCommand(
+  filePaths: string | string[],
+  options?: FilenameOptions,
+): Promise<void> {
+  if (typeof filePaths === "string") {
+    return filenameCommand([filePaths]);
+  }
+
+  const outputFileNameByFilePath = new Map<string, string>();
+
+  for (const filePath of filePaths) {
+    if (outputFileNameByFilePath.has(filePath)) {
+      continue;
+    }
+
+    const readPdfResult = await readPdf(filePath);
+    if (isReadPdfError(readPdfResult)) {
+      console.error(`ERROR: ${readPdfResult.message}: ${filePath}`);
+      process.exit(1);
+    }
+
+    const parsedPdf = parsePdf(readPdfResult.lines);
+    if (isParsePdfError(parsedPdf)) {
+      console.error(
+        `ERROR: unable to parse pdf contents: ` +
+          `${parsedPdf.message}: ${filePath}`,
+      );
+      process.exit(1);
+    }
+
+    const outputFileName = calculateOutputFileName(parsedPdf);
+    outputFileNameByFilePath.set(filePath, outputFileName);
+  }
+
+  for (const filePath of filePaths) {
+    const outputFileName = outputFileNameByFilePath.get(filePath);
+    if (!outputFileName) {
+      throw new Error(
+        `internal error patvap56xt: ` +
+          `outputFileNameByFilePath.get(${Bun.inspect(filePath)}) ` +
+          `returned ${Bun.inspect(outputFileName)}`,
+      );
+    }
+
+    if (options?.v) {
+      console.log(`${filePath}: ${outputFileName}`);
+    } else {
+      console.log(outputFileName);
+    }
+  }
+}
+
 program
   .name("stmt")
   .description(
@@ -275,6 +340,15 @@ program
   .argument("<files...>", "paths of the PDF files")
   .option("-v", "print the file path on its own line before its contents")
   .action(parseCommand);
+
+program
+  .command("filename")
+  .description(
+    "Reads PDF files and prints their normalized file names to stdout",
+  )
+  .argument("<files...>", "paths of the PDF files")
+  .option("-v", "prefix each line with the file path")
+  .action(filenameCommand);
 
 program.parse(process.argv);
 
