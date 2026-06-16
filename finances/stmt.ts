@@ -15,7 +15,14 @@ async function readPdf(filePath: string): Promise<string> {
   }
 }
 
-async function printCommand(filePath: string): Promise<void> {
+async function printCommand(filePath: string | string[]): Promise<void> {
+  if (Array.isArray(filePath)) {
+    for (const currentFilePath of filePath) {
+      await printCommand(currentFilePath);
+    }
+    return;
+  }
+
   if (!(await fs.exists(filePath))) {
     console.error(`Error: File not found: ${filePath}`);
     process.exit(1);
@@ -23,6 +30,34 @@ async function printCommand(filePath: string): Promise<void> {
 
   const text = await readPdf(filePath);
   console.log(text);
+}
+
+type PdfType = "PublicMobileStatement";
+
+function identify(pdfText: string): PdfType | undefined {
+  const lines = pdfText.split("\n").filter((line) => line.trim());
+  if (lines.includes("Public Mobile Account")) {
+    return "PublicMobileStatement";
+  }
+  return undefined;
+}
+
+async function identifyCommand(filePath: string | string[]): Promise<void> {
+  if (Array.isArray(filePath)) {
+    for (const currentFilePath of filePath) {
+      await identifyCommand(currentFilePath);
+    }
+    return;
+  }
+
+  if (!(await fs.exists(filePath))) {
+    console.error(`Error: File not found: ${filePath}`);
+    process.exit(1);
+  }
+
+  const text = await readPdf(filePath);
+  const type = identify(text);
+  console.log(type);
 }
 
 program
@@ -35,8 +70,14 @@ program
 
 program
   .command("print")
-  .description("Reads a PDF file and prints its text to stdout")
-  .argument("<file>", "path of the PDF file")
+  .description("Reads PDF files and prints their text to stdout")
+  .argument("<file...>", "path of the PDF file")
   .action(printCommand);
+
+program
+  .command("identify")
+  .description("Reads PDF files and prints their types to stdout")
+  .argument("<files...>", "path of the PDF file")
+  .action(identifyCommand);
 
 program.parse(process.argv);
