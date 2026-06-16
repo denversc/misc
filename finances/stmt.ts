@@ -460,6 +460,8 @@ async function renameCommand(
     } else {
       console.log(destFilePath);
     }
+
+    await fs.rename(srcFilePath, destFilePath);
   }
 
   console.log(`${filePaths.length} files renamed`);
