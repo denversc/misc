@@ -89,10 +89,17 @@ function identify(pdfText: string): PdfType | undefined {
   return undefined;
 }
 
-async function identifyCommand(filePath: string | string[]): Promise<void> {
+interface IdentifyOptions {
+  v?: boolean;
+}
+
+async function identifyCommand(
+  filePath: string | string[],
+  options?: IdentifyOptions,
+): Promise<void> {
   if (Array.isArray(filePath)) {
     for (const currentFilePath of filePath) {
-      await identifyCommand(currentFilePath);
+      await identifyCommand(currentFilePath, options);
     }
     return;
   }
@@ -104,7 +111,11 @@ async function identifyCommand(filePath: string | string[]): Promise<void> {
   }
 
   const type = identify(text);
-  console.log(type);
+  if (options?.v) {
+    console.log(`${filePath}: ${type}`);
+  } else {
+    console.log(type);
+  }
 }
 
 program
@@ -125,6 +136,7 @@ program
   .command("identify")
   .description("Reads PDF files and prints their types to stdout")
   .argument("<files...>", "path of the PDF file")
+  .option("-v", "prefix each line with the file path")
   .action(identifyCommand);
 
 program.parse(process.argv);
