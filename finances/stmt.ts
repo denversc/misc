@@ -62,10 +62,17 @@ async function readPdf(filePath: string): Promise<string | ReadPdfError> {
   }
 }
 
-async function printCommand(filePath: string | string[]): Promise<void> {
+interface PrintOptions {
+  v?: boolean;
+}
+
+async function printCommand(
+  filePath: string | string[],
+  options?: PrintOptions,
+): Promise<void> {
   if (Array.isArray(filePath)) {
     for (const currentFilePath of filePath) {
-      await printCommand(currentFilePath);
+      await printCommand(currentFilePath, options);
     }
     return;
   }
@@ -76,6 +83,9 @@ async function printCommand(filePath: string | string[]): Promise<void> {
     process.exit(1);
   }
 
+  if (options?.v) {
+    console.log(filePath);
+  }
   console.log(text);
 }
 
@@ -130,6 +140,7 @@ program
   .command("print")
   .description("Reads PDF files and prints their text to stdout")
   .argument("<file...>", "path of the PDF file")
+  .option("-v", "print the file path on its own line before its contents")
   .action(printCommand);
 
 program
