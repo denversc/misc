@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
-import { parse, format } from "@formkit/tempo";
+import { parse as tempoParse, format as tempoFormat } from "@formkit/tempo";
 import * as path from "node:path";
 
 const program = new Command();
@@ -28,6 +28,40 @@ function messageForError(e: unknown): string {
   } else {
     return `unknown error (${Bun.inspect(e)})`;
   }
+}
+
+interface ParseDateError {
+  type: "ParseDateError";
+  message: string;
+}
+
+function isParseDateError(e: unknown): e is ParseDateError {
+  return (
+    e !== null &&
+    typeof e === "object" &&
+    "type" in e &&
+    e.type === "ParseDateError" &&
+    "message" in e &&
+    typeof e.message === "string"
+  );
+}
+
+function parseDateToYYYYMMDD(
+  format: string,
+  text: string,
+): string | ParseDateError {
+  let parsedDate: Date;
+  try {
+    parsedDate = tempoParse(text, format, "en");
+  } catch (e: unknown) {
+    return { type: "ParseDateError", message: messageForError(e) };
+  }
+
+  if (isNaN(parsedDate.getTime())) {
+    return { type: "ParseDateError", message: "invalid date" };
+  }
+
+  return tempoFormat(parsedDate, "YYYY-MM-DD");
 }
 
 interface ReadPdfError {
@@ -81,7 +115,11 @@ async function readPdf(
   return { text, lines, hash };
 }
 
-type PdfType = "PublicMobileStatement";
+type PdfType =
+  | "PublicMobileStatement"
+  | "QuestradeRESPStatement"
+  | "QuestradeRRSPStatement"
+  | "QuestradeMarginStatement";
 
 interface ParsePdfError {
   type: "ParsePdfError";
@@ -101,7 +139,7 @@ function isParsePdfError(e: unknown): e is ParsePdfError {
 
 interface ParsedPublicMobileStatement {
   type: "PublicMobileStatement";
-  invoiceDate: Date;
+  invoiceDate: string;
   totalAmountPaid: string;
 }
 
@@ -114,27 +152,19 @@ function parsePublicMobileStatement(
   if (invoiceIndex < 0) {
     return { type: "ParsePdfError", message: "INVOICE line not found" };
   }
-  const invoiceDateStr = pdfLines[invoiceIndex + 1];
+  const invoiceDateStr = pdfLines[invoiceIndex + 1]?.trim();
   if (!invoiceDateStr) {
     return {
       type: "ParsePdfError",
       message: "expected line after INVOICE line",
     };
   }
-  let invoiceDate: Date;
-  try {
-    invoiceDate = parse(invoiceDateStr, "MMM D, YYYY", "en");
-  } catch (e: unknown) {
+  const invoiceDate = parseDateToYYYYMMDD("MMM D, YYYY", invoiceDateStr);
+  if (isParseDateError(invoiceDate)) {
+    const { message } = invoiceDate;
     return {
       type: "ParsePdfError",
-      message: `unable to parse invoice date "${invoiceDateStr}": ${messageForError(e)}`,
-    };
-  }
-
-  if (isNaN(invoiceDate.getTime())) {
-    return {
-      type: "ParsePdfError",
-      message: `invalid invoice date: ${invoiceDateStr}`,
+      message: `unable to parse invoice date: ${invoiceDateStr} (${message})`,
     };
   }
 
@@ -153,7 +183,77 @@ function parsePublicMobileStatement(
   return { type: "PublicMobileStatement", invoiceDate, totalAmountPaid };
 }
 
-type ParsedPdf = ParsedPublicMobileStatement;
+interface ParsedQuestradeStatement {
+  type: QuestradeStatementType;
+  statementDate: string;
+  accountNumber: string;
+  balance: string;
+}
+
+function parseQuestradeStatement(
+  pdfLines: readonly string[],
+): ParsedQuestradeStatement | ParsePdfError {
+  const type = identifyQuestradeStatementType(pdfLines);
+  if (!type) {
+    return {
+      type: "ParsePdfError",
+      message: "Unable to determine Questrade statement type",
+    };
+  }
+
+  const accountNumberRegex = /Account\s*#:\s*(\d+)/i;
+  const accountNumberLine = pdfLines.find((line) =>
+    accountNumberRegex.test(line),
+  );
+  if (!accountNumberLine) {
+    return { type: "ParsePdfError", message: "Account number line not found" };
+  }
+  const accountNumber = accountNumberLine.match(accountNumberRegex)?.[1];
+  if (!accountNumber) {
+    throw new Error(
+      "internal error rhtan4myg2: accountNumberRegex should have matched",
+    );
+  }
+
+  const currentMonthRegex = /Current month\s*:\s*(\w+\s+\d+,\s*\d+)/i;
+  const currentMonthLine = pdfLines.find((line) =>
+    line.match(currentMonthRegex),
+  );
+  if (!currentMonthLine) {
+    return { type: "ParsePdfError", message: "Current month line not found" };
+  }
+  const statementDateStr = currentMonthLine.match(currentMonthRegex)?.[1];
+  if (!statementDateStr) {
+    throw new Error(
+      "internal error ydjbyakqr8: currentMonthRegex should have matched",
+    );
+  }
+  const statementDate = parseDateToYYYYMMDD("MMMM D, YYYY", statementDateStr);
+  if (isParseDateError(statementDate)) {
+    const { message } = statementDate;
+    return {
+      type: "ParsePdfError",
+      message:
+        `unable to parse statement date: ${statementDateStr} ` + `(${message})`,
+    };
+  }
+
+  const balanceRegex = /Current month balance:\s*(\$[\d,.]+)/i;
+  const balanceLine = pdfLines.find((line) => line.match(balanceRegex));
+  if (!balanceLine) {
+    return { type: "ParsePdfError", message: "Balance line not found" };
+  }
+  const balance = balanceLine.match(balanceRegex)?.[1];
+  if (!balance) {
+    throw new Error(
+      "internal error ky4fmdxh8b: balanceRegex should have matched",
+    );
+  }
+
+  return { type, statementDate, accountNumber, balance };
+}
+
+type ParsedPdf = ParsedPublicMobileStatement | ParsedQuestradeStatement;
 
 function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
   const type = identify(pdfLines);
@@ -161,6 +261,8 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
     return { type: "ParsePdfError", message: "unrecognized pdf content" };
   } else if (type === "PublicMobileStatement") {
     return parsePublicMobileStatement(pdfLines);
+  } else if (isQuestradeStatementType(type)) {
+    return parseQuestradeStatement(pdfLines);
   } else {
     unreachable(type, "unknown type");
   }
@@ -169,8 +271,20 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
 function calculateFileName(parsedPdf: ParsedPdf): string {
   if (parsedPdf.type === "PublicMobileStatement") {
     const { invoiceDate, totalAmountPaid } = parsedPdf;
-    const formattedDate = format(invoiceDate, "YYYY-MM-DD");
-    return `${formattedDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
+    return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
+  } else if (isQuestradeStatementType(parsedPdf.type)) {
+    const { statementDate, accountNumber, balance } = parsedPdf;
+    let typeName: string;
+    if (parsedPdf.type === "QuestradeRESPStatement") {
+      typeName = "RESP";
+    } else if (parsedPdf.type === "QuestradeRRSPStatement") {
+      typeName = "RRSP";
+    } else if (parsedPdf.type === "QuestradeMarginStatement") {
+      typeName = "Margin Account";
+    } else {
+      unreachable(parsedPdf.type, "unknown type");
+    }
+    return `${statementDate} Questrade ${typeName} ${accountNumber} Statement ${balance}.pdf`;
   } else {
     unreachable(parsedPdf.type, "unknown type");
   }
@@ -346,16 +460,66 @@ async function parseCommand(
   if (options?.v) {
     console.log(filePath);
   }
-  console.log({
-    ...parsedPdf,
-    invoiceDate: format(parsedPdf.invoiceDate, "YYYY-MM-DD"),
-  });
+  console.log(parsedPdf);
 }
 
-function identify(pdfLines: string[]): PdfType | undefined {
+function identify(pdfLines: readonly string[]): PdfType | undefined {
   if (pdfLines.includes("Public Mobile Account")) {
     return "PublicMobileStatement";
   }
+
+  if (
+    pdfLines.some((line) =>
+      line.toLowerCase().startsWith("questrade wealth management inc."),
+    )
+  ) {
+    const questradeStatementType = identifyQuestradeStatementType(pdfLines);
+    if (questradeStatementType) {
+      return questradeStatementType;
+    }
+  }
+
+  return undefined;
+}
+
+type QuestradeStatementType =
+  | "QuestradeRESPStatement"
+  | "QuestradeRRSPStatement"
+  | "QuestradeMarginStatement";
+
+function isQuestradeStatementType(
+  value: unknown,
+): value is QuestradeStatementType {
+  return (
+    value === "QuestradeRESPStatement" ||
+    value === "QuestradeRRSPStatement" ||
+    value === "QuestradeMarginStatement"
+  );
+}
+
+function identifyQuestradeStatementType(
+  pdfLines: readonly string[],
+): QuestradeStatementType | undefined {
+  if (pdfLines.some((line) => line.includes("(RESP)"))) {
+    return "QuestradeRESPStatement";
+  }
+
+  if (
+    pdfLines.some((line) =>
+      line.toLowerCase().includes("registered retirement savings plan"),
+    )
+  ) {
+    return "QuestradeRRSPStatement";
+  }
+
+  if (
+    pdfLines.some((line) =>
+      line.toLowerCase().includes("individual margin account"),
+    )
+  ) {
+    return "QuestradeMarginStatement";
+  }
+
   return undefined;
 }
 
