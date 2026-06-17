@@ -131,6 +131,13 @@ function parsePublicMobileStatement(
     };
   }
 
+  if (isNaN(invoiceDate.getTime())) {
+    return {
+      type: "ParsePdfError",
+      message: `invalid invoice date: ${invoiceDateStr}`,
+    };
+  }
+
   const totalAmountPaidLine = pdfLines.find((line) =>
     line.toLowerCase().startsWith("total amount paid"),
   );
@@ -437,6 +444,9 @@ async function renameCommand(
     process.exit(1);
   }
 
+  const renamedPaths = new Set<string>();
+  let skippedCount = 0;
+
   for (const srcFilePath of filePaths) {
     const destFileName = outputFileNameByFilePath.get(srcFilePath);
     if (!destFileName) {
@@ -447,13 +457,25 @@ async function renameCommand(
       );
     }
 
-    const dir = path.dirname(srcFilePath);
-    let destFilePath: string;
-    if (dir === "" || dir === ".") {
-      destFilePath = destFileName;
-    } else {
-      destFilePath = path.join(dir, destFileName);
+    if (renamedPaths.has(srcFilePath)) {
+      console.log(
+        `Skipping renaming ${srcFilePath} to ${destFileName} (already processed)`,
+      );
+      skippedCount++;
+      continue;
     }
+
+    const srcFileName = path.basename(srcFilePath);
+    if (srcFileName === destFileName) {
+      console.log(
+        `Skipping renaming ${srcFilePath} (already has the correct file name)`,
+      );
+      skippedCount++;
+      continue;
+    }
+
+    const dir = path.dirname(srcFilePath);
+    const destFilePath = path.join(dir, destFileName);
 
     if (options?.v) {
       console.log(`Renaming ${srcFilePath} to ${destFileName}`);
@@ -462,9 +484,10 @@ async function renameCommand(
     }
 
     await fs.rename(srcFilePath, destFilePath);
+    renamedPaths.add(srcFilePath);
   }
 
-  console.log(`${filePaths.length} files renamed`);
+  console.log(`${renamedPaths.size} files renamed (${skippedCount} skipped)`);
 }
 
 program
