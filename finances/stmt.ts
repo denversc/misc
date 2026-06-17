@@ -452,20 +452,23 @@ async function renameCommand(
 
     if (renamedPaths.has(srcFilePath)) {
       console.log(
-        `Skipping renaming ${srcFilePath} to ${destFileName} (already renamed)`,
+        `Skipping renaming ${srcFilePath} to ${destFileName} (already processed)`,
       );
       skippedCount++;
       continue;
     }
-    renamedPaths.add(srcFilePath);
+
+    const srcFileName = path.basename(srcFilePath);
+    if (srcFileName === destFileName) {
+      console.log(
+        `Skipping renaming ${srcFilePath} (already has the correct file name)`,
+      );
+      skippedCount++;
+      continue;
+    }
 
     const dir = path.dirname(srcFilePath);
-    let destFilePath: string;
-    if (dir === "" || dir === ".") {
-      destFilePath = destFileName;
-    } else {
-      destFilePath = path.join(dir, destFileName);
-    }
+    const destFilePath = path.join(dir, destFileName);
 
     if (options?.v) {
       console.log(`Renaming ${srcFilePath} to ${destFileName}`);
@@ -474,6 +477,7 @@ async function renameCommand(
     }
 
     await fs.rename(srcFilePath, destFilePath);
+    renamedPaths.add(srcFilePath);
   }
 
   console.log(`${renamedPaths.size} files renamed (${skippedCount} skipped)`);
