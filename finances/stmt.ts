@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
-import { parse, format } from "@formkit/tempo";
+import { parse as tempoParse, format as tempoFormat } from "@formkit/tempo";
 import * as path from "node:path";
 
 const program = new Command();
@@ -28,6 +28,40 @@ function messageForError(e: unknown): string {
   } else {
     return `unknown error (${Bun.inspect(e)})`;
   }
+}
+
+interface ParseDateError {
+  type: "ParseDateError";
+  message: string;
+}
+
+function isParseDateError(e: unknown): e is ParseDateError {
+  return (
+    e !== null &&
+    typeof e === "object" &&
+    "type" in e &&
+    e.type === "ParseDateError" &&
+    "message" in e &&
+    typeof e.message === "string"
+  );
+}
+
+function parseDateToYYYYMMDD(
+  format: string,
+  text: string,
+): string | ParseDateError {
+  let parsedDate: Date;
+  try {
+    parsedDate = tempoParse(text, format, "en");
+  } catch (e: unknown) {
+    return { type: "ParseDateError", message: messageForError(e) };
+  }
+
+  if (isNaN(parsedDate.getTime())) {
+    return { type: "ParseDateError", message: "invalid date" };
+  }
+
+  return tempoFormat(parsedDate, "YYYY-MM-DD");
 }
 
 interface ReadPdfError {
@@ -118,31 +152,21 @@ function parsePublicMobileStatement(
   if (invoiceIndex < 0) {
     return { type: "ParsePdfError", message: "INVOICE line not found" };
   }
-  const invoiceDateStr = pdfLines[invoiceIndex + 1];
+  const invoiceDateStr = pdfLines[invoiceIndex + 1]?.trim();
   if (!invoiceDateStr) {
     return {
       type: "ParsePdfError",
       message: "expected line after INVOICE line",
     };
   }
-  let parsedInvoiceDate: Date;
-  try {
-    parsedInvoiceDate = parse(invoiceDateStr, "MMM D, YYYY", "en");
-  } catch (e: unknown) {
+  const invoiceDate = parseDateToYYYYMMDD("MMM D, YYYY", invoiceDateStr);
+  if (isParseDateError(invoiceDate)) {
+    const { message } = invoiceDate;
     return {
       type: "ParsePdfError",
-      message: `unable to parse invoice date "${invoiceDateStr}": ${messageForError(e)}`,
+      message: `unable to parse invoice date: ${invoiceDateStr} (${message})`,
     };
   }
-
-  if (isNaN(parsedInvoiceDate.getTime())) {
-    return {
-      type: "ParsePdfError",
-      message: `invalid invoice date: ${invoiceDateStr}`,
-    };
-  }
-
-  const invoiceDate = format(parsedInvoiceDate, "YYYY-MM-DD");
 
   const totalAmountPaidLine = pdfLines.find((line) =>
     line.toLowerCase().startsWith("total amount paid"),
@@ -161,7 +185,7 @@ function parsePublicMobileStatement(
 
 interface ParsedQuestradeStatement {
   type: QuestradeStatementType;
-  statementDate: Date;
+  statementDate: string;
   accountNumber: string;
   balance: string;
 }
@@ -187,11 +211,33 @@ function parseQuestradeStatement(
   const accountNumber = accountNumberLine.match(accountNumberRegex)?.[1];
   if (!accountNumber) {
     throw new Error(
-      "internal error rhtan4myg2: " + "accountNumber should have matched",
+      "internal error rhtan4myg2: accountNumberRegex should have matched",
     );
   }
 
-  const statementDate = new Date();
+  const currentMonthRegex = /Current month\s*:\s*(\w+\s+\d+\d*,\s*\d+)/i;
+  const currentMonthLine = pdfLines.find((line) =>
+    line.match(currentMonthRegex),
+  );
+  if (!currentMonthLine) {
+    return { type: "ParsePdfError", message: "Account number line not found" };
+  }
+  const statementDateStr = currentMonthLine.match(currentMonthRegex)?.[1];
+  if (!statementDateStr) {
+    throw new Error(
+      "internal error ydjbyakqr8: currentMonthRegex should have matched",
+    );
+  }
+  const statementDate = parseDateToYYYYMMDD("MMMM D, YYYY", statementDateStr);
+  if (isParseDateError(statementDate)) {
+    const { message } = statementDate;
+    return {
+      type: "ParsePdfError",
+      message:
+        `unable to parse statement date: ${statementDateStr} ` + `(${message})`,
+    };
+  }
+
   const balance = "$0.00";
 
   return { type, statementDate, accountNumber, balance };
@@ -215,8 +261,7 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
 function calculateFileName(parsedPdf: ParsedPdf): string {
   if (parsedPdf.type === "PublicMobileStatement") {
     const { invoiceDate, totalAmountPaid } = parsedPdf;
-    const formattedDate = format(invoiceDate, "YYYY-MM-DD");
-    return `${formattedDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
+    return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
   } else if (isQuestradeStatementType(parsedPdf.type)) {
     throw new Error("not implemented h6rjr85kc6");
   } else {
