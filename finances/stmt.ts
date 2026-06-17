@@ -273,7 +273,18 @@ function calculateFileName(parsedPdf: ParsedPdf): string {
     const { invoiceDate, totalAmountPaid } = parsedPdf;
     return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
   } else if (isQuestradeStatementType(parsedPdf.type)) {
-    throw new Error("not implemented h6rjr85kc6");
+    const { statementDate, accountNumber, balance } = parsedPdf;
+    let typeName: string;
+    if (parsedPdf.type === "QuestradeRESPStatement") {
+      typeName = "RESP";
+    } else if (parsedPdf.type === "QuestradeRRSPStatement") {
+      typeName = "RRSP";
+    } else if (parsedPdf.type === "QuestradeMarginStatement") {
+      typeName = "Margin Account";
+    } else {
+      unreachable(parsedPdf.type, "unknown type");
+    }
+    return `${statementDate} Questrade ${typeName} ${accountNumber} Statement ${balance}.pdf`;
   } else {
     unreachable(parsedPdf.type, "unknown type");
   }
