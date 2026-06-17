@@ -238,7 +238,17 @@ function parseQuestradeStatement(
     };
   }
 
-  const balance = "$0.00";
+  const balanceRegex = /Current month balance:\s*(\$(\d|[,.])+)/i;
+  const balanceLine = pdfLines.find((line) => line.match(balanceRegex));
+  if (!balanceLine) {
+    return { type: "ParsePdfError", message: "Balance line not found" };
+  }
+  const balance = balanceLine.match(balanceRegex)?.[1];
+  if (!balance) {
+    throw new Error(
+      "internal error ky4fmdxh8b: balanceRegex should have matched",
+    );
+  }
 
   return { type, statementDate, accountNumber, balance };
 }
