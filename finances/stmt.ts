@@ -131,6 +131,13 @@ function parsePublicMobileStatement(
     };
   }
 
+  if (isNaN(invoiceDate.getTime())) {
+    return {
+      type: "ParsePdfError",
+      message: `invalid invoice date: ${invoiceDateStr}`,
+    };
+  }
+
   const totalAmountPaidLine = pdfLines.find((line) =>
     line.toLowerCase().startsWith("total amount paid"),
   );
