@@ -203,7 +203,7 @@ function parseQuestradeStatement(
 
   const accountNumberRegex = /Account\s*#:\s*(\d+)/i;
   const accountNumberLine = pdfLines.find((line) =>
-    line.match(accountNumberRegex),
+    accountNumberRegex.test(line),
   );
   if (!accountNumberLine) {
     return { type: "ParsePdfError", message: "Account number line not found" };
@@ -215,12 +215,12 @@ function parseQuestradeStatement(
     );
   }
 
-  const currentMonthRegex = /Current month\s*:\s*(\w+\s+\d+\d*,\s*\d+)/i;
+  const currentMonthRegex = /Current month\s*:\s*(\w+\s+\d+,\s*\d+)/i;
   const currentMonthLine = pdfLines.find((line) =>
     line.match(currentMonthRegex),
   );
   if (!currentMonthLine) {
-    return { type: "ParsePdfError", message: "Account number line not found" };
+    return { type: "ParsePdfError", message: "Current month line not found" };
   }
   const statementDateStr = currentMonthLine.match(currentMonthRegex)?.[1];
   if (!statementDateStr) {
@@ -238,7 +238,7 @@ function parseQuestradeStatement(
     };
   }
 
-  const balanceRegex = /Current month balance:\s*(\$(\d|[,.])+)/i;
+  const balanceRegex = /Current month balance:\s*(\$[\d,.]+)/i;
   const balanceLine = pdfLines.find((line) => line.match(balanceRegex));
   if (!balanceLine) {
     return { type: "ParsePdfError", message: "Balance line not found" };
