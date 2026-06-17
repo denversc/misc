@@ -437,6 +437,9 @@ async function renameCommand(
     process.exit(1);
   }
 
+  const renamedPaths = new Set<string>();
+  let skippedCount = 0;
+
   for (const srcFilePath of filePaths) {
     const destFileName = outputFileNameByFilePath.get(srcFilePath);
     if (!destFileName) {
@@ -446,6 +449,15 @@ async function renameCommand(
           `returned ${Bun.inspect(destFileName)}`,
       );
     }
+
+    if (renamedPaths.has(srcFilePath)) {
+      console.log(
+        `Skipping renaming ${srcFilePath} to ${destFileName} (already renamed)`,
+      );
+      skippedCount++;
+      continue;
+    }
+    renamedPaths.add(srcFilePath);
 
     const dir = path.dirname(srcFilePath);
     let destFilePath: string;
@@ -464,7 +476,7 @@ async function renameCommand(
     await fs.rename(srcFilePath, destFilePath);
   }
 
-  console.log(`${filePaths.length} files renamed`);
+  console.log(`${renamedPaths.size} files renamed (${skippedCount} skipped)`);
 }
 
 program
