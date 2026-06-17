@@ -81,7 +81,11 @@ async function readPdf(
   return { text, lines, hash };
 }
 
-type PdfType = "PublicMobileStatement";
+type PdfType =
+  | "PublicMobileStatement"
+  | "QuestradeRESPStatement"
+  | "QuestradeRRSPStatement"
+  | "QuestradeMarginStatement";
 
 interface ParsePdfError {
   type: "ParsePdfError";
@@ -356,6 +360,29 @@ function identify(pdfLines: string[]): PdfType | undefined {
   if (pdfLines.includes("Public Mobile Account")) {
     return "PublicMobileStatement";
   }
+
+  if (
+    pdfLines.some((line) =>
+      line.toLowerCase().startsWith("questrade wealth management inc."),
+    )
+  ) {
+    if (pdfLines.some((line) => line.includes("RESP"))) {
+      return "QuestradeRESPStatement";
+    } else if (
+      pdfLines.some((line) =>
+        line.toLowerCase().includes("registered retirement savings plan"),
+      )
+    ) {
+      return "QuestradeRRSPStatement";
+    } else if (
+      pdfLines.some((line) =>
+        line.toLowerCase().includes("individual margin account"),
+      )
+    ) {
+      return "QuestradeMarginStatement";
+    }
+  }
+
   return undefined;
 }
 
