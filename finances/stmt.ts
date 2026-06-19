@@ -4,6 +4,7 @@ import { PDFParse } from "pdf-parse";
 import * as path from "node:path";
 
 import { type ParsePdfError, isParsePdfError } from "./parse_pdf_error.ts";
+import { identify, isIdentifyError } from "./identify.ts";
 import { messageForError } from "./error.ts";
 import { unreachable } from "./unreachable.ts";
 import { rogersBill, type ParsedRogersBill } from "./rogers.ts";
@@ -298,62 +299,6 @@ async function parseCommand(
   console.log(parsedPdf);
 }
 
-interface IdentifyError {
-  type: "IdentifyError";
-  message: string;
-}
-
-function isIdentifyError(e: unknown): e is IdentifyError {
-  return (
-    e !== null &&
-    typeof e === "object" &&
-    "type" in e &&
-    e.type === "IdentifyError" &&
-    "message" in e &&
-    typeof e.message === "string"
-  );
-}
-
-function identify(
-  pdfLines: readonly string[],
-): PdfType | IdentifyError | undefined {
-  const types: Array<PdfType | undefined> = [];
-
-  if (questradeRESPStatement.identify(pdfLines)) {
-    types.push(questradeRESPStatement.type);
-  }
-
-  if (questradeRRSPStatement.identify(pdfLines)) {
-    types.push(questradeRRSPStatement.type);
-  }
-
-  if (questradeMarginStatement.identify(pdfLines)) {
-    types.push(questradeMarginStatement.type);
-  }
-
-  if (publicMobileStatement.identify(pdfLines)) {
-    types.push(publicMobileStatement.type);
-  }
-
-  if (rogersBill.identify(pdfLines)) {
-    types.push(rogersBill.type);
-  }
-
-  const definedTypes = types.filter((type) => typeof type !== "undefined");
-
-  if (definedTypes.length > 1) {
-    const definedTypesStr = definedTypes.sort().join();
-    return {
-      type: "IdentifyError",
-      message:
-        `Unable to uniquely identify the PDF type; ` +
-        `the PDF matched ${definedTypes.length} types: ${definedTypesStr}`,
-    };
-  }
-
-  return definedTypes[0];
-}
-
 interface IdentifyOptions {
   v?: boolean;
 }
@@ -375,7 +320,15 @@ async function identifyCommand(
     process.exit(1);
   }
 
-  const type = identify(readPdfResult.lines);
+  const document = identify(readPdfResult.lines);
+  if (isIdentifyError(document)) {
+    const { message } = document;
+    console.error(`ERROR: ${message}: ${filePath}`);
+    process.exit(1);
+  }
+
+  const type: string = document?.type ?? "<unknown>";
+
   if (options?.v) {
     console.log(`${filePath}: ${type}`);
   } else {
