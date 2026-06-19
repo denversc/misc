@@ -11,7 +11,14 @@ import {
   publicMobileStatement,
   type ParsedPublicMobileStatement,
 } from "./public_mobile.ts";
-import * as questrade from "./questrade.ts";
+import {
+  type ParsedQuestradeMarginStatement,
+  type ParsedQuestradeRESPStatement,
+  type ParsedQuestradeRRSPStatement,
+  questradeMarginStatement,
+  questradeRESPStatement,
+  questradeRRSPStatement,
+} from "./questrade.ts";
 
 const program = new Command();
 
@@ -74,7 +81,9 @@ type PdfType =
   | "RogersBill";
 
 type ParsedPdf =
-  | questrade.ParsedPdf
+  | ParsedQuestradeMarginStatement
+  | ParsedQuestradeRESPStatement
+  | ParsedQuestradeRRSPStatement
   | ParsedPublicMobileStatement
   | ParsedRogersBill;
 
@@ -87,8 +96,12 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
     return { type: "ParsePdfError", message: "unrecognized pdf content" };
   } else if (type === "PublicMobileStatement") {
     return publicMobileStatement.parse(pdfLines);
-  } else if (questrade.isStatementType(type)) {
-    return questrade.parsePdf(pdfLines);
+  } else if (type === "QuestradeRESPStatement") {
+    return questradeRESPStatement.parse(pdfLines);
+  } else if (type === "QuestradeRRSPStatement") {
+    return questradeRRSPStatement.parse(pdfLines);
+  } else if (type === "QuestradeMarginStatement") {
+    return questradeMarginStatement.parse(pdfLines);
   } else if (type === "RogersBill") {
     return rogersBill.parse(pdfLines);
   } else {
@@ -101,8 +114,12 @@ function calculateFileName(parsedPdf: ParsedPdf): string {
     return publicMobileStatement.calculateFileName(parsedPdf);
   } else if (parsedPdf.type === "RogersBill") {
     return rogersBill.calculateFileName(parsedPdf);
-  } else if (questrade.isStatementType(parsedPdf.type)) {
-    return questrade.calculateFileName(parsedPdf);
+  } else if (parsedPdf.type === "QuestradeRESPStatement") {
+    return questradeRESPStatement.calculateFileName(parsedPdf);
+  } else if (parsedPdf.type === "QuestradeRRSPStatement") {
+    return questradeRRSPStatement.calculateFileName(parsedPdf);
+  } else if (parsedPdf.type === "QuestradeMarginStatement") {
+    return questradeMarginStatement.calculateFileName(parsedPdf);
   } else {
     unreachable(parsedPdf.type, "unknown type");
   }
@@ -300,7 +317,19 @@ function isIdentifyError(e: unknown): e is IdentifyError {
 function identify(
   pdfLines: readonly string[],
 ): PdfType | IdentifyError | undefined {
-  const types: Array<PdfType | undefined> = [questrade.identify(pdfLines)];
+  const types: Array<PdfType | undefined> = [];
+
+  if (questradeRESPStatement.identify(pdfLines)) {
+    types.push(questradeRESPStatement.type);
+  }
+
+  if (questradeRRSPStatement.identify(pdfLines)) {
+    types.push(questradeRRSPStatement.type);
+  }
+
+  if (questradeMarginStatement.identify(pdfLines)) {
+    types.push(questradeMarginStatement.type);
+  }
 
   if (publicMobileStatement.identify(pdfLines)) {
     types.push(publicMobileStatement.type);
