@@ -3,7 +3,7 @@ import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
 import * as path from "node:path";
 
-import { isParsePdfError } from "./parse_pdf_error.ts";
+import { isDocumentParseError } from "./document.ts";
 import { identify, isIdentifyError } from "./identify.ts";
 import { messageForError } from "./error.ts";
 
@@ -119,7 +119,7 @@ async function calculateFileNames(
     }
 
     const parseResult = document.parse(readPdfResult.lines);
-    if (isParsePdfError(parseResult)) {
+    if (isDocumentParseError(parseResult)) {
       return {
         type: "CalculateFileNamesError",
         message: parseResult.message,
@@ -247,7 +247,7 @@ async function parseCommand(
   }
 
   const parseResult = document.parse(readPdfResult.lines);
-  if (isParsePdfError(parseResult)) {
+  if (isDocumentParseError(parseResult)) {
     const { message } = parseResult;
     console.error(`ERROR: ${message}: ${filePath}`);
     process.exit(1);

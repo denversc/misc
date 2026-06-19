@@ -1,5 +1,4 @@
-import { type Document } from "./document.ts";
-import { type ParsePdfError } from "./parse_pdf_error.ts";
+import { type Document, type DocumentParseError } from "./document.ts";
 import { parseDateToYYYYMMDD, isParseDateError } from "./date.ts";
 
 export interface ParsedPublicMobileStatement {
@@ -23,17 +22,19 @@ class PublicMobileStatement implements Document<
     return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
   }
 
-  parse(lines: readonly string[]): ParsedPublicMobileStatement | ParsePdfError {
+  parse(
+    lines: readonly string[],
+  ): ParsedPublicMobileStatement | DocumentParseError {
     const invoiceIndex = lines.findIndex(
       (line) => line.toLowerCase() === "invoice",
     );
     if (invoiceIndex < 0) {
-      return { type: "ParsePdfError", message: "INVOICE line not found" };
+      return { type: "DocumentParseError", message: "INVOICE line not found" };
     }
     const invoiceDateStr = lines[invoiceIndex + 1]?.trim();
     if (!invoiceDateStr) {
       return {
-        type: "ParsePdfError",
+        type: "DocumentParseError",
         message: "expected line after INVOICE line",
       };
     }
@@ -41,7 +42,7 @@ class PublicMobileStatement implements Document<
     if (isParseDateError(invoiceDate)) {
       const { message } = invoiceDate;
       return {
-        type: "ParsePdfError",
+        type: "DocumentParseError",
         message: `unable to parse invoice date: ${invoiceDateStr} (${message})`,
       };
     }
@@ -51,7 +52,7 @@ class PublicMobileStatement implements Document<
     );
     if (!totalAmountPaidLine) {
       return {
-        type: "ParsePdfError",
+        type: "DocumentParseError",
         message: "Total Amount Paid line not found",
       };
     }

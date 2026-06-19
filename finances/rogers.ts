@@ -1,5 +1,4 @@
-import { type Document } from "./document.ts";
-import { type ParsePdfError } from "./parse_pdf_error.ts";
+import { type Document, type DocumentParseError } from "./document.ts";
 import { parseDateToYYYYMMDD, isParseDateError } from "./date.ts";
 
 export interface ParsedRogersBill {
@@ -20,17 +19,20 @@ class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
     return `${billDate} Rogers Bill ${amountDue}.pdf`;
   }
 
-  parse(lines: readonly string[]): ParsedRogersBill | ParsePdfError {
+  parse(lines: readonly string[]): ParsedRogersBill | DocumentParseError {
     const amountDueIndex = lines.findIndex(
       (line) => line.toLowerCase() === "what is the total due?",
     );
     if (amountDueIndex < 0) {
-      return { type: "ParsePdfError", message: "amount due line not found" };
+      return {
+        type: "DocumentParseError",
+        message: "amount due line not found",
+      };
     }
     const amountDue = lines[amountDueIndex + 1]?.trim();
     if (!amountDue) {
       return {
-        type: "ParsePdfError",
+        type: "DocumentParseError",
         message: "expected line after amount due line",
       };
     }
@@ -39,12 +41,15 @@ class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
       (line) => line.toLowerCase() === "bill date",
     );
     if (billDateIndex < 0) {
-      return { type: "ParsePdfError", message: "bill date line not found" };
+      return {
+        type: "DocumentParseError",
+        message: "bill date line not found",
+      };
     }
     const billDateStr = lines[billDateIndex + 1]?.trim();
     if (!billDateStr) {
       return {
-        type: "ParsePdfError",
+        type: "DocumentParseError",
         message: "expected line after bill date line",
       };
     }
@@ -52,7 +57,7 @@ class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
     if (isParseDateError(billDate)) {
       const { message } = billDate;
       return {
-        type: "ParsePdfError",
+        type: "DocumentParseError",
         message: `unable to parse invoice date: ${billDateStr} (${message})`,
       };
     }

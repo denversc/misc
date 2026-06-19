@@ -1,5 +1,4 @@
-import { type Document } from "./document.ts";
-import { type ParsePdfError } from "./parse_pdf_error.ts";
+import { type Document, type DocumentParseError } from "./document.ts";
 import { parseDateToYYYYMMDD, isParseDateError } from "./date.ts";
 
 export type StatementType =
@@ -71,14 +70,14 @@ class QuestradeStatement<Type extends StatementType> implements Document<
 
   parse(
     lines: readonly string[],
-  ): ParsedQuestradeStatement<Type> | ParsePdfError {
+  ): ParsedQuestradeStatement<Type> | DocumentParseError {
     const accountNumberRegex = /Account\s*#:\s*(\d+)/i;
     const accountNumberLine = lines.find((line) =>
       accountNumberRegex.test(line),
     );
     if (!accountNumberLine) {
       return {
-        type: "ParsePdfError",
+        type: "DocumentParseError",
         message: "Account number line not found",
       };
     }
@@ -94,7 +93,10 @@ class QuestradeStatement<Type extends StatementType> implements Document<
       line.match(currentMonthRegex),
     );
     if (!currentMonthLine) {
-      return { type: "ParsePdfError", message: "Current month line not found" };
+      return {
+        type: "DocumentParseError",
+        message: "Current month line not found",
+      };
     }
     const statementDateStr = currentMonthLine.match(currentMonthRegex)?.[1];
     if (!statementDateStr) {
@@ -106,7 +108,7 @@ class QuestradeStatement<Type extends StatementType> implements Document<
     if (isParseDateError(statementDate)) {
       const { message } = statementDate;
       return {
-        type: "ParsePdfError",
+        type: "DocumentParseError",
         message: `unable to parse statement date: ${statementDateStr} (${message})`,
       };
     }
@@ -114,7 +116,7 @@ class QuestradeStatement<Type extends StatementType> implements Document<
     const balanceRegex = /Current month balance:\s*(\$[\d,.]+)/i;
     const balanceLine = lines.find((line) => line.match(balanceRegex));
     if (!balanceLine) {
-      return { type: "ParsePdfError", message: "Balance line not found" };
+      return { type: "DocumentParseError", message: "Balance line not found" };
     }
     const balance = balanceLine.match(balanceRegex)?.[1];
     if (!balance) {
