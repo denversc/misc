@@ -1,5 +1,5 @@
-import { type Document, type DocumentParseError } from "./document.ts";
-import { parseDateToYYYYMMDD, isParseDateError } from "./date.ts";
+import { type Document, type DocumentParseError } from "../document.ts";
+import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
 
 export type StatementType =
   | "QuestradeRESPStatement"

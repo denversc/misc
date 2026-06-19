@@ -1,10 +1,10 @@
-import { rogersBill } from "./rogers.ts";
-import { publicMobileStatement } from "./public_mobile.ts";
+import { rogersBill } from "./documents/rogers.ts";
+import { publicMobileStatement } from "./documents/public_mobile.ts";
 import {
   questradeMarginStatement,
   questradeRESPStatement,
   questradeRRSPStatement,
-} from "./questrade.ts";
+} from "./documents/questrade.ts";
 
 export const allDocuments = Object.freeze([
   publicMobileStatement,
