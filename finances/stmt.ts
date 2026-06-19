@@ -6,8 +6,11 @@ import * as path from "node:path";
 import { type ParsePdfError, isParsePdfError } from "./parse_pdf_error.ts";
 import { messageForError } from "./error.ts";
 import { unreachable } from "./unreachable.ts";
-import * as rogers from "./rogers.ts";
-import * as publicMobile from "./public_mobile.ts";
+import { rogersBill, type ParsedRogersBill } from "./rogers.ts";
+import {
+  publicMobileStatement,
+  type ParsedPublicMobileStatement,
+} from "./public_mobile.ts";
 import * as questrade from "./questrade.ts";
 
 const program = new Command();
@@ -72,8 +75,8 @@ type PdfType =
 
 type ParsedPdf =
   | questrade.ParsedPdf
-  | publicMobile.ParsedPdf
-  | rogers.ParsedPdf;
+  | ParsedPublicMobileStatement
+  | ParsedRogersBill;
 
 function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
   const type = identify(pdfLines);
@@ -83,11 +86,11 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
   } else if (!type) {
     return { type: "ParsePdfError", message: "unrecognized pdf content" };
   } else if (type === "PublicMobileStatement") {
-    return publicMobile.parsePdf(pdfLines);
+    return publicMobileStatement.parse(pdfLines);
   } else if (questrade.isStatementType(type)) {
     return questrade.parsePdf(pdfLines);
   } else if (type === "RogersBill") {
-    return rogers.parsePdf(pdfLines);
+    return rogersBill.parse(pdfLines);
   } else {
     unreachable(type, "unknown type");
   }
@@ -95,9 +98,9 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
 
 function calculateFileName(parsedPdf: ParsedPdf): string {
   if (parsedPdf.type === "PublicMobileStatement") {
-    return publicMobile.calculateFileName(parsedPdf);
+    return publicMobileStatement.calculateFileName(parsedPdf);
   } else if (parsedPdf.type === "RogersBill") {
-    return rogers.calculateFileName(parsedPdf);
+    return rogersBill.calculateFileName(parsedPdf);
   } else if (questrade.isStatementType(parsedPdf.type)) {
     return questrade.calculateFileName(parsedPdf);
   } else {
@@ -297,11 +300,15 @@ function isIdentifyError(e: unknown): e is IdentifyError {
 function identify(
   pdfLines: readonly string[],
 ): PdfType | IdentifyError | undefined {
-  const types = [
-    questrade.identify(pdfLines),
-    publicMobile.identify(pdfLines),
-    rogers.identify(pdfLines),
-  ];
+  const types: Array<PdfType | undefined> = [questrade.identify(pdfLines)];
+
+  if (publicMobileStatement.identify(pdfLines)) {
+    types.push(publicMobileStatement.type);
+  }
+
+  if (rogersBill.identify(pdfLines)) {
+    types.push(rogersBill.type);
+  }
 
   const definedTypes = types.filter((type) => typeof type !== "undefined");
 
