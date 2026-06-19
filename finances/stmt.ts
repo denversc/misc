@@ -1,67 +1,17 @@
 import * as fs from "node:fs/promises";
 import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
-import { parse as tempoParse, format as tempoFormat } from "@formkit/tempo";
 import * as path from "node:path";
+
+import { type ParsePdfError, isParsePdfError } from "./parse_pdf_error.ts";
+import { parseDateToYYYYMMDD, isParseDateError } from "./date.ts";
+import { messageForError } from "./error.ts";
+import * as rogers from "./rogers.ts";
 
 const program = new Command();
 
 function unreachable(value: never, message: string): never {
   throw new Error(`should never get here: ${message} (${Bun.inspect(value)})`);
-}
-
-function propertyFromUnknown(obj: unknown, propertyName: string): unknown {
-  return typeof obj === "object" && obj !== null && propertyName in obj
-    ? (obj as Record<string, unknown>)[propertyName]
-    : undefined;
-}
-
-function messageForError(e: unknown): string {
-  const code = propertyFromUnknown(e, "code");
-  const message = propertyFromUnknown(e, "message");
-  if (code === "ENOENT") {
-    return "file not found";
-  } else if (code === "EACCES") {
-    return "insufficient permissions to read file";
-  } else if (typeof message === "string" && message.trim().length > 0) {
-    return message.trim();
-  } else {
-    return `unknown error (${Bun.inspect(e)})`;
-  }
-}
-
-interface ParseDateError {
-  type: "ParseDateError";
-  message: string;
-}
-
-function isParseDateError(e: unknown): e is ParseDateError {
-  return (
-    e !== null &&
-    typeof e === "object" &&
-    "type" in e &&
-    e.type === "ParseDateError" &&
-    "message" in e &&
-    typeof e.message === "string"
-  );
-}
-
-function parseDateToYYYYMMDD(
-  format: string,
-  text: string,
-): string | ParseDateError {
-  let parsedDate: Date;
-  try {
-    parsedDate = tempoParse(text, format, "en");
-  } catch (e: unknown) {
-    return { type: "ParseDateError", message: messageForError(e) };
-  }
-
-  if (isNaN(parsedDate.getTime())) {
-    return { type: "ParseDateError", message: "invalid date" };
-  }
-
-  return tempoFormat(parsedDate, "YYYY-MM-DD");
 }
 
 interface ReadPdfError {
@@ -121,22 +71,6 @@ type PdfType =
   | "QuestradeRRSPStatement"
   | "QuestradeMarginStatement"
   | "RogersBill";
-
-interface ParsePdfError {
-  type: "ParsePdfError";
-  message: string;
-}
-
-function isParsePdfError(e: unknown): e is ParsePdfError {
-  return (
-    e !== null &&
-    typeof e === "object" &&
-    "type" in e &&
-    e.type === "ParsePdfError" &&
-    "message" in e &&
-    typeof e.message === "string"
-  );
-}
 
 interface ParsedPublicMobileStatement {
   type: "PublicMobileStatement";
@@ -262,64 +196,10 @@ function parseQuestradeStatement(
   return { type, statementDate, accountNumber, balance };
 }
 
-interface ParsedRogersBill {
-  type: "RogersBill";
-  billDate: string;
-  amountDue: string;
-}
-
-function identifyRogersBillType(
-  pdfLines: readonly string[],
-): "RogersBill" | undefined {
-  if (pdfLines.some((line) => line.toUpperCase().includes("1-888-ROGERS-1"))) {
-    return "RogersBill";
-  }
-}
-
-function parseRogersBill(pdfLines: string[]): ParsedRogersBill | ParsePdfError {
-  const amountDueIndex = pdfLines.findIndex(
-    (line) => line.toLowerCase() === "what is the total due?",
-  );
-  if (amountDueIndex < 0) {
-    return { type: "ParsePdfError", message: "amount due line not found" };
-  }
-  const amountDue = pdfLines[amountDueIndex + 1]?.trim();
-  if (!amountDue) {
-    return {
-      type: "ParsePdfError",
-      message: "expected line after amount due line",
-    };
-  }
-
-  const billDateIndex = pdfLines.findIndex(
-    (line) => line.toLowerCase() === "bill date",
-  );
-  if (billDateIndex < 0) {
-    return { type: "ParsePdfError", message: "bill date line not found" };
-  }
-  const billDateStr = pdfLines[billDateIndex + 1]?.trim();
-  if (!billDateStr) {
-    return {
-      type: "ParsePdfError",
-      message: "expected line after bill date line",
-    };
-  }
-  const billDate = parseDateToYYYYMMDD("MMM D, YYYY", billDateStr);
-  if (isParseDateError(billDate)) {
-    const { message } = billDate;
-    return {
-      type: "ParsePdfError",
-      message: `unable to parse invoice date: ${billDateStr} (${message})`,
-    };
-  }
-
-  return { type: "RogersBill", billDate, amountDue };
-}
-
 type ParsedPdf =
   | ParsedPublicMobileStatement
   | ParsedQuestradeStatement
-  | ParsedRogersBill;
+  | rogers.ParsedPdf;
 
 function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
   const type = identify(pdfLines);
@@ -333,7 +213,7 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
   } else if (isQuestradeStatementType(type)) {
     return parseQuestradeStatement(pdfLines);
   } else if (type === "RogersBill") {
-    return parseRogersBill(pdfLines);
+    return rogers.parsePdf(pdfLines);
   } else {
     unreachable(type, "unknown type");
   }
@@ -344,8 +224,7 @@ function calculateFileName(parsedPdf: ParsedPdf): string {
     const { invoiceDate, totalAmountPaid } = parsedPdf;
     return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
   } else if (parsedPdf.type === "RogersBill") {
-    const { billDate, amountDue } = parsedPdf;
-    return `${billDate} Rogers Bill ${amountDue}.pdf`;
+    return rogers.calculateFileName(parsedPdf);
   } else if (isQuestradeStatementType(parsedPdf.type)) {
     const { statementDate, accountNumber, balance } = parsedPdf;
     let typeName: string;
@@ -559,7 +438,7 @@ function identify(
   const types = [
     identifyPublicMobileStatementType(pdfLines),
     identifyQuestradeStatementType(pdfLines),
-    identifyRogersBillType(pdfLines),
+    rogers.identify(pdfLines),
   ];
 
   const definedTypes = types.filter((type) => typeof type !== "undefined");
