@@ -119,7 +119,8 @@ type PdfType =
   | "PublicMobileStatement"
   | "QuestradeRESPStatement"
   | "QuestradeRRSPStatement"
-  | "QuestradeMarginStatement";
+  | "QuestradeMarginStatement"
+  | "RogersBill";
 
 interface ParsePdfError {
   type: "ParsePdfError";
@@ -141,6 +142,14 @@ interface ParsedPublicMobileStatement {
   type: "PublicMobileStatement";
   invoiceDate: string;
   totalAmountPaid: string;
+}
+
+function identifyPublicMobileStatementType(
+  pdfLines: readonly string[],
+): "PublicMobileStatement" | undefined {
+  if (pdfLines.includes("Public Mobile Account")) {
+    return "PublicMobileStatement";
+  }
 }
 
 function parsePublicMobileStatement(
@@ -253,16 +262,78 @@ function parseQuestradeStatement(
   return { type, statementDate, accountNumber, balance };
 }
 
-type ParsedPdf = ParsedPublicMobileStatement | ParsedQuestradeStatement;
+interface ParsedRogersBill {
+  type: "RogersBill";
+  billDate: string;
+  amountDue: string;
+}
+
+function identifyRogersBillType(
+  pdfLines: readonly string[],
+): "RogersBill" | undefined {
+  if (pdfLines.some((line) => line.toUpperCase().includes("1-888-ROGERS-1"))) {
+    return "RogersBill";
+  }
+}
+
+function parseRogersBill(pdfLines: string[]): ParsedRogersBill | ParsePdfError {
+  const amountDueIndex = pdfLines.findIndex(
+    (line) => line.toLowerCase() === "what is the total due?",
+  );
+  if (amountDueIndex < 0) {
+    return { type: "ParsePdfError", message: "amount due line not found" };
+  }
+  const amountDue = pdfLines[amountDueIndex + 1]?.trim();
+  if (!amountDue) {
+    return {
+      type: "ParsePdfError",
+      message: "expected line after amount due line",
+    };
+  }
+
+  const billDateIndex = pdfLines.findIndex(
+    (line) => line.toLowerCase() === "bill date",
+  );
+  if (billDateIndex < 0) {
+    return { type: "ParsePdfError", message: "bill date line not found" };
+  }
+  const billDateStr = pdfLines[billDateIndex + 1]?.trim();
+  if (!billDateStr) {
+    return {
+      type: "ParsePdfError",
+      message: "expected line after bill date line",
+    };
+  }
+  const billDate = parseDateToYYYYMMDD("MMM D, YYYY", billDateStr);
+  if (isParseDateError(billDate)) {
+    const { message } = billDate;
+    return {
+      type: "ParsePdfError",
+      message: `unable to parse invoice date: ${billDateStr} (${message})`,
+    };
+  }
+
+  return { type: "RogersBill", billDate, amountDue };
+}
+
+type ParsedPdf =
+  | ParsedPublicMobileStatement
+  | ParsedQuestradeStatement
+  | ParsedRogersBill;
 
 function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
   const type = identify(pdfLines);
-  if (!type) {
+  if (isIdentifyError(type)) {
+    const { message } = type;
+    return { type: "ParsePdfError", message };
+  } else if (!type) {
     return { type: "ParsePdfError", message: "unrecognized pdf content" };
   } else if (type === "PublicMobileStatement") {
     return parsePublicMobileStatement(pdfLines);
   } else if (isQuestradeStatementType(type)) {
     return parseQuestradeStatement(pdfLines);
+  } else if (type === "RogersBill") {
+    return parseRogersBill(pdfLines);
   } else {
     unreachable(type, "unknown type");
   }
@@ -272,6 +343,9 @@ function calculateFileName(parsedPdf: ParsedPdf): string {
   if (parsedPdf.type === "PublicMobileStatement") {
     const { invoiceDate, totalAmountPaid } = parsedPdf;
     return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
+  } else if (parsedPdf.type === "RogersBill") {
+    const { billDate, amountDue } = parsedPdf;
+    return `${billDate} Rogers Bill ${amountDue}.pdf`;
   } else if (isQuestradeStatementType(parsedPdf.type)) {
     const { statementDate, accountNumber, balance } = parsedPdf;
     let typeName: string;
@@ -463,23 +537,44 @@ async function parseCommand(
   console.log(parsedPdf);
 }
 
-function identify(pdfLines: readonly string[]): PdfType | undefined {
-  if (pdfLines.includes("Public Mobile Account")) {
-    return "PublicMobileStatement";
+interface IdentifyError {
+  type: "IdentifyError";
+  message: string;
+}
+
+function isIdentifyError(e: unknown): e is IdentifyError {
+  return (
+    e !== null &&
+    typeof e === "object" &&
+    "type" in e &&
+    e.type === "IdentifyError" &&
+    "message" in e &&
+    typeof e.message === "string"
+  );
+}
+
+function identify(
+  pdfLines: readonly string[],
+): PdfType | IdentifyError | undefined {
+  const types = [
+    identifyPublicMobileStatementType(pdfLines),
+    identifyQuestradeStatementType(pdfLines),
+    identifyRogersBillType(pdfLines),
+  ];
+
+  const definedTypes = types.filter((type) => typeof type !== "undefined");
+
+  if (definedTypes.length > 1) {
+    const definedTypesStr = definedTypes.sort().join();
+    return {
+      type: "IdentifyError",
+      message:
+        `Unable to uniquely identify the PDF type; ` +
+        `the PDF matched ${definedTypes.length} types: ${definedTypesStr}`,
+    };
   }
 
-  if (
-    pdfLines.some((line) =>
-      line.toLowerCase().startsWith("questrade wealth management inc."),
-    )
-  ) {
-    const questradeStatementType = identifyQuestradeStatementType(pdfLines);
-    if (questradeStatementType) {
-      return questradeStatementType;
-    }
-  }
-
-  return undefined;
+  return definedTypes[0];
 }
 
 type QuestradeStatementType =
@@ -500,6 +595,14 @@ function isQuestradeStatementType(
 function identifyQuestradeStatementType(
   pdfLines: readonly string[],
 ): QuestradeStatementType | undefined {
+  if (
+    !pdfLines.some((line) =>
+      line.toLowerCase().startsWith("questrade wealth management inc."),
+    )
+  ) {
+    return undefined;
+  }
+
   if (pdfLines.some((line) => line.includes("(RESP)"))) {
     return "QuestradeRESPStatement";
   }
