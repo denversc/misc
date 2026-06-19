@@ -4,16 +4,13 @@ import { PDFParse } from "pdf-parse";
 import * as path from "node:path";
 
 import { type ParsePdfError, isParsePdfError } from "./parse_pdf_error.ts";
-import { parseDateToYYYYMMDD, isParseDateError } from "./date.ts";
 import { messageForError } from "./error.ts";
+import { unreachable } from "./unreachable.ts";
 import * as rogers from "./rogers.ts";
 import * as publicMobile from "./public_mobile.ts";
+import * as questrade from "./questrade.ts";
 
 const program = new Command();
-
-function unreachable(value: never, message: string): never {
-  throw new Error(`should never get here: ${message} (${Bun.inspect(value)})`);
-}
 
 interface ReadPdfError {
   type: "ReadPdfError";
@@ -73,78 +70,8 @@ type PdfType =
   | "QuestradeMarginStatement"
   | "RogersBill";
 
-interface ParsedQuestradeStatement {
-  type: QuestradeStatementType;
-  statementDate: string;
-  accountNumber: string;
-  balance: string;
-}
-
-function parseQuestradeStatement(
-  pdfLines: readonly string[],
-): ParsedQuestradeStatement | ParsePdfError {
-  const type = identifyQuestradeStatementType(pdfLines);
-  if (!type) {
-    return {
-      type: "ParsePdfError",
-      message: "Unable to determine Questrade statement type",
-    };
-  }
-
-  const accountNumberRegex = /Account\s*#:\s*(\d+)/i;
-  const accountNumberLine = pdfLines.find((line) =>
-    accountNumberRegex.test(line),
-  );
-  if (!accountNumberLine) {
-    return { type: "ParsePdfError", message: "Account number line not found" };
-  }
-  const accountNumber = accountNumberLine.match(accountNumberRegex)?.[1];
-  if (!accountNumber) {
-    throw new Error(
-      "internal error rhtan4myg2: accountNumberRegex should have matched",
-    );
-  }
-
-  const currentMonthRegex = /Current month\s*:\s*(\w+\s+\d+,\s*\d+)/i;
-  const currentMonthLine = pdfLines.find((line) =>
-    line.match(currentMonthRegex),
-  );
-  if (!currentMonthLine) {
-    return { type: "ParsePdfError", message: "Current month line not found" };
-  }
-  const statementDateStr = currentMonthLine.match(currentMonthRegex)?.[1];
-  if (!statementDateStr) {
-    throw new Error(
-      "internal error ydjbyakqr8: currentMonthRegex should have matched",
-    );
-  }
-  const statementDate = parseDateToYYYYMMDD("MMMM D, YYYY", statementDateStr);
-  if (isParseDateError(statementDate)) {
-    const { message } = statementDate;
-    return {
-      type: "ParsePdfError",
-      message:
-        `unable to parse statement date: ${statementDateStr} ` + `(${message})`,
-    };
-  }
-
-  const balanceRegex = /Current month balance:\s*(\$[\d,.]+)/i;
-  const balanceLine = pdfLines.find((line) => line.match(balanceRegex));
-  if (!balanceLine) {
-    return { type: "ParsePdfError", message: "Balance line not found" };
-  }
-  const balance = balanceLine.match(balanceRegex)?.[1];
-  if (!balance) {
-    throw new Error(
-      "internal error ky4fmdxh8b: balanceRegex should have matched",
-    );
-  }
-
-  return { type, statementDate, accountNumber, balance };
-}
-
 type ParsedPdf =
-  | ParsedQuestradeStatement
+  | questrade.ParsedPdf
   | publicMobile.ParsedPdf
   | rogers.ParsedPdf;
 
@@ -157,8 +84,8 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
     return { type: "ParsePdfError", message: "unrecognized pdf content" };
   } else if (type === "PublicMobileStatement") {
     return publicMobile.parsePdf(pdfLines);
-  } else if (isQuestradeStatementType(type)) {
-    return parseQuestradeStatement(pdfLines);
+  } else if (questrade.isStatementType(type)) {
+    return questrade.parsePdf(pdfLines);
   } else if (type === "RogersBill") {
     return rogers.parsePdf(pdfLines);
   } else {
@@ -171,19 +98,8 @@ function calculateFileName(parsedPdf: ParsedPdf): string {
     return publicMobile.calculateFileName(parsedPdf);
   } else if (parsedPdf.type === "RogersBill") {
     return rogers.calculateFileName(parsedPdf);
-  } else if (isQuestradeStatementType(parsedPdf.type)) {
-    const { statementDate, accountNumber, balance } = parsedPdf;
-    let typeName: string;
-    if (parsedPdf.type === "QuestradeRESPStatement") {
-      typeName = "RESP";
-    } else if (parsedPdf.type === "QuestradeRRSPStatement") {
-      typeName = "RRSP";
-    } else if (parsedPdf.type === "QuestradeMarginStatement") {
-      typeName = "Margin Account";
-    } else {
-      unreachable(parsedPdf.type, "unknown type");
-    }
-    return `${statementDate} Questrade ${typeName} ${accountNumber} Statement ${balance}.pdf`;
+  } else if (questrade.isStatementType(parsedPdf.type)) {
+    return questrade.calculateFileName(parsedPdf);
   } else {
     unreachable(parsedPdf.type, "unknown type");
   }
@@ -382,8 +298,8 @@ function identify(
   pdfLines: readonly string[],
 ): PdfType | IdentifyError | undefined {
   const types = [
+    questrade.identify(pdfLines),
     publicMobile.identify(pdfLines),
-    identifyQuestradeStatementType(pdfLines),
     rogers.identify(pdfLines),
   ];
 
@@ -400,55 +316,6 @@ function identify(
   }
 
   return definedTypes[0];
-}
-
-type QuestradeStatementType =
-  | "QuestradeRESPStatement"
-  | "QuestradeRRSPStatement"
-  | "QuestradeMarginStatement";
-
-function isQuestradeStatementType(
-  value: unknown,
-): value is QuestradeStatementType {
-  return (
-    value === "QuestradeRESPStatement" ||
-    value === "QuestradeRRSPStatement" ||
-    value === "QuestradeMarginStatement"
-  );
-}
-
-function identifyQuestradeStatementType(
-  pdfLines: readonly string[],
-): QuestradeStatementType | undefined {
-  if (
-    !pdfLines.some((line) =>
-      line.toLowerCase().startsWith("questrade wealth management inc."),
-    )
-  ) {
-    return undefined;
-  }
-
-  if (pdfLines.some((line) => line.includes("(RESP)"))) {
-    return "QuestradeRESPStatement";
-  }
-
-  if (
-    pdfLines.some((line) =>
-      line.toLowerCase().includes("registered retirement savings plan"),
-    )
-  ) {
-    return "QuestradeRRSPStatement";
-  }
-
-  if (
-    pdfLines.some((line) =>
-      line.toLowerCase().includes("individual margin account"),
-    )
-  ) {
-    return "QuestradeMarginStatement";
-  }
-
-  return undefined;
 }
 
 interface IdentifyOptions {
