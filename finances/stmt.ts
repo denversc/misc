@@ -7,6 +7,7 @@ import { type ParsePdfError, isParsePdfError } from "./parse_pdf_error.ts";
 import { parseDateToYYYYMMDD, isParseDateError } from "./date.ts";
 import { messageForError } from "./error.ts";
 import * as rogers from "./rogers.ts";
+import * as publicMobile from "./public_mobile.ts";
 
 const program = new Command();
 
@@ -71,60 +72,6 @@ type PdfType =
   | "QuestradeRRSPStatement"
   | "QuestradeMarginStatement"
   | "RogersBill";
-
-interface ParsedPublicMobileStatement {
-  type: "PublicMobileStatement";
-  invoiceDate: string;
-  totalAmountPaid: string;
-}
-
-function identifyPublicMobileStatementType(
-  pdfLines: readonly string[],
-): "PublicMobileStatement" | undefined {
-  if (pdfLines.includes("Public Mobile Account")) {
-    return "PublicMobileStatement";
-  }
-}
-
-function parsePublicMobileStatement(
-  pdfLines: string[],
-): ParsedPublicMobileStatement | ParsePdfError {
-  const invoiceIndex = pdfLines.findIndex(
-    (line) => line.toLowerCase() === "invoice",
-  );
-  if (invoiceIndex < 0) {
-    return { type: "ParsePdfError", message: "INVOICE line not found" };
-  }
-  const invoiceDateStr = pdfLines[invoiceIndex + 1]?.trim();
-  if (!invoiceDateStr) {
-    return {
-      type: "ParsePdfError",
-      message: "expected line after INVOICE line",
-    };
-  }
-  const invoiceDate = parseDateToYYYYMMDD("MMM D, YYYY", invoiceDateStr);
-  if (isParseDateError(invoiceDate)) {
-    const { message } = invoiceDate;
-    return {
-      type: "ParsePdfError",
-      message: `unable to parse invoice date: ${invoiceDateStr} (${message})`,
-    };
-  }
-
-  const totalAmountPaidLine = pdfLines.find((line) =>
-    line.toLowerCase().startsWith("total amount paid"),
-  );
-  if (!totalAmountPaidLine) {
-    return {
-      type: "ParsePdfError",
-      message: "Total Amount Paid line not found",
-    };
-  }
-
-  const totalAmountPaid = totalAmountPaidLine.substring(17).trim();
-
-  return { type: "PublicMobileStatement", invoiceDate, totalAmountPaid };
-}
 
 interface ParsedQuestradeStatement {
   type: QuestradeStatementType;
@@ -197,8 +144,8 @@ function parseQuestradeStatement(
 }
 
 type ParsedPdf =
-  | ParsedPublicMobileStatement
   | ParsedQuestradeStatement
+  | publicMobile.ParsedPdf
   | rogers.ParsedPdf;
 
 function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
@@ -209,7 +156,7 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
   } else if (!type) {
     return { type: "ParsePdfError", message: "unrecognized pdf content" };
   } else if (type === "PublicMobileStatement") {
-    return parsePublicMobileStatement(pdfLines);
+    return publicMobile.parsePdf(pdfLines);
   } else if (isQuestradeStatementType(type)) {
     return parseQuestradeStatement(pdfLines);
   } else if (type === "RogersBill") {
@@ -221,8 +168,7 @@ function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
 
 function calculateFileName(parsedPdf: ParsedPdf): string {
   if (parsedPdf.type === "PublicMobileStatement") {
-    const { invoiceDate, totalAmountPaid } = parsedPdf;
-    return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
+    return publicMobile.calculateFileName(parsedPdf);
   } else if (parsedPdf.type === "RogersBill") {
     return rogers.calculateFileName(parsedPdf);
   } else if (isQuestradeStatementType(parsedPdf.type)) {
@@ -436,7 +382,7 @@ function identify(
   pdfLines: readonly string[],
 ): PdfType | IdentifyError | undefined {
   const types = [
-    identifyPublicMobileStatementType(pdfLines),
+    publicMobile.identify(pdfLines),
     identifyQuestradeStatementType(pdfLines),
     rogers.identify(pdfLines),
   ];
