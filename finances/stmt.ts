@@ -3,19 +3,13 @@ import { Command } from "commander";
 import { PDFParse } from "pdf-parse";
 import * as path from "node:path";
 
-import { type ParsePdfError, isParsePdfError } from "./parse_pdf_error.ts";
+import { isParsePdfError } from "./parse_pdf_error.ts";
 import { identify, isIdentifyError } from "./identify.ts";
 import { messageForError } from "./error.ts";
 import { unreachable } from "./unreachable.ts";
-import { rogersBill, type ParsedRogersBill } from "./rogers.ts";
+import { rogersBill } from "./rogers.ts";
+import { publicMobileStatement } from "./public_mobile.ts";
 import {
-  publicMobileStatement,
-  type ParsedPublicMobileStatement,
-} from "./public_mobile.ts";
-import {
-  type ParsedQuestradeMarginStatement,
-  type ParsedQuestradeRESPStatement,
-  type ParsedQuestradeRRSPStatement,
   questradeMarginStatement,
   questradeRESPStatement,
   questradeRRSPStatement,
@@ -72,42 +66,6 @@ async function readPdf(
   const lines = text.split("\n").map((line) => line.trim());
   const hash = Bun.CryptoHasher.hash("sha512-256", fileContents, "hex");
   return { text, lines, hash };
-}
-
-type PdfType =
-  | "PublicMobileStatement"
-  | "QuestradeRESPStatement"
-  | "QuestradeRRSPStatement"
-  | "QuestradeMarginStatement"
-  | "RogersBill";
-
-type ParsedPdf =
-  | ParsedQuestradeMarginStatement
-  | ParsedQuestradeRESPStatement
-  | ParsedQuestradeRRSPStatement
-  | ParsedPublicMobileStatement
-  | ParsedRogersBill;
-
-function parsePdf(pdfLines: string[]): ParsedPdf | ParsePdfError {
-  const type = identify(pdfLines);
-  if (isIdentifyError(type)) {
-    const { message } = type;
-    return { type: "ParsePdfError", message };
-  } else if (!type) {
-    return { type: "ParsePdfError", message: "unrecognized pdf content" };
-  } else if (type === "PublicMobileStatement") {
-    return publicMobileStatement.parse(pdfLines);
-  } else if (type === "QuestradeRESPStatement") {
-    return questradeRESPStatement.parse(pdfLines);
-  } else if (type === "QuestradeRRSPStatement") {
-    return questradeRRSPStatement.parse(pdfLines);
-  } else if (type === "QuestradeMarginStatement") {
-    return questradeMarginStatement.parse(pdfLines);
-  } else if (type === "RogersBill") {
-    return rogersBill.parse(pdfLines);
-  } else {
-    unreachable(type, "unknown type");
-  }
 }
 
 function calculateFileName(parsedPdf: ParsedPdf): string {
@@ -278,25 +236,34 @@ async function parseCommand(
     return;
   }
 
-  const text = await readPdf(filePath);
-  if (isReadPdfError(text)) {
-    console.error(`ERROR: ${text.message}: ${filePath}`);
+  const readPdfResult = await readPdf(filePath);
+  if (isReadPdfError(readPdfResult)) {
+    console.error(`ERROR: ${readPdfResult.message}: ${filePath}`);
     process.exit(1);
   }
 
-  const parsedPdf = parsePdf(text.lines);
-  if (isParsePdfError(parsedPdf)) {
-    console.error(
-      `ERROR: unable to parse pdf contents: ` +
-        `${parsedPdf.message}: ${filePath}`,
-    );
+  const document = identify(readPdfResult.lines);
+  if (typeof document === "undefined") {
+    console.error(`ERROR: unable to identify pdf contents: ${filePath}`);
+    process.exit(1);
+  }
+  if (isIdentifyError(document)) {
+    const { message } = document;
+    console.error(`ERROR: ${message}: ${filePath}`);
+    process.exit(1);
+  }
+
+  const parseResult = document.parse(readPdfResult.lines);
+  if (isParsePdfError(parseResult)) {
+    const { message } = parseResult;
+    console.error(`ERROR: ${message}: ${filePath}`);
     process.exit(1);
   }
 
   if (options?.v) {
     console.log(filePath);
   }
-  console.log(parsedPdf);
+  console.log(parseResult);
 }
 
 interface IdentifyOptions {
