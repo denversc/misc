@@ -6,14 +6,6 @@ import * as path from "node:path";
 import { isParsePdfError } from "./parse_pdf_error.ts";
 import { identify, isIdentifyError } from "./identify.ts";
 import { messageForError } from "./error.ts";
-import { unreachable } from "./unreachable.ts";
-import { rogersBill } from "./rogers.ts";
-import { publicMobileStatement } from "./public_mobile.ts";
-import {
-  questradeMarginStatement,
-  questradeRESPStatement,
-  questradeRRSPStatement,
-} from "./questrade.ts";
 
 const program = new Command();
 
@@ -68,22 +60,6 @@ async function readPdf(
   return { text, lines, hash };
 }
 
-function calculateFileName(parsedPdf: ParsedPdf): string {
-  if (parsedPdf.type === "PublicMobileStatement") {
-    return publicMobileStatement.calculateFileName(parsedPdf);
-  } else if (parsedPdf.type === "RogersBill") {
-    return rogersBill.calculateFileName(parsedPdf);
-  } else if (parsedPdf.type === "QuestradeRESPStatement") {
-    return questradeRESPStatement.calculateFileName(parsedPdf);
-  } else if (parsedPdf.type === "QuestradeRRSPStatement") {
-    return questradeRRSPStatement.calculateFileName(parsedPdf);
-  } else if (parsedPdf.type === "QuestradeMarginStatement") {
-    return questradeMarginStatement.calculateFileName(parsedPdf);
-  } else {
-    unreachable(parsedPdf.type, "unknown type");
-  }
-}
-
 interface CalculateFileNamesError {
   type: "CalculateFileNamesError";
   message: string;
@@ -126,16 +102,33 @@ async function calculateFileNames(
       };
     }
 
-    const parsedPdf = parsePdf(readPdfResult.lines);
-    if (isParsePdfError(parsedPdf)) {
+    const document = identify(readPdfResult.lines);
+    if (typeof document === "undefined") {
       return {
         type: "CalculateFileNamesError",
-        message: `unable to parse pdf contents: ${parsedPdf.message}`,
+        message: "unable to identify pdf contents",
+        filePath,
+      };
+    }
+    if (isIdentifyError(document)) {
+      return {
+        type: "CalculateFileNamesError",
+        message: document.message,
         filePath,
       };
     }
 
-    const fileName = calculateFileName(parsedPdf);
+    const parseResult = document.parse(readPdfResult.lines);
+    if (isParsePdfError(parseResult)) {
+      return {
+        type: "CalculateFileNamesError",
+        message: parseResult.message,
+        filePath,
+      };
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fileName = document.calculateFileName(parseResult as unknown as any);
     fileNameByFilePath.set(filePath, fileName);
 
     const newFileNameInfo = { filePath, hash: readPdfResult.hash };
