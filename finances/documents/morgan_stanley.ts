@@ -39,7 +39,7 @@ class MorganStanleyRelease implements Document<
       `${settlementDate} Morgan Stanley Release Confirmation ` +
       `${awardId} ${sharesSold} shares vested for ` +
       `${vestedValue} sold for ${saleAmount} ` +
-      `(${salePrice} per share)`
+      `(${salePrice} per share).pdf`
     );
   }
 
