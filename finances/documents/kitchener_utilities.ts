@@ -34,7 +34,10 @@ class KitchenerUtilitiesBill implements Document<
       return statementDate;
     }
 
-    const amountDue = "$12.34";
+    const amountDue = this.#parseAmountDue(lines);
+    if (isDocumentParseError(amountDue)) {
+      return amountDue;
+    }
 
     return { type: "KitchenerUtilitiesBill", statementDate, amountDue };
   }
@@ -64,6 +67,24 @@ class KitchenerUtilitiesBill implements Document<
     }
 
     return date;
+  }
+
+  #parseAmountDue(lines: readonly string[]): string | DocumentParseError {
+    const regex = /Pre-authorized Withdrawal:\s*(\d+\.\d+)/i;
+    const line = lines.find((line) => regex.test(line));
+    if (!line) {
+      return {
+        type: "DocumentParseError",
+        message: "Pre-authorized Withdrawal line not found",
+      };
+    }
+
+    const amountDueStr = line.match(regex)?.[1];
+    if (!amountDueStr) {
+      throw new Error("internal error ms3atxxre5: regex should have matched");
+    }
+
+    return `$${amountDueStr}`;
   }
 }
 
