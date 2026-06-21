@@ -1,6 +1,7 @@
-name: Finances CI
+name: finances
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
