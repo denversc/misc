@@ -1,5 +1,6 @@
 import { rogersBill } from "./documents/rogers.ts";
 import { publicMobileStatement } from "./documents/public_mobile.ts";
+import { kitchenerUtilitiesBill } from "./documents/kitchener_utilities.ts";
 import {
   questradeMarginStatement,
   questradeRESPStatement,
@@ -12,6 +13,7 @@ export const allDocuments = Object.freeze([
   questradeMarginStatement,
   questradeRESPStatement,
   questradeRRSPStatement,
+  kitchenerUtilitiesBill,
 ]);
 
 export type Documents = Exclude<(typeof allDocuments)[number], undefined>;
