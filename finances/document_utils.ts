@@ -18,7 +18,7 @@ export function stringFromLines(
     }
 
     const matchingString = match[1];
-    if (!matchingString) {
+    if (typeof matchingString === "undefined") {
       throw new Error(
         `internal error stdp7xw6rb: regex should have matched line; ` +
           `regex=${regex.source}, line=${trimmedLine}`,
