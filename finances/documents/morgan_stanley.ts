@@ -80,7 +80,15 @@ class MorganStanleyRelease implements Document<
       return saleAmount;
     }
 
-    const sharesSold = "zzyzx";
+    const sharesSold = stringFromLines(
+      lines,
+      /^Quantity Sold:\s*\(([\d.]+)\)$/i,
+    );
+    if (isDocumentParseError(sharesSold)) {
+      prefixMessage(sharesSold, "Shares Sold not found: ");
+      return sharesSold;
+    }
+
     const salePrice = "zzyzx";
 
     return {
