@@ -1,9 +1,14 @@
 import { isDocumentParseError, type DocumentParseError } from "./document.ts";
 import { parseDateToYYYYMMDD, isParseDateError } from "./date.ts";
 
+interface StringFromLinesOptions {
+  resultPrefix: string;
+}
+
 export function stringFromLines(
   lines: readonly string[],
   regex: RegExp,
+  options?: Partial<StringFromLinesOptions>,
 ): string | DocumentParseError {
   const line = lines.find((line) => regex.test(line));
   if (!line) {
@@ -21,7 +26,21 @@ export function stringFromLines(
     );
   }
 
-  return matchingString;
+  return matchingStringWithStringFromLinesOptionsApplied(
+    matchingString,
+    options,
+  );
+}
+
+function matchingStringWithStringFromLinesOptionsApplied(
+  matchingString: string,
+  options: Partial<StringFromLinesOptions> | undefined,
+): string {
+  const resultPrefix = options?.resultPrefix;
+  if (typeof resultPrefix === "undefined") {
+    return matchingString;
+  }
+  return resultPrefix + matchingString;
 }
 
 export function yyyymmddDateFromLines(

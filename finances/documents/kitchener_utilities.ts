@@ -3,7 +3,8 @@ import {
   type Document,
   type DocumentParseError,
 } from "../document.ts";
-import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
+import { stringFromLines, yyyymmddDateFromLines } from "../document_utils.ts";
+import { prefixMessage } from "../error.ts";
 
 export interface ParsedKitchenerUtilitiesBill {
   type: "KitchenerUtilitiesBill";
@@ -29,62 +30,27 @@ class KitchenerUtilitiesBill implements Document<
   parse(
     lines: readonly string[],
   ): ParsedKitchenerUtilitiesBill | DocumentParseError {
-    const statementDate = this.#parseStatementDate(lines);
+    const statementDate = yyyymmddDateFromLines(
+      lines,
+      /^Statement Date:\s*(\w+\s+\d+\s+\d+)\s+/i,
+      "MMM D YYYY",
+    );
     if (isDocumentParseError(statementDate)) {
+      prefixMessage(statementDate, "Statement Date not found: ");
       return statementDate;
     }
 
-    const amountDue = this.#parseAmountDue(lines);
+    const amountDue = stringFromLines(
+      lines,
+      /^Pre-authorized Withdrawal:\s*(\d+\.\d+)$/i,
+      { resultPrefix: "$" },
+    );
     if (isDocumentParseError(amountDue)) {
+      prefixMessage(amountDue, "Amount Due not found: ");
       return amountDue;
     }
 
     return { type: "KitchenerUtilitiesBill", statementDate, amountDue };
-  }
-
-  #parseStatementDate(lines: readonly string[]): string | DocumentParseError {
-    const regex = /Statement Date:\s*(\w+\s+\d+\s+\d+)/i;
-    const line = lines.find((line) => regex.test(line));
-    if (!line) {
-      return {
-        type: "DocumentParseError",
-        message: "Statement Date line not found",
-      };
-    }
-
-    const dateStr = line.match(regex)?.[1];
-    if (!dateStr) {
-      throw new Error("internal error vngd3pn5ry: regex should have matched");
-    }
-
-    const date = parseDateToYYYYMMDD("MMM D YYYY", dateStr);
-    if (isParseDateError(date)) {
-      const { message } = date;
-      return {
-        type: "DocumentParseError",
-        message: `unable to parse statement date: ${dateStr} (${message})`,
-      };
-    }
-
-    return date;
-  }
-
-  #parseAmountDue(lines: readonly string[]): string | DocumentParseError {
-    const regex = /Pre-authorized Withdrawal:\s*(\d+\.\d+)/i;
-    const line = lines.find((line) => regex.test(line));
-    if (!line) {
-      return {
-        type: "DocumentParseError",
-        message: "Pre-authorized Withdrawal line not found",
-      };
-    }
-
-    const amountDueStr = line.match(regex)?.[1];
-    if (!amountDueStr) {
-      throw new Error("internal error ms3atxxre5: regex should have matched");
-    }
-
-    return `$${amountDueStr}`;
   }
 }
 
