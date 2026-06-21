@@ -50,7 +50,11 @@ class MorganStanleyRelease implements Document<
       return awardId;
     }
 
-    const settlementDate = "zzyzx";
+    const settlementDate = this.#parseSettlementDate(lines);
+    if (isDocumentParseError(settlementDate)) {
+      return settlementDate;
+    }
+
     const vestedValue = "zzyzx";
     const saleAmount = "zzyzx";
     const sharesSold = "zzyzx";
@@ -68,7 +72,7 @@ class MorganStanleyRelease implements Document<
   }
 
   #parseAwardId(lines: readonly string[]): string | DocumentParseError {
-    const regex = /^Award ID:\s+([\w\d]+)/i;
+    const regex = /^Award ID:\s+([\w\d]+)$/i;
     const line = lines.find((line) => regex.test(line));
     if (!line) {
       return {
@@ -83,6 +87,33 @@ class MorganStanleyRelease implements Document<
     }
 
     return awardId;
+  }
+
+  #parseSettlementDate(lines: readonly string[]): string | DocumentParseError {
+    const regex = /^Settlement Date:\s*(\d+-\w+-\d+)$/i;
+    const line = lines.find((line) => regex.test(line));
+    if (!line) {
+      return {
+        type: "DocumentParseError",
+        message: "Settlement Date line not found",
+      };
+    }
+
+    const dateStr = line.match(regex)?.[1];
+    if (!dateStr) {
+      throw new Error("internal error tccydgchk6: regex should have matched");
+    }
+
+    const date = parseDateToYYYYMMDD("DD-MMM-YYYY", dateStr);
+    if (isParseDateError(date)) {
+      const { message } = date;
+      return {
+        type: "DocumentParseError",
+        message: `unable to parse settlement date: ${dateStr} (${message})`,
+      };
+    }
+
+    return date;
   }
 }
 
