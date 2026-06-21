@@ -82,14 +82,21 @@ class MorganStanleyRelease implements Document<
 
     const sharesSold = stringFromLines(
       lines,
-      /^Quantity Sold:\s*\(([\d.]+)\)$/i,
+      /^Quantity Sold:\s*\((\d+\.\d{3})0*\)$/i,
     );
     if (isDocumentParseError(sharesSold)) {
       prefixMessage(sharesSold, "Shares Sold not found: ");
       return sharesSold;
     }
 
-    const salePrice = "zzyzx";
+    const salePrice = stringFromLines(
+      lines,
+      /shares at (\$\d+\.\d{4})0* per share/i,
+    );
+    if (isDocumentParseError(salePrice)) {
+      prefixMessage(salePrice, "Sale Price not found: ");
+      return salePrice;
+    }
 
     return {
       type: "MorganStanleyRelease",
