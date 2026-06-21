@@ -62,7 +62,15 @@ class MorganStanleyRelease implements Document<
       return settlementDate;
     }
 
-    const vestedValue = "zzyzx";
+    const vestedValue = stringFromLines(
+      lines,
+      /^Total Gain.*:\s*(\$[\d,.]+)$/i,
+    );
+    if (isDocumentParseError(vestedValue)) {
+      prefixMessage(vestedValue, "Vested Value not found: ");
+      return vestedValue;
+    }
+
     const saleAmount = "zzyzx";
     const sharesSold = "zzyzx";
     const salePrice = "zzyzx";
