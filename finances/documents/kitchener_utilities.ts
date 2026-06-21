@@ -4,7 +4,6 @@ import {
   type DocumentParseError,
 } from "../document.ts";
 import { stringFromLines, yyyymmddDateFromLines } from "../document_utils.ts";
-import { prefixMessage } from "../error.ts";
 
 export interface ParsedKitchenerUtilitiesBill {
   type: "KitchenerUtilitiesBill";
@@ -36,7 +35,6 @@ class KitchenerUtilitiesBill implements Document<
       "MMM D YYYY",
     );
     if (isDocumentParseError(statementDate)) {
-      prefixMessage(statementDate, "Statement Date not found: ");
       return statementDate;
     }
 
@@ -46,7 +44,6 @@ class KitchenerUtilitiesBill implements Document<
       { resultPrefix: "$" },
     );
     if (isDocumentParseError(amountDue)) {
-      prefixMessage(amountDue, "Amount Due not found: ");
       return amountDue;
     }
 

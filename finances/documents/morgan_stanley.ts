@@ -4,7 +4,6 @@ import {
   type DocumentParseError,
 } from "../document.ts";
 import { stringFromLines, yyyymmddDateFromLines } from "../document_utils.ts";
-import { prefixMessage } from "../error.ts";
 
 export interface ParsedMorganStanleyRelease {
   type: "MorganStanleyRelease";
@@ -48,7 +47,6 @@ class MorganStanleyRelease implements Document<
   ): ParsedMorganStanleyRelease | DocumentParseError {
     const awardId = stringFromLines(lines, /^Award ID:\s+([\w\d]+)$/i);
     if (isDocumentParseError(awardId)) {
-      prefixMessage(awardId, "Award ID not found: ");
       return awardId;
     }
 
@@ -58,7 +56,6 @@ class MorganStanleyRelease implements Document<
       "DD-MMM-YYYY",
     );
     if (isDocumentParseError(settlementDate)) {
-      prefixMessage(settlementDate, "Settlement Date not found: ");
       return settlementDate;
     }
 
@@ -67,7 +64,6 @@ class MorganStanleyRelease implements Document<
       /^Total Gain.*:\s*(\$[\d,.]+)$/i,
     );
     if (isDocumentParseError(vestedValue)) {
-      prefixMessage(vestedValue, "Vested Value not found: ");
       return vestedValue;
     }
 
@@ -76,7 +72,6 @@ class MorganStanleyRelease implements Document<
       /^Sale PricexQuantity Sold:\s*\((\$[\d,.]+)\)$/i,
     );
     if (isDocumentParseError(saleAmount)) {
-      prefixMessage(saleAmount, "Sale Amount not found: ");
       return saleAmount;
     }
 
@@ -85,7 +80,6 @@ class MorganStanleyRelease implements Document<
       /^Quantity Sold:\s*\((\d+\.\d{3})0*\)$/i,
     );
     if (isDocumentParseError(sharesSold)) {
-      prefixMessage(sharesSold, "Shares Sold not found: ");
       return sharesSold;
     }
 
@@ -94,7 +88,6 @@ class MorganStanleyRelease implements Document<
       /shares at (\$\d+\.\d{4})0* per share/i,
     );
     if (isDocumentParseError(salePrice)) {
-      prefixMessage(salePrice, "Sale Price not found: ");
       return salePrice;
     }
 
