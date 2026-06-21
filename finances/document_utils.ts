@@ -10,37 +10,33 @@ export function stringFromLines(
   regex: RegExp,
   options?: Partial<StringFromLinesOptions>,
 ): string | DocumentParseError {
-  const line = lines.find((line) => regex.test(line));
-  if (!line) {
-    return {
-      type: "DocumentParseError",
-      message: `line not found matching regex: ${regex.source}`,
-    };
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    const match = trimmedLine.match(regex);
+    if (!match) {
+      continue;
+    }
+
+    const matchingString = match[1];
+    if (!matchingString) {
+      throw new Error(
+        `internal error stdp7xw6rb: regex should have matched line; ` +
+          `regex=${regex.source}, line=${trimmedLine}`,
+      );
+    }
+
+    const resultPrefix = options?.resultPrefix;
+    if (typeof resultPrefix === "undefined") {
+      return matchingString;
+    } else {
+      return resultPrefix + matchingString;
+    }
   }
 
-  const matchingString = line.match(regex)?.[1];
-  if (!matchingString) {
-    throw new Error(
-      `internal error stdp7xw6rb: regex should have matched line; ` +
-        `regex=${regex.source}, line=${line}`,
-    );
-  }
-
-  return matchingStringWithStringFromLinesOptionsApplied(
-    matchingString,
-    options,
-  );
-}
-
-function matchingStringWithStringFromLinesOptionsApplied(
-  matchingString: string,
-  options: Partial<StringFromLinesOptions> | undefined,
-): string {
-  const resultPrefix = options?.resultPrefix;
-  if (typeof resultPrefix === "undefined") {
-    return matchingString;
-  }
-  return resultPrefix + matchingString;
+  return {
+    type: "DocumentParseError",
+    message: `line not found matching regex: ${regex.source}`,
+  };
 }
 
 export function yyyymmddDateFromLines(
