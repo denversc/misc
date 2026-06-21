@@ -1,4 +1,4 @@
-name: Finances CI
+name: finances
 
 on:
   workflow_dispatch:
