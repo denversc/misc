@@ -3,7 +3,8 @@ import {
   type Document,
   type DocumentParseError,
 } from "../document.ts";
-import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
+import { stringFromLines, yyyymmddDateFromLines } from "../document_utils.ts";
+import { prefixMessage } from "../error.ts";
 
 export interface ParsedMorganStanleyRelease {
   type: "MorganStanleyRelease";
@@ -45,13 +46,19 @@ class MorganStanleyRelease implements Document<
   parse(
     lines: readonly string[],
   ): ParsedMorganStanleyRelease | DocumentParseError {
-    const awardId = this.#parseAwardId(lines);
+    const awardId = stringFromLines(lines, /^Award ID:\s+([\w\d]+)$/i);
     if (isDocumentParseError(awardId)) {
+      prefixMessage(awardId, "Award ID not found: ");
       return awardId;
     }
 
-    const settlementDate = this.#parseSettlementDate(lines);
+    const settlementDate = yyyymmddDateFromLines(
+      lines,
+      /^Settlement Date:\s*(\d+-\w+-\d+)$/i,
+      "DD-MMM-YYYY",
+    );
     if (isDocumentParseError(settlementDate)) {
+      prefixMessage(settlementDate, "Settlement Date not found: ");
       return settlementDate;
     }
 
@@ -69,51 +76,6 @@ class MorganStanleyRelease implements Document<
       sharesSold,
       salePrice,
     };
-  }
-
-  #parseAwardId(lines: readonly string[]): string | DocumentParseError {
-    const regex = /^Award ID:\s+([\w\d]+)$/i;
-    const line = lines.find((line) => regex.test(line));
-    if (!line) {
-      return {
-        type: "DocumentParseError",
-        message: "Award ID line not found",
-      };
-    }
-
-    const awardId = line.match(regex)?.[1];
-    if (!awardId) {
-      throw new Error("internal error stdp7xw6rb: regex should have matched");
-    }
-
-    return awardId;
-  }
-
-  #parseSettlementDate(lines: readonly string[]): string | DocumentParseError {
-    const regex = /^Settlement Date:\s*(\d+-\w+-\d+)$/i;
-    const line = lines.find((line) => regex.test(line));
-    if (!line) {
-      return {
-        type: "DocumentParseError",
-        message: "Settlement Date line not found",
-      };
-    }
-
-    const dateStr = line.match(regex)?.[1];
-    if (!dateStr) {
-      throw new Error("internal error tccydgchk6: regex should have matched");
-    }
-
-    const date = parseDateToYYYYMMDD("DD-MMM-YYYY", dateStr);
-    if (isParseDateError(date)) {
-      const { message } = date;
-      return {
-        type: "DocumentParseError",
-        message: `unable to parse settlement date: ${dateStr} (${message})`,
-      };
-    }
-
-    return date;
   }
 }
 

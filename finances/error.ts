@@ -17,3 +17,7 @@ function propertyFromUnknown(obj: unknown, propertyName: string): unknown {
     ? (obj as Record<string, unknown>)[propertyName]
     : undefined;
 }
+
+export function prefixMessage(obj: { message: string }, prefix: string) {
+  obj.message = `${prefix}${obj.message}`;
+}
