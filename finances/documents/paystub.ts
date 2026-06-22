@@ -6,6 +6,7 @@ import type {
 import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
 
 export type PayStubType =
+  | "PayStubAnnualBonus"
   | "PayStubRegularPay"
   | "PayStubGSU"
   | "PayStubShuttle"
@@ -13,6 +14,7 @@ export type PayStubType =
 
 export function isPayStubType(value: unknown): value is PayStubType {
   return (
+    value === "PayStubAnnualBonus" ||
     value === "PayStubRegularPay" ||
     value === "PayStubGSU" ||
     value === "PayStubShuttle" ||
@@ -26,6 +28,7 @@ export interface ParsedPayStub<Type extends PayStubType> {
   amount: string;
 }
 
+export type ParsedPayStubAnnualBonus = ParsedPayStub<"PayStubAnnualBonus">;
 export type ParsedPayStubRegularPay = ParsedPayStub<"PayStubRegularPay">;
 export type ParsedPayStubGSU = ParsedPayStub<"PayStubGSU">;
 export type ParsedPayStubShuttle = ParsedPayStub<"PayStubShuttle">;
@@ -77,6 +80,15 @@ class PayStub<Type extends PayStubType> implements Document<
   }
 }
 
+class PayStubAnnualBonus extends PayStub<"PayStubAnnualBonus"> {
+  constructor() {
+    super(
+      "PayStubAnnualBonus",
+      /\sAnnual\s+Bonus\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+\s/i,
+    );
+  }
+}
+
 class PayStubRegularPay extends PayStub<"PayStubRegularPay"> {
   constructor() {
     super(
@@ -112,6 +124,10 @@ class PayStubMeal extends PayStub<"PayStubMeal"> {
     );
   }
 }
+
+export const payStubAnnualBonus: Readonly<
+  Document<ParsedPayStubAnnualBonus, "PayStubAnnualBonus">
+> = Object.freeze(new PayStubAnnualBonus());
 
 export const payStubRegularPay: Readonly<
   Document<ParsedPayStubRegularPay, "PayStubRegularPay">

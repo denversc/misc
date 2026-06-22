@@ -2,6 +2,7 @@ import { rogersBill } from "./documents/rogers.ts";
 import { publicMobileStatement } from "./documents/public_mobile.ts";
 import { kitchenerUtilitiesBill } from "./documents/kitchener_utilities.ts";
 import {
+  payStubAnnualBonus,
   payStubGSU,
   payStubMeal,
   payStubRegularPay,
@@ -17,6 +18,7 @@ import {
 export const allDocuments = Object.freeze([
   kitchenerUtilitiesBill,
   morganStanleyRelease,
+  payStubAnnualBonus,
   payStubGSU,
   payStubMeal,
   payStubRegularPay,
