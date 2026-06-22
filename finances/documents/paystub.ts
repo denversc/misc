@@ -3,7 +3,8 @@ import type {
   DocumentSource,
   DocumentParseError,
 } from "../document.ts";
-import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
+import { isDocumentParseError } from "../document.ts";
+import { yyyymmddDateFromLines } from "../document_utils.ts";
 
 export type PayStubType =
   | "PayStubAnnualBonus"
@@ -76,7 +77,32 @@ class PayStub<Type extends PayStubType> implements Document<
   parse(
     source: Readonly<DocumentSource>,
   ): ParsedPayStub<Type> | DocumentParseError {
-    throw new Error("not implemented");
+    const payDate = yyyymmddDateFromLines(
+      source.lines,
+      /^Pay\s+Date\s+(\d+\s+\d+\s+\d+)$/i,
+      "YYYY MM DD",
+    );
+    if (isDocumentParseError(payDate)) {
+      return payDate;
+    }
+
+    const match = source.text.match(this.#regex);
+    if (!match) {
+      return {
+        type: "DocumentParseError",
+        message: `no match found for regex: ${this.#regex.source}`,
+      };
+    }
+
+    const amount = match[1];
+    if (typeof amount === "undefined") {
+      throw new Error(
+        `internal error vkwqspedkb: regex should have matched line; ` +
+          `regex=${this.#regex.source}, match=${match[0]}`,
+      );
+    }
+
+    return { type: this.type, payDate, amount };
   }
 }
 
