@@ -1,3 +1,4 @@
+import { type DocumentSource } from "./document.ts";
 import { allDocuments, type Documents } from "./documents.ts";
 
 export interface IdentifyError {
@@ -17,10 +18,10 @@ export function isIdentifyError(e: unknown): e is IdentifyError {
 }
 
 export function identify(
-  lines: readonly string[],
+  source: Readonly<DocumentSource>,
 ): Documents | IdentifyError | undefined {
   const filteredDocuments = allDocuments.filter((document) =>
-    document.identify(lines),
+    document.identify(source),
   );
 
   if (filteredDocuments.length > 1) {

@@ -1,4 +1,8 @@
-import { type Document, type DocumentParseError } from "../document.ts";
+import type {
+  Document,
+  DocumentSource,
+  DocumentParseError,
+} from "../document.ts";
 import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
 
 export interface ParsedRogersBill {
@@ -10,8 +14,10 @@ export interface ParsedRogersBill {
 class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
   readonly type = "RogersBill" as const;
 
-  identify(lines: readonly string[]): boolean {
-    return lines.some((line) => line.toUpperCase().includes("1-888-ROGERS-1"));
+  identify(source: Readonly<DocumentSource>): boolean {
+    return source.lines.some((line) =>
+      line.toUpperCase().includes("1-888-ROGERS-1"),
+    );
   }
 
   calculateFileName(pdf: Readonly<ParsedRogersBill>): string {
@@ -19,8 +25,10 @@ class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
     return `${billDate} Rogers Bill ${amountDue}.pdf`;
   }
 
-  parse(lines: readonly string[]): ParsedRogersBill | DocumentParseError {
-    const amountDueIndex = lines.findIndex(
+  parse(
+    source: Readonly<DocumentSource>,
+  ): ParsedRogersBill | DocumentParseError {
+    const amountDueIndex = source.lines.findIndex(
       (line) => line.toLowerCase() === "what is the total due?",
     );
     if (amountDueIndex < 0) {
@@ -29,7 +37,7 @@ class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
         message: "amount due line not found",
       };
     }
-    const amountDue = lines[amountDueIndex + 1]?.trim();
+    const amountDue = source.lines[amountDueIndex + 1]?.trim();
     if (!amountDue) {
       return {
         type: "DocumentParseError",
@@ -37,7 +45,7 @@ class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
       };
     }
 
-    const billDateIndex = lines.findIndex(
+    const billDateIndex = source.lines.findIndex(
       (line) => line.toLowerCase() === "bill date",
     );
     if (billDateIndex < 0) {
@@ -46,7 +54,7 @@ class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
         message: "bill date line not found",
       };
     }
-    const billDateStr = lines[billDateIndex + 1]?.trim();
+    const billDateStr = source.lines[billDateIndex + 1]?.trim();
     if (!billDateStr) {
       return {
         type: "DocumentParseError",

@@ -3,6 +3,11 @@ export interface DocumentParseError {
   message: string;
 }
 
+export interface DocumentSource {
+  text: string;
+  lines: readonly string[];
+}
+
 export function isDocumentParseError(e: unknown): e is DocumentParseError {
   return (
     e !== null &&
@@ -24,9 +29,9 @@ export interface Document<
 > {
   readonly type: TypeName;
 
-  identify(lines: readonly string[]): boolean;
+  identify(source: Readonly<DocumentSource>): boolean;
 
-  parse(lines: readonly string[]): ParsedDocumentT | DocumentParseError;
+  parse(source: Readonly<DocumentSource>): ParsedDocumentT | DocumentParseError;
 
   calculateFileName(pdf: Readonly<ParsedDocumentT>): string;
 }

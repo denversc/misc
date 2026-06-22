@@ -1,4 +1,8 @@
-import { type Document, type DocumentParseError } from "../document.ts";
+import type {
+  Document,
+  DocumentSource,
+  DocumentParseError,
+} from "../document.ts";
 import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
 
 export type StatementType =
@@ -42,9 +46,9 @@ class QuestradeStatement<Type extends StatementType> implements Document<
     this.#fileNameType = fileNameType;
   }
 
-  identify(lines: readonly string[]): boolean {
+  identify(source: Readonly<DocumentSource>): boolean {
     if (
-      !lines.some((line) =>
+      !source.lines.some((line) =>
         line.toLowerCase().startsWith("questrade wealth management inc."),
       )
     ) {
@@ -52,7 +56,9 @@ class QuestradeStatement<Type extends StatementType> implements Document<
     }
 
     if (
-      lines.some((line) => line.toLowerCase().includes(this.#identifyingLine))
+      source.lines.some((line) =>
+        line.toLowerCase().includes(this.#identifyingLine),
+      )
     ) {
       return true;
     }
@@ -69,10 +75,10 @@ class QuestradeStatement<Type extends StatementType> implements Document<
   }
 
   parse(
-    lines: readonly string[],
+    source: Readonly<DocumentSource>,
   ): ParsedQuestradeStatement<Type> | DocumentParseError {
     const accountNumberRegex = /Account\s*#:\s*(\d+)/i;
-    const accountNumberLine = lines.find((line) =>
+    const accountNumberLine = source.lines.find((line) =>
       accountNumberRegex.test(line),
     );
     if (!accountNumberLine) {
@@ -89,7 +95,7 @@ class QuestradeStatement<Type extends StatementType> implements Document<
     }
 
     const currentMonthRegex = /Current month\s*:\s*(\w+\s+\d+,\s*\d+)/i;
-    const currentMonthLine = lines.find((line) =>
+    const currentMonthLine = source.lines.find((line) =>
       line.match(currentMonthRegex),
     );
     if (!currentMonthLine) {
@@ -114,7 +120,7 @@ class QuestradeStatement<Type extends StatementType> implements Document<
     }
 
     const balanceRegex = /Current month balance:\s*(\$[\d,.]+)/i;
-    const balanceLine = lines.find((line) => line.match(balanceRegex));
+    const balanceLine = source.lines.find((line) => line.match(balanceRegex));
     if (!balanceLine) {
       return { type: "DocumentParseError", message: "Balance line not found" };
     }

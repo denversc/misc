@@ -1,8 +1,9 @@
-import {
-  isDocumentParseError,
-  type Document,
-  type DocumentParseError,
+import type {
+  Document,
+  DocumentSource,
+  DocumentParseError,
 } from "../document.ts";
+import { isDocumentParseError } from "../document.ts";
 import { stringFromLines, yyyymmddDateFromLines } from "../document_utils.ts";
 
 export interface ParsedMorganStanleyRelease {
@@ -21,8 +22,10 @@ class MorganStanleyRelease implements Document<
 > {
   readonly type = "MorganStanleyRelease" as const;
 
-  identify(lines: readonly string[]): boolean {
-    return lines.some((line) => line.toLowerCase() === "release confirmation");
+  identify(source: Readonly<DocumentSource>): boolean {
+    return source.lines.some(
+      (line) => line.toLowerCase() === "release confirmation",
+    );
   }
 
   calculateFileName(pdf: Readonly<ParsedMorganStanleyRelease>): string {
@@ -43,15 +46,15 @@ class MorganStanleyRelease implements Document<
   }
 
   parse(
-    lines: readonly string[],
+    source: Readonly<DocumentSource>,
   ): ParsedMorganStanleyRelease | DocumentParseError {
-    const awardId = stringFromLines(lines, /^Award ID:\s+([\w\d]+)$/i);
+    const awardId = stringFromLines(source.lines, /^Award ID:\s+([\w\d]+)$/i);
     if (isDocumentParseError(awardId)) {
       return awardId;
     }
 
     const settlementDate = yyyymmddDateFromLines(
-      lines,
+      source.lines,
       /^Settlement Date:\s*(\d+-\w+-\d+)$/i,
       "DD-MMM-YYYY",
     );
@@ -60,7 +63,7 @@ class MorganStanleyRelease implements Document<
     }
 
     const vestedValue = stringFromLines(
-      lines,
+      source.lines,
       /^Total Gain.*:\s*(\$[\d,.]+)$/i,
     );
     if (isDocumentParseError(vestedValue)) {
@@ -68,7 +71,7 @@ class MorganStanleyRelease implements Document<
     }
 
     const saleAmount = stringFromLines(
-      lines,
+      source.lines,
       /^Sale PricexQuantity Sold:\s*\((\$[\d,.]+)\)$/i,
     );
     if (isDocumentParseError(saleAmount)) {
@@ -76,7 +79,7 @@ class MorganStanleyRelease implements Document<
     }
 
     const sharesSold = stringFromLines(
-      lines,
+      source.lines,
       /^Quantity Sold:\s*\((\d+\.\d{3})0*\)$/i,
     );
     if (isDocumentParseError(sharesSold)) {
@@ -84,7 +87,7 @@ class MorganStanleyRelease implements Document<
     }
 
     const salePrice = stringFromLines(
-      lines,
+      source.lines,
       /shares at (\$\d+\.\d{4})0* per share/i,
     );
     if (isDocumentParseError(salePrice)) {

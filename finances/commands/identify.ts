@@ -22,7 +22,7 @@ export async function identifyCommand(
     process.exit(1);
   }
 
-  const document = identify(readPdfResult.lines);
+  const document = identify(readPdfResult);
   if (isIdentifyError(document)) {
     const { message } = document;
     console.error(`ERROR: ${message}: ${filePath}`);

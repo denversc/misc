@@ -1,8 +1,9 @@
-import {
-  isDocumentParseError,
-  type Document,
-  type DocumentParseError,
+import type {
+  Document,
+  DocumentSource,
+  DocumentParseError,
 } from "../document.ts";
+import { isDocumentParseError } from "../document.ts";
 import { stringFromLines, yyyymmddDateFromLines } from "../document_utils.ts";
 
 export interface ParsedKitchenerUtilitiesBill {
@@ -17,8 +18,8 @@ class KitchenerUtilitiesBill implements Document<
 > {
   readonly type = "KitchenerUtilitiesBill" as const;
 
-  identify(lines: readonly string[]): boolean {
-    return lines.some((line) => line.includes("UTILITIES@KITCHENER.CA"));
+  identify(source: Readonly<DocumentSource>): boolean {
+    return source.lines.some((line) => line.includes("UTILITIES@KITCHENER.CA"));
   }
 
   calculateFileName(pdf: Readonly<ParsedKitchenerUtilitiesBill>): string {
@@ -27,10 +28,10 @@ class KitchenerUtilitiesBill implements Document<
   }
 
   parse(
-    lines: readonly string[],
+    source: Readonly<DocumentSource>,
   ): ParsedKitchenerUtilitiesBill | DocumentParseError {
     const statementDate = yyyymmddDateFromLines(
-      lines,
+      source.lines,
       /^Statement Date:\s*(\w+\s+\d+\s+\d+)\s+/i,
       "MMM D YYYY",
     );
@@ -39,7 +40,7 @@ class KitchenerUtilitiesBill implements Document<
     }
 
     const amountDue = stringFromLines(
-      lines,
+      source.lines,
       /^Pre-authorized Withdrawal:\s*(\d+\.\d+)$/i,
       { resultPrefix: "$" },
     );

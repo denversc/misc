@@ -46,7 +46,7 @@ export async function calculateFileNames(
       };
     }
 
-    const document = identify(readPdfResult.lines);
+    const document = identify(readPdfResult);
     if (typeof document === "undefined") {
       return {
         type: "CalculateFileNamesError",
@@ -62,7 +62,7 @@ export async function calculateFileNames(
       };
     }
 
-    const parseResult = document.parse(readPdfResult.lines);
+    const parseResult = document.parse(readPdfResult);
     if (isDocumentParseError(parseResult)) {
       return {
         type: "CalculateFileNamesError",

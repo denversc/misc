@@ -1,4 +1,8 @@
-import { type Document, type DocumentParseError } from "../document.ts";
+import type {
+  Document,
+  DocumentSource,
+  DocumentParseError,
+} from "../document.ts";
 import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
 
 export interface ParsedPublicMobileStatement {
@@ -13,8 +17,8 @@ class PublicMobileStatement implements Document<
 > {
   readonly type = "PublicMobileStatement" as const;
 
-  identify(lines: readonly string[]): boolean {
-    return lines.includes("Public Mobile Account");
+  identify(source: Readonly<DocumentSource>): boolean {
+    return source.lines.includes("Public Mobile Account");
   }
 
   calculateFileName(pdf: Readonly<ParsedPublicMobileStatement>): string {
@@ -23,15 +27,15 @@ class PublicMobileStatement implements Document<
   }
 
   parse(
-    lines: readonly string[],
+    source: Readonly<DocumentSource>,
   ): ParsedPublicMobileStatement | DocumentParseError {
-    const invoiceIndex = lines.findIndex(
+    const invoiceIndex = source.lines.findIndex(
       (line) => line.toLowerCase() === "invoice",
     );
     if (invoiceIndex < 0) {
       return { type: "DocumentParseError", message: "INVOICE line not found" };
     }
-    const invoiceDateStr = lines[invoiceIndex + 1]?.trim();
+    const invoiceDateStr = source.lines[invoiceIndex + 1]?.trim();
     if (!invoiceDateStr) {
       return {
         type: "DocumentParseError",
@@ -47,7 +51,7 @@ class PublicMobileStatement implements Document<
       };
     }
 
-    const totalAmountPaidLine = lines.find((line) =>
+    const totalAmountPaidLine = source.lines.find((line) =>
       line.toLowerCase().startsWith("total amount paid"),
     );
     if (!totalAmountPaidLine) {
