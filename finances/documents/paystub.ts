@@ -43,10 +43,12 @@ class PayStub<Type extends PayStubType> implements Document<
 > {
   readonly type: Type;
   readonly #regex: RegExp;
+  readonly #filenameTemplate: string;
 
-  constructor(type: Type, regex: RegExp) {
+  constructor(type: Type, regex: RegExp, filenameTemplate: string) {
     this.type = type;
     this.#regex = regex;
+    this.#filenameTemplate = filenameTemplate;
   }
 
   identify(source: Readonly<DocumentSource>): boolean {
@@ -71,7 +73,11 @@ class PayStub<Type extends PayStubType> implements Document<
   }
 
   calculateFileName(pdf: Readonly<ParsedPayStub<Type>>): string {
-    throw new Error("not implemented");
+    const parentheticalText = this.#filenameTemplate.replace(
+      "__AMOUNT__",
+      pdf.amount,
+    );
+    return `${pdf.payDate} Google Pay Stub (${parentheticalText}).pdf`;
   }
 
   parse(
@@ -111,6 +117,7 @@ class PayStubAnnualBonus extends PayStub<"PayStubAnnualBonus"> {
     super(
       "PayStubAnnualBonus",
       /\sAnnual\s+Bonus\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+\s/i,
+      "Annual Bonus",
     );
   }
 }
@@ -120,6 +127,7 @@ class PayStubRegularPay extends PayStub<"PayStubRegularPay"> {
     super(
       "PayStubRegularPay",
       /\sRegular\s+Pay\s+\d+\.\d+\s+\$\d+\.\d+\s+(\$[\d,]+\.\d+)\s/i,
+      "Regular Pay",
     );
   }
 }
@@ -129,6 +137,7 @@ class PayStubGSU extends PayStub<"PayStubGSU"> {
     super(
       "PayStubGSU",
       /\sGoogle\s+Stock\s+Un\s+0.0*\s+\$0.0*\s+(\$[\d,]+\.\d+)\s/i,
+      "GSU Vest __AMOUNT__ CAD",
     );
   }
 }
@@ -138,6 +147,7 @@ class PayStubShuttle extends PayStub<"PayStubShuttle"> {
     super(
       "PayStubShuttle",
       /\sCA\s+Shuttle\s+Bus\s+\$[\d,]+\.\d+\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s/,
+      "Shuttle Bus",
     );
   }
 }
@@ -147,6 +157,7 @@ class PayStubMeal extends PayStub<"PayStubMeal"> {
     super(
       "PayStubMeal",
       /\sMeal\s+Benefit\s+\$[\d,]+\.\d+\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s/,
+      "Meal Benefit",
     );
   }
 }
