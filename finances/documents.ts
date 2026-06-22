@@ -1,6 +1,12 @@
 import { rogersBill } from "./documents/rogers.ts";
 import { publicMobileStatement } from "./documents/public_mobile.ts";
 import { kitchenerUtilitiesBill } from "./documents/kitchener_utilities.ts";
+import {
+  payStubGSU,
+  payStubMeal,
+  payStubRegularPay,
+  payStubShuttle,
+} from "./documents/paystub.ts";
 import { morganStanleyRelease } from "./documents/morgan_stanley.ts";
 import {
   questradeMarginStatement,
@@ -11,6 +17,10 @@ import {
 export const allDocuments = Object.freeze([
   kitchenerUtilitiesBill,
   morganStanleyRelease,
+  payStubGSU,
+  payStubMeal,
+  payStubRegularPay,
+  payStubShuttle,
   publicMobileStatement,
   questradeMarginStatement,
   questradeRESPStatement,
