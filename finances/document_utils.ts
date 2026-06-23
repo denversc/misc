@@ -2,7 +2,7 @@ import { isDocumentParseError, type DocumentParseError } from "./document.ts";
 import { parseDateToYYYYMMDD, isParseDateError } from "./date.ts";
 
 interface StringFromLinesOptions {
-  resultPrefix: string;
+  resultTransform: (matchingString: string) => string | DocumentParseError;
 }
 
 export function stringFromPdf(
@@ -26,9 +26,9 @@ export function stringFromPdf(
     );
   }
 
-  const resultPrefix = options?.resultPrefix;
-  if (typeof resultPrefix !== "undefined") {
-    return resultPrefix + matchingString;
+  const resultTransform = options?.resultTransform;
+  if (typeof resultTransform !== "undefined") {
+    return resultTransform(matchingString);
   } else {
     return matchingString;
   }
@@ -38,8 +38,9 @@ export function yyyymmddDateFromPdf(
   pdf: string,
   regex: RegExp,
   dateFormat: string,
+  options?: Partial<StringFromLinesOptions>,
 ): string | DocumentParseError {
-  const dateStr = stringFromPdf(pdf, regex);
+  const dateStr = stringFromPdf(pdf, regex, options);
   if (isDocumentParseError(dateStr)) {
     return dateStr;
   }

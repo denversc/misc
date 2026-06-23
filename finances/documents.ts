@@ -8,6 +8,7 @@ import {
   payStubRegularPay,
   payStubShuttle,
 } from "./documents/paystub.ts";
+import { pcMastercardStatement } from "./documents/pcmc.ts";
 import { morganStanleyRelease } from "./documents/morgan_stanley.ts";
 import {
   questradeMarginStatement,
@@ -23,6 +24,7 @@ export const allDocuments = Object.freeze([
   payStubMeal,
   payStubRegularPay,
   payStubShuttle,
+  pcMastercardStatement,
   publicMobileStatement,
   questradeMarginStatement,
   questradeRESPStatement,

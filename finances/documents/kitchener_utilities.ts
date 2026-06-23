@@ -37,7 +37,7 @@ class KitchenerUtilitiesBill implements Document<
     const amountDue = stringFromPdf(
       pdf,
       /^Pre-authorized Withdrawal:\s*(\d+\.\d+)$/im,
-      { resultPrefix: "$" },
+      { resultTransform: (s) => `$${s}` },
     );
     if (isDocumentParseError(amountDue)) {
       return amountDue;
