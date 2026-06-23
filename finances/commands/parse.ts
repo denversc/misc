@@ -17,13 +17,13 @@ export async function parseCommand(
     return;
   }
 
-  const readPdfResult = await readPdf(filePath);
-  if (isReadPdfError(readPdfResult)) {
-    console.error(`ERROR: ${readPdfResult.message}: ${filePath}`);
+  const pdf = await readPdf(filePath);
+  if (isReadPdfError(pdf)) {
+    console.error(`ERROR: ${pdf.message}: ${filePath}`);
     process.exit(1);
   }
 
-  const document = identify(readPdfResult);
+  const document = identify(pdf);
   if (typeof document === "undefined") {
     console.error(`ERROR: unable to identify pdf contents: ${filePath}`);
     process.exit(1);
@@ -34,7 +34,7 @@ export async function parseCommand(
     process.exit(1);
   }
 
-  const parseResult = document.parse(readPdfResult);
+  const parseResult = document.parse(pdf);
   if (isDocumentParseError(parseResult)) {
     const { message } = parseResult;
     console.error(`ERROR: ${message}: ${filePath}`);

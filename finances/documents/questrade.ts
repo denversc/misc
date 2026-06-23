@@ -1,9 +1,6 @@
-import type {
-  Document,
-  DocumentSource,
-  DocumentParseError,
-} from "../document.ts";
-import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
+import type { Document, DocumentParseError } from "../document.ts";
+import { isDocumentParseError } from "../document.ts";
+import { yyyymmddDateFromPdf, stringFromPdf } from "../document_utils.ts";
 
 export type StatementType =
   | "QuestradeRESPStatement"
@@ -46,24 +43,17 @@ class QuestradeStatement<Type extends StatementType> implements Document<
     this.#fileNameType = fileNameType;
   }
 
-  identify(source: Readonly<DocumentSource>): boolean {
-    if (
-      !source.lines.some((line) =>
-        line.toLowerCase().startsWith("questrade wealth management inc."),
-      )
-    ) {
+  identify(pdf: string): boolean {
+    const identifyRegex = /^questrade wealth management inc\.\s/im;
+    if (!identifyRegex.test(pdf)) {
       return false;
     }
 
-    if (
-      source.lines.some((line) =>
-        line.toLowerCase().includes(this.#identifyingLine),
-      )
-    ) {
-      return true;
-    }
-
-    return false;
+    const lineRegex = RegExp(
+      "\\s" + RegExp.escape(this.#identifyingLine) + "\\s",
+      "i",
+    );
+    return lineRegex.test(pdf);
   }
 
   calculateFileName(pdf: Readonly<ParsedQuestradeStatement<Type>>): string {
@@ -74,61 +64,27 @@ class QuestradeStatement<Type extends StatementType> implements Document<
     );
   }
 
-  parse(
-    source: Readonly<DocumentSource>,
-  ): ParsedQuestradeStatement<Type> | DocumentParseError {
-    const accountNumberRegex = /Account\s*#:\s*(\d+)/i;
-    const accountNumberLine = source.lines.find((line) =>
-      accountNumberRegex.test(line),
-    );
-    if (!accountNumberLine) {
-      return {
-        type: "DocumentParseError",
-        message: "Account number line not found",
-      };
-    }
-    const accountNumber = accountNumberLine.match(accountNumberRegex)?.[1];
-    if (!accountNumber) {
-      throw new Error(
-        "internal error rhtan4myg2: accountNumberRegex should have matched",
-      );
+  parse(pdf: string): ParsedQuestradeStatement<Type> | DocumentParseError {
+    const accountNumber = stringFromPdf(pdf, /^Account\s*#\s*:\s*(\d+)\s/im);
+    if (isDocumentParseError(accountNumber)) {
+      return accountNumber;
     }
 
-    const currentMonthRegex = /Current month\s*:\s*(\w+\s+\d+,\s*\d+)/i;
-    const currentMonthLine = source.lines.find((line) =>
-      line.match(currentMonthRegex),
+    const statementDate = yyyymmddDateFromPdf(
+      pdf,
+      /\sCurrent month\s*:\s*(\w+\s+\d+,\s*\d+)$/im,
+      "MMMM D, YYYY",
     );
-    if (!currentMonthLine) {
-      return {
-        type: "DocumentParseError",
-        message: "Current month line not found",
-      };
-    }
-    const statementDateStr = currentMonthLine.match(currentMonthRegex)?.[1];
-    if (!statementDateStr) {
-      throw new Error(
-        "internal error ydjbyakqr8: currentMonthRegex should have matched",
-      );
-    }
-    const statementDate = parseDateToYYYYMMDD("MMMM D, YYYY", statementDateStr);
-    if (isParseDateError(statementDate)) {
-      const { message } = statementDate;
-      return {
-        type: "DocumentParseError",
-        message: `unable to parse statement date: ${statementDateStr} (${message})`,
-      };
+    if (isDocumentParseError(statementDate)) {
+      return statementDate;
     }
 
-    const balanceRegex = /Current month balance:\s*(\$[\d,.]+)/i;
-    const balanceLine = source.lines.find((line) => line.match(balanceRegex));
-    if (!balanceLine) {
-      return { type: "DocumentParseError", message: "Balance line not found" };
-    }
-    const balance = balanceLine.match(balanceRegex)?.[1];
-    if (!balance) {
-      throw new Error(
-        "internal error ky4fmdxh8b: balanceRegex should have matched",
-      );
+    const balance = stringFromPdf(
+      pdf,
+      /^Current month balance:\s*(\$[\d,]+\.\d+)$/im,
+    );
+    if (isDocumentParseError(balance)) {
+      return balance;
     }
 
     return { type: this.type, statementDate, accountNumber, balance };

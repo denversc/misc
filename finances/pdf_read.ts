@@ -19,15 +19,9 @@ export function isReadPdfError(e: unknown): e is ReadPdfError {
   );
 }
 
-export interface ReadPdfResult {
-  text: string;
-  lines: string[];
-  hash: string;
-}
-
 export async function readPdf(
   filePath: string,
-): Promise<ReadPdfResult | ReadPdfError> {
+): Promise<string | ReadPdfError> {
   let fileContents: Buffer<ArrayBuffer>;
   try {
     fileContents = await fs.readFile(filePath);
@@ -37,10 +31,9 @@ export async function readPdf(
 
   const parser = new PDFParse({ data: fileContents });
 
-  let text: string;
   try {
     const textContents = await parser.getText();
-    text = textContents.text;
+    return textContents.text;
   } catch (e: unknown) {
     const errorMessage = messageForError(e);
     const message = `parsing pdf file contents failed (${errorMessage})`;
@@ -48,8 +41,4 @@ export async function readPdf(
   } finally {
     await parser.destroy();
   }
-
-  const lines = text.split("\n").map((line) => line.trim());
-  const hash = Bun.CryptoHasher.hash("sha512-256", fileContents, "hex");
-  return { text, lines, hash };
 }

@@ -1,4 +1,3 @@
-import { type DocumentSource } from "./document.ts";
 import { allDocuments, type Documents } from "./documents.ts";
 
 export interface IdentifyError {
@@ -17,11 +16,9 @@ export function isIdentifyError(e: unknown): e is IdentifyError {
   );
 }
 
-export function identify(
-  source: Readonly<DocumentSource>,
-): Documents | IdentifyError | undefined {
+export function identify(pdf: string): Documents | IdentifyError | undefined {
   const filteredDocuments = allDocuments.filter((document) =>
-    document.identify(source),
+    document.identify(pdf),
   );
 
   if (filteredDocuments.length > 1) {

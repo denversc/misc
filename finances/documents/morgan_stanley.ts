@@ -1,10 +1,6 @@
-import type {
-  Document,
-  DocumentSource,
-  DocumentParseError,
-} from "../document.ts";
+import type { Document, DocumentParseError } from "../document.ts";
 import { isDocumentParseError } from "../document.ts";
-import { stringFromLines, yyyymmddDateFromLines } from "../document_utils.ts";
+import { stringFromPdf, yyyymmddDateFromPdf } from "../document_utils.ts";
 
 export interface ParsedMorganStanleyRelease {
   type: "MorganStanleyRelease";
@@ -22,10 +18,9 @@ class MorganStanleyRelease implements Document<
 > {
   readonly type = "MorganStanleyRelease" as const;
 
-  identify(source: Readonly<DocumentSource>): boolean {
-    return source.lines.some(
-      (line) => line.toLowerCase() === "release confirmation",
-    );
+  identify(pdf: string): boolean {
+    const regex = /^release confirmation$/im;
+    return regex.test(pdf);
   }
 
   calculateFileName(pdf: Readonly<ParsedMorganStanleyRelease>): string {
@@ -45,50 +40,45 @@ class MorganStanleyRelease implements Document<
     );
   }
 
-  parse(
-    source: Readonly<DocumentSource>,
-  ): ParsedMorganStanleyRelease | DocumentParseError {
-    const awardId = stringFromLines(source.lines, /^Award ID:\s+([\w\d]+)$/i);
+  parse(pdf: string): ParsedMorganStanleyRelease | DocumentParseError {
+    const awardId = stringFromPdf(pdf, /^Award ID:\s+([\w\d]+)$/im);
     if (isDocumentParseError(awardId)) {
       return awardId;
     }
 
-    const settlementDate = yyyymmddDateFromLines(
-      source.lines,
-      /^Settlement Date:\s*(\d+-\w+-\d+)$/i,
+    const settlementDate = yyyymmddDateFromPdf(
+      pdf,
+      /^Settlement Date:\s*(\d+-\w+-\d+)$/im,
       "DD-MMM-YYYY",
     );
     if (isDocumentParseError(settlementDate)) {
       return settlementDate;
     }
 
-    const vestedValue = stringFromLines(
-      source.lines,
-      /^Total Gain.*:\s*(\$[\d,.]+)$/i,
-    );
+    const vestedValue = stringFromPdf(pdf, /^Total Gain.*:\s*(\$[\d,.]+)$/im);
     if (isDocumentParseError(vestedValue)) {
       return vestedValue;
     }
 
-    const saleAmount = stringFromLines(
-      source.lines,
-      /^Sale PricexQuantity Sold:\s*\((\$[\d,.]+)\)$/i,
+    const saleAmount = stringFromPdf(
+      pdf,
+      /^Sale PricexQuantity Sold:\s*\((\$[\d,.]+)\)$/im,
     );
     if (isDocumentParseError(saleAmount)) {
       return saleAmount;
     }
 
-    const sharesSold = stringFromLines(
-      source.lines,
-      /^Quantity Sold:\s*\((\d+\.\d{3})0*\)$/i,
+    const sharesSold = stringFromPdf(
+      pdf,
+      /^Quantity Sold:\s*\((\d+\.\d{3})0*\)$/im,
     );
     if (isDocumentParseError(sharesSold)) {
       return sharesSold;
     }
 
-    const salePrice = stringFromLines(
-      source.lines,
-      /shares at (\$\d+\.\d{4})0* per share/i,
+    const salePrice = stringFromPdf(
+      pdf,
+      /\sshares at (\$\d+\.\d{4})0* per share\s/im,
     );
     if (isDocumentParseError(salePrice)) {
       return salePrice;

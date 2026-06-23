@@ -1,9 +1,6 @@
-import type {
-  Document,
-  DocumentSource,
-  DocumentParseError,
-} from "../document.ts";
-import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
+import type { Document, DocumentParseError } from "../document.ts";
+import { isDocumentParseError } from "../document.ts";
+import { yyyymmddDateFromPdf, stringFromPdf } from "../document_utils.ts";
 
 export interface ParsedRogersBill {
   type: "RogersBill";
@@ -14,10 +11,9 @@ export interface ParsedRogersBill {
 class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
   readonly type = "RogersBill" as const;
 
-  identify(source: Readonly<DocumentSource>): boolean {
-    return source.lines.some((line) =>
-      line.toUpperCase().includes("1-888-ROGERS-1"),
-    );
+  identify(pdf: string): boolean {
+    const regex = /^Call 1-888-ROGERS-1$/im;
+    return regex.test(pdf);
   }
 
   calculateFileName(pdf: Readonly<ParsedRogersBill>): string {
@@ -25,49 +21,22 @@ class RogersBill implements Document<ParsedRogersBill, "RogersBill"> {
     return `${billDate} Rogers Bill ${amountDue}.pdf`;
   }
 
-  parse(
-    source: Readonly<DocumentSource>,
-  ): ParsedRogersBill | DocumentParseError {
-    const amountDueIndex = source.lines.findIndex(
-      (line) => line.toLowerCase() === "what is the total due?",
+  parse(pdf: string): ParsedRogersBill | DocumentParseError {
+    const amountDue = stringFromPdf(
+      pdf,
+      /^what is the total due\?\s+(\$\d+\.\d+)$/im,
     );
-    if (amountDueIndex < 0) {
-      return {
-        type: "DocumentParseError",
-        message: "amount due line not found",
-      };
-    }
-    const amountDue = source.lines[amountDueIndex + 1]?.trim();
-    if (!amountDue) {
-      return {
-        type: "DocumentParseError",
-        message: "expected line after amount due line",
-      };
+    if (isDocumentParseError(amountDue)) {
+      return amountDue;
     }
 
-    const billDateIndex = source.lines.findIndex(
-      (line) => line.toLowerCase() === "bill date",
+    const billDate = yyyymmddDateFromPdf(
+      pdf,
+      /^bill date\s+(\w+\s+\d+,\s+\d+)$/im,
+      "MMM D, YYYY",
     );
-    if (billDateIndex < 0) {
-      return {
-        type: "DocumentParseError",
-        message: "bill date line not found",
-      };
-    }
-    const billDateStr = source.lines[billDateIndex + 1]?.trim();
-    if (!billDateStr) {
-      return {
-        type: "DocumentParseError",
-        message: "expected line after bill date line",
-      };
-    }
-    const billDate = parseDateToYYYYMMDD("MMM D, YYYY", billDateStr);
-    if (isParseDateError(billDate)) {
-      const { message } = billDate;
-      return {
-        type: "DocumentParseError",
-        message: `unable to parse invoice date: ${billDateStr} (${message})`,
-      };
+    if (isDocumentParseError(billDate)) {
+      return billDate;
     }
 
     return { type: "RogersBill", billDate, amountDue };

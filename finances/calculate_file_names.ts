@@ -28,7 +28,7 @@ export async function calculateFileNames(
 ): Promise<Map<string, string> | CalculateFileNamesError> {
   const infoByFileName = new Map<
     string,
-    Array<{ filePath: string; hash: string }>
+    Array<{ filePath: string; pdf: string }>
   >();
   const fileNameByFilePath = new Map<string, string>();
 
@@ -37,16 +37,16 @@ export async function calculateFileNames(
       continue;
     }
 
-    const readPdfResult = await readPdf(filePath);
-    if (isReadPdfError(readPdfResult)) {
+    const pdf = await readPdf(filePath);
+    if (isReadPdfError(pdf)) {
       return {
         type: "CalculateFileNamesError",
-        message: readPdfResult.message,
+        message: pdf.message,
         filePath,
       };
     }
 
-    const document = identify(readPdfResult);
+    const document = identify(pdf);
     if (typeof document === "undefined") {
       return {
         type: "CalculateFileNamesError",
@@ -62,7 +62,7 @@ export async function calculateFileNames(
       };
     }
 
-    const parseResult = document.parse(readPdfResult);
+    const parseResult = document.parse(pdf);
     if (isDocumentParseError(parseResult)) {
       return {
         type: "CalculateFileNamesError",
@@ -75,7 +75,7 @@ export async function calculateFileNames(
     const fileName = document.calculateFileName(parseResult as unknown as any);
     fileNameByFilePath.set(filePath, fileName);
 
-    const newFileNameInfo = { filePath, hash: readPdfResult.hash };
+    const newFileNameInfo = { filePath, pdf };
     const info = infoByFileName.get(fileName);
     if (info) {
       info.push(newFileNameInfo);
@@ -85,22 +85,22 @@ export async function calculateFileNames(
   }
 
   for (const [fileName, infoList] of infoByFileName.entries()) {
-    const hashes = new Set<string>();
+    const pdfs = new Set<string>();
     for (const info of infoList) {
-      hashes.add(info.hash);
+      pdfs.add(info.pdf);
     }
 
-    if (hashes.size < 2) {
+    if (pdfs.size < 2) {
       continue;
     }
 
-    const numberByHash = new Map<string, number>();
-    for (const hash of hashes) {
-      numberByHash.set(hash, numberByHash.size + 1);
+    const numberByPdf = new Map<string, number>();
+    for (const pdf of pdfs) {
+      numberByPdf.set(pdf, numberByPdf.size + 1);
     }
 
-    const fileNameByHash = new Map<string, string>();
-    for (const [hash, fileNumber] of numberByHash) {
+    const fileNameByPdf = new Map<string, string>();
+    for (const [pdf, fileNumber] of numberByPdf) {
       const lastPeriodIndex = fileName.lastIndexOf(".");
       let numberedFileName: string;
       if (lastPeriodIndex < 0) {
@@ -111,11 +111,11 @@ export async function calculateFileNames(
           ` ${fileNumber}` +
           fileName.substring(lastPeriodIndex);
       }
-      fileNameByHash.set(hash, numberedFileName);
+      fileNameByPdf.set(pdf, numberedFileName);
     }
 
     for (const info of infoList) {
-      const newFileName = fileNameByHash.get(info.hash);
+      const newFileName = fileNameByPdf.get(info.pdf);
       if (!newFileName) {
         throw new Error(
           `internal error kwteqzzx79: ` +
