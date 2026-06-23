@@ -119,7 +119,7 @@ export async function calculateFileNames(
       if (!newFileName) {
         throw new Error(
           `internal error kwteqzzx79: ` +
-            `fileNameByHash.get(info.hash) ` +
+            `fileNameByPdf.get(info.pdf) ` +
             `returned ${Bun.inspect(newFileName)}`,
         );
       }
