@@ -1,9 +1,6 @@
-import type {
-  Document,
-  DocumentSource,
-  DocumentParseError,
-} from "../document.ts";
-import { parseDateToYYYYMMDD, isParseDateError } from "../date.ts";
+import type { Document, DocumentParseError } from "../document.ts";
+import { yyyymmddDateFromPdf, stringFromPdf } from "../document_utils.ts";
+import { isDocumentParseError } from "../document.ts";
 
 export interface ParsedPublicMobileStatement {
   type: "PublicMobileStatement";
@@ -17,8 +14,9 @@ class PublicMobileStatement implements Document<
 > {
   readonly type = "PublicMobileStatement" as const;
 
-  identify(source: Readonly<DocumentSource>): boolean {
-    return source.lines.includes("Public Mobile Account");
+  identify(pdf: string): boolean {
+    const regex = /^Public Mobile Account$/im;
+    return regex.test(pdf);
   }
 
   calculateFileName(pdf: Readonly<ParsedPublicMobileStatement>): string {
@@ -26,42 +24,23 @@ class PublicMobileStatement implements Document<
     return `${invoiceDate} Public Mobile Payment ${totalAmountPaid}.pdf`;
   }
 
-  parse(
-    source: Readonly<DocumentSource>,
-  ): ParsedPublicMobileStatement | DocumentParseError {
-    const invoiceIndex = source.lines.findIndex(
-      (line) => line.toLowerCase() === "invoice",
+  parse(pdf: string): ParsedPublicMobileStatement | DocumentParseError {
+    const invoiceDate = yyyymmddDateFromPdf(
+      pdf,
+      /^invoice\s+(\w+\s+\d+,\s+\d+)$/im,
+      "MMM D, YYYY",
     );
-    if (invoiceIndex < 0) {
-      return { type: "DocumentParseError", message: "INVOICE line not found" };
-    }
-    const invoiceDateStr = source.lines[invoiceIndex + 1]?.trim();
-    if (!invoiceDateStr) {
-      return {
-        type: "DocumentParseError",
-        message: "expected line after INVOICE line",
-      };
-    }
-    const invoiceDate = parseDateToYYYYMMDD("MMM D, YYYY", invoiceDateStr);
-    if (isParseDateError(invoiceDate)) {
-      const { message } = invoiceDate;
-      return {
-        type: "DocumentParseError",
-        message: `unable to parse invoice date: ${invoiceDateStr} (${message})`,
-      };
+    if (isDocumentParseError(invoiceDate)) {
+      return invoiceDate;
     }
 
-    const totalAmountPaidLine = source.lines.find((line) =>
-      line.toLowerCase().startsWith("total amount paid"),
+    const totalAmountPaid = stringFromPdf(
+      pdf,
+      /^total amount paid\s+(\$\d+\.\d+)$/im,
     );
-    if (!totalAmountPaidLine) {
-      return {
-        type: "DocumentParseError",
-        message: "Total Amount Paid line not found",
-      };
+    if (isDocumentParseError(totalAmountPaid)) {
+      return totalAmountPaid;
     }
-
-    const totalAmountPaid = totalAmountPaidLine.substring(17).trim();
 
     return { type: "PublicMobileStatement", invoiceDate, totalAmountPaid };
   }

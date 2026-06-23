@@ -1,10 +1,6 @@
-import type {
-  Document,
-  DocumentSource,
-  DocumentParseError,
-} from "../document.ts";
+import type { Document, DocumentParseError } from "../document.ts";
 import { isDocumentParseError } from "../document.ts";
-import { stringFromLines, yyyymmddDateFromLines } from "../document_utils.ts";
+import { stringFromPdf, yyyymmddDateFromPdf } from "../document_utils.ts";
 
 export interface ParsedKitchenerUtilitiesBill {
   type: "KitchenerUtilitiesBill";
@@ -18,8 +14,9 @@ class KitchenerUtilitiesBill implements Document<
 > {
   readonly type = "KitchenerUtilitiesBill" as const;
 
-  identify(source: Readonly<DocumentSource>): boolean {
-    return source.lines.some((line) => line.includes("UTILITIES@KITCHENER.CA"));
+  identify(pdf: string): boolean {
+    const regex = /\s519-741-2626.*utilities@kitchener.ca$/im;
+    return regex.test(pdf);
   }
 
   calculateFileName(pdf: Readonly<ParsedKitchenerUtilitiesBill>): string {
@@ -27,21 +24,19 @@ class KitchenerUtilitiesBill implements Document<
     return `${statementDate} Kitchener Utilities Bill ${amountDue}.pdf`;
   }
 
-  parse(
-    source: Readonly<DocumentSource>,
-  ): ParsedKitchenerUtilitiesBill | DocumentParseError {
-    const statementDate = yyyymmddDateFromLines(
-      source.lines,
-      /^Statement Date:\s*(\w+\s+\d+\s+\d+)\s+/i,
+  parse(pdf: string): ParsedKitchenerUtilitiesBill | DocumentParseError {
+    const statementDate = yyyymmddDateFromPdf(
+      pdf,
+      /^Statement Date:\s*(\w+\s+\d+\s+\d+)\s/im,
       "MMM D YYYY",
     );
     if (isDocumentParseError(statementDate)) {
       return statementDate;
     }
 
-    const amountDue = stringFromLines(
-      source.lines,
-      /^Pre-authorized Withdrawal:\s*(\d+\.\d+)$/i,
+    const amountDue = stringFromPdf(
+      pdf,
+      /^Pre-authorized Withdrawal:\s*(\d+\.\d+)$/im,
       { resultPrefix: "$" },
     );
     if (isDocumentParseError(amountDue)) {

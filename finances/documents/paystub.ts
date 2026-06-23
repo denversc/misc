@@ -1,10 +1,6 @@
-import type {
-  Document,
-  DocumentSource,
-  DocumentParseError,
-} from "../document.ts";
+import type { Document, DocumentParseError } from "../document.ts";
 import { isDocumentParseError } from "../document.ts";
-import { yyyymmddDateFromLines } from "../document_utils.ts";
+import { yyyymmddDateFromPdf } from "../document_utils.ts";
 
 export type PayStubType =
   | "PayStubAnnualBonus"
@@ -51,12 +47,13 @@ class PayStub<Type extends PayStubType> implements Document<
     this.#filenameTemplate = filenameTemplate;
   }
 
-  identify(source: Readonly<DocumentSource>): boolean {
-    if (!source.lines.some((line) => line === "Pay Summary")) {
+  identify(pdf: string): boolean {
+    const identifyRegex = /^Pay Summary$/im;
+    if (!identifyRegex.test(pdf)) {
       return false;
     }
 
-    const match = source.text.match(this.#regex);
+    const match = pdf.match(this.#regex);
     if (!match) {
       return false;
     }
@@ -80,19 +77,17 @@ class PayStub<Type extends PayStubType> implements Document<
     return `${pdf.payDate} Google Pay Stub (${parentheticalText}).pdf`;
   }
 
-  parse(
-    source: Readonly<DocumentSource>,
-  ): ParsedPayStub<Type> | DocumentParseError {
-    const payDate = yyyymmddDateFromLines(
-      source.lines,
-      /^Pay\s+Date\s+(\d+\s+\d+\s+\d+)$/i,
+  parse(pdf: string): ParsedPayStub<Type> | DocumentParseError {
+    const payDate = yyyymmddDateFromPdf(
+      pdf,
+      /^Pay\s+Date\s+(\d+\s+\d+\s+\d+)$/im,
       "YYYY MM DD",
     );
     if (isDocumentParseError(payDate)) {
       return payDate;
     }
 
-    const match = source.text.match(this.#regex);
+    const match = pdf.match(this.#regex);
     if (!match) {
       return {
         type: "DocumentParseError",
@@ -116,7 +111,7 @@ class PayStubAnnualBonus extends PayStub<"PayStubAnnualBonus"> {
   constructor() {
     super(
       "PayStubAnnualBonus",
-      /\sAnnual\s+Bonus\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+\s/i,
+      /^Annual\s+Bonus\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+$/im,
       "Annual Bonus",
     );
   }
@@ -126,7 +121,7 @@ class PayStubRegularPay extends PayStub<"PayStubRegularPay"> {
   constructor() {
     super(
       "PayStubRegularPay",
-      /\sRegular\s+Pay\s+\d+\.\d+\s+\$\d+\.\d+\s+(\$[\d,]+\.\d+)\s/i,
+      /^Regular\s+Pay\s+\d+\.\d+\s+\$\d+\.\d+\s+(\$[\d,]+\.\d+)\s/im,
       "Regular Pay",
     );
   }
@@ -136,7 +131,7 @@ class PayStubGSU extends PayStub<"PayStubGSU"> {
   constructor() {
     super(
       "PayStubGSU",
-      /\sGoogle\s+Stock\s+Un\s+0.0*\s+\$0.0*\s+(\$[\d,]+\.\d+)\s/i,
+      /^Google\s+Stock\s+Un\s+0.0*\s+\$0.0*\s+(\$[\d,]+\.\d+)\s/im,
       "GSU Vest __AMOUNT__ CAD",
     );
   }
@@ -146,7 +141,7 @@ class PayStubShuttle extends PayStub<"PayStubShuttle"> {
   constructor() {
     super(
       "PayStubShuttle",
-      /\sCA\s+Shuttle\s+Bus\s+\$[\d,]+\.\d+\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s/,
+      /^CA\s+Shuttle\s+Bus\s+\$[\d,]+\.\d+\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+$/im,
       "Shuttle Bus",
     );
   }
@@ -156,7 +151,7 @@ class PayStubMeal extends PayStub<"PayStubMeal"> {
   constructor() {
     super(
       "PayStubMeal",
-      /\sMeal\s+Benefit\s+\$[\d,]+\.\d+\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s/,
+      /^Meal\s+Benefit\s+\$[\d,]+\.\d+\s+(\$[\d,]+\.\d+)\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+\s+\$[\d,]+\.\d+$/im,
       "Meal Benefit",
     );
   }

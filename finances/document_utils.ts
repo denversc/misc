@@ -5,46 +5,41 @@ interface StringFromLinesOptions {
   resultPrefix: string;
 }
 
-export function stringFromLines(
-  lines: readonly string[],
+export function stringFromPdf(
+  pdf: string,
   regex: RegExp,
   options?: Partial<StringFromLinesOptions>,
 ): string | DocumentParseError {
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    const match = trimmedLine.match(regex);
-    if (!match) {
-      continue;
-    }
-
-    const matchingString = match[1];
-    if (typeof matchingString === "undefined") {
-      throw new Error(
-        `internal error stdp7xw6rb: regex should have matched line; ` +
-          `regex=${regex.source}, line=${trimmedLine}`,
-      );
-    }
-
-    const resultPrefix = options?.resultPrefix;
-    if (typeof resultPrefix === "undefined") {
-      return matchingString;
-    } else {
-      return resultPrefix + matchingString;
-    }
+  const match = pdf.match(regex);
+  if (!match) {
+    return {
+      type: "DocumentParseError",
+      message: `regular expression was not matched: ${regex.source}`,
+    };
   }
 
-  return {
-    type: "DocumentParseError",
-    message: `line not found matching regex: ${regex.source}`,
-  };
+  const matchingString = match[1];
+  if (typeof matchingString === "undefined") {
+    throw new Error(
+      `internal error stdp7xw6rb: regex should have had a matching group: ` +
+        regex.source,
+    );
+  }
+
+  const resultPrefix = options?.resultPrefix;
+  if (typeof resultPrefix !== "undefined") {
+    return resultPrefix + matchingString;
+  } else {
+    return matchingString;
+  }
 }
 
-export function yyyymmddDateFromLines(
-  lines: readonly string[],
+export function yyyymmddDateFromPdf(
+  pdf: string,
   regex: RegExp,
   dateFormat: string,
 ): string | DocumentParseError {
-  const dateStr = stringFromLines(lines, regex);
+  const dateStr = stringFromPdf(pdf, regex);
   if (isDocumentParseError(dateStr)) {
     return dateStr;
   }
