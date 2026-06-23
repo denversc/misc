@@ -15,14 +15,14 @@ export async function printCommand(
     return;
   }
 
-  const readPdfResult = await readPdf(filePath);
-  if (isReadPdfError(readPdfResult)) {
-    console.error(`ERROR: ${readPdfResult.message}: ${filePath}`);
+  const pdf = await readPdf(filePath);
+  if (isReadPdfError(pdf)) {
+    console.error(`ERROR: ${pdf.message}: ${filePath}`);
     process.exit(1);
   }
 
   if (options?.v) {
     console.log(filePath);
   }
-  console.log(readPdfResult.text);
+  console.log(pdf);
 }
