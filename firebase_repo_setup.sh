@@ -13,8 +13,9 @@ function main {
   setup_repo -d data-connect-ios -b main -u https://github.com/firebase/data-connect-ios-sdk.git -p git@github.com:firebase/data-connect-ios-sdk.git
   setup_repo -d cpp -b main -u https://github.com/firebase/firebase-cpp-sdk.git -p git@github.com:firebase/firebase-cpp-sdk.git
   setup_repo -d unity -b main -u https://github.com/firebase/firebase-unity-sdk.git -p git@github.com:firebase/firebase-unity-sdk.git
-  setup_repo -d nodejs-firestore -b main -u https://github.com/googleapis/nodejs-firestore.git -p git@github.com:googleapis/nodejs-firestore.git
-  setup_repo -d java-firestore -b main -u https://github.com/googleapis/java-firestore.git -p git@github.com:googleapis/java-firestore.git
+  setup_repo -d google-cloud-node -b main -u https://github.com/googleapis/google-cloud-node.git -p git@github.com:googleapis/google-cloud-node.git
+  setup_repo -d google-cloud-java -b main -u https://github.com/googleapis/google-cloud-java.git -p git@github.com:googleapis/google-cloud-java.git
+  setup_repo -d google-cloud-python -b main -u https://github.com/googleapis/google-cloud-python.git -p git@github.com:googleapis/google-cloud-python.git
   setup_repo -d admin-node -b main -u https://github.com/firebase/firebase-admin-node.git -p git@github.com:firebase/firebase-admin-node.git
   setup_repo -d admin-java -b main -u https://github.com/firebase/firebase-admin-java.git -p git@github.com:firebase/firebase-admin-java.git
   setup_repo -d admin-python -b main -u https://github.com/firebase/firebase-admin-python.git -p git@github.com:firebase/firebase-admin-python.git
