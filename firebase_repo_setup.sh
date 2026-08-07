@@ -26,6 +26,7 @@ function main {
   setup_repo -d quickstart-unity -b master -u https://github.com/firebase/quickstart-unity.git -p git@github.com:firebase/quickstart-unity.git
   setup_repo -d flutterfire -b main -u https://github.com/firebase/flutterfire.git -p git@github.com:firebase/flutterfire.git
   setup_repo -d team -b main -u git@github.com:FirebasePrivate/firestore-team.git
+  #git clone sso://firebase-internal/realtime-database
   #git clone sso://user/dconeybe/firebase-misc misc
 }
 
