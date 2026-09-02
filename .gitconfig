@@ -21,6 +21,7 @@
   sw = switch
   lf = show --format= --name-only
   lfr = lf --relative
+  logu = !TZ=UTC git log --date=iso-strict-local
 [push]
   default = upstream
 [pull]
