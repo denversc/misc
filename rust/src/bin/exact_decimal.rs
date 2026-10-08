@@ -12,11 +12,11 @@ fn process_input(input: &str) {
         Err(_) => {
             // Try matching Java's Infinity/NaN strings if Rust's f64::from_str doesn't natively parse it
             if input == "Infinity" || input == "+Infinity" {
-                std::f64::INFINITY
+                f64::INFINITY
             } else if input == "-Infinity" {
-                std::f64::NEG_INFINITY
+                f64::NEG_INFINITY
             } else if input == "NaN" {
-                std::f64::NAN
+                f64::NAN
             } else {
                 eprintln!("Failed to parse input as double: {}", input);
                 std::process::exit(1);
