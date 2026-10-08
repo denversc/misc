@@ -3,9 +3,11 @@
 return {
   'saghen/blink.cmp',
   -- optional: provides snippets for the snippet source
-  dependencies = { 'rafamadriz/friendly-snippets' },
+  dependencies = { 'rafamadriz/friendly-snippets', 'saghen/blink.lib' },
+  version = '*',
 
-  version = '1.*',
+  -- Requires the rust toolchain to be on the path to build the native binary from source
+  build = function() require('blink.cmp').build():pwait() end,
 
   ---@module 'blink.cmp'
   ---@type blink.cmp.Config
