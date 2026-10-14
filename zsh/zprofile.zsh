@@ -17,4 +17,7 @@ if [[ -n $ANDROID_HOME ]] ; then
   if (( ! ${path[(I)$ANDROID_HOME/platform-tools]} )); then
     path=($ANDROID_HOME/platform-tools $path)
   fi
+  if (( ! ${path[(I)$ANDROID_HOME/cmdline-tools/latest/bin]} )); then
+    path=($ANDROID_HOME/cmdline-tools/latest/bin $path)
+  fi
 fi
