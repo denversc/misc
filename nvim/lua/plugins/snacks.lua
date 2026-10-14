@@ -107,6 +107,7 @@ return {
       "<leader>gg",
       function()
         Snacks.lazygit({
+          configure = false,
           win = {
             position = "float",
             width = 0,
