@@ -92,6 +92,18 @@ kdl() {
   "${kitten_args[@]}"
 }
 
+# Function: l (lazygit)
+#
+# Arguments: All arguments are passed verbatim to the "lazygit" command.
+l() {
+  emulate -L zsh
+  setopt extended_glob warn_create_global no_unset pipe_fail
+
+  typeset -r lazygit_args=(lazygit "$@")
+  say_args "${lazygit_args[@]}"
+  "${lazygit_args[@]}"
+}
+
 # Function: mkd (make temp directory)
 #
 # Arguments: one positional argument may be specified and, if specified, will
