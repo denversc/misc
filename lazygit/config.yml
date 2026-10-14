@@ -2,3 +2,11 @@ os:
   editPreset: "nvim-remote"
 gui:
   nerdFontsVersion: "3"
+git:
+  diffRenderers:
+    - type: rawGit
+      name: none
+    - name: delta (stacked)
+      command: delta --{{colorScheme}} --config ~/.config/lazygit/delta.stacked.conf
+    - name: delta (side-by-side)
+      command: delta --{{colorScheme}} --config ~/.config/lazygit/delta.sidebyside.conf
