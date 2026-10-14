@@ -1,0 +1,4 @@
+os:
+  editPreset: "nvim-remote"
+gui:
+  nerdFontsVersion: "3"
